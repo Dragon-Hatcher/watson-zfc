@@ -1,0 +1,9 @@
+{
+    "luau-lsp.platform.type": "standard",
+    "luau-lsp.sourcemap.enabled": false,
+    "luau-lsp.types.definitionFiles": {
+        "watson": "build/luau/definitions.d.luau"
+    },
+    "luau-lsp.fflags.enableNewSolver": true,
+    "luau-lsp.server.baseLuaurc": "build/luau/.luaurc"
+}
