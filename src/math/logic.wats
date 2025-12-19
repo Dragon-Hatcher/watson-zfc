@@ -1,0 +1,247 @@
+= Logic
+
+In this chapter we will develop the formal language of first order logic upon
+which we will build mathematics. Although the objects of our study will be sets
+it is first order logic which allows us to make statements about those sets.
+
+First order logic is itself an extension of a simpler system called propositional
+logic. Propositional logic encompasses all the logical statements that do not 
+involve the quantifiers $\exists$ and $\forall$. This include and, or, not,
+and implications.
+
+== Propositional Logic
+
+=== Formal Language
+
+When defining propositional logic we will eventually want to be able to express
+all of and, or, not, and implies. One possibility is to make all four operators
+part of our formal language. However, it turns out that and, or, and not can
+all be defined in terms of only implication and a constant _falsum_, which we 
+will denote as $\bot$. The advantage of doing things this way is that later we 
+will need fewer axioms because we will have fewer foundational terms we need to
+define the meaning of. The disadvantage is that to define and and or in terms
+of implication we will have to assume to law of the excluded middle or 
+equivalently the law of double negation. This means that we will can only do
+classical logic. However, supporting intuitionist logic is not a goal of this
+development. So we will take the simpler formal language.
+
+The first piece of formal language syntax we want to define is the implication
+operator. Below is the Watson command to define the operator. Watson calls
+mathematical statements sentences and so defines the non-terminal that 
+represents mathematical statements `sentence`. The syntax 
+`non-terminal ::= replacement` for defining productions in a context free 
+grammar is actually standard and is called Backus–Naur form. The `(500)` 
+is a Watson specific extension and allows defining the precedence of different
+pieces of syntax. This is not mathematical meaningful but simply helps with
+writing notation. For example, we want `¬p → q` to mean `(¬p) → q` and not
+`¬(p → q)`.
+
+syntax implication
+    sentence (500) ::= sentence " → " sentence
+end
+
+The next piece of syntax we will define is the constant symbol _falsum_. This
+represents a statement that is always false. The utility of this will become
+apparent shortly.
+
+syntax falsum
+    sentence ::= "⊥"
+end
+
+This is the entire formal language of propositional logic. It is remarkably
+small yet it is capable of expressing all quantifier free logical statements.
+
+=== Other Logical Operators
+
+Although only implication and falsum are part of our formal language, we still
+need to be able to discuss and, or, and not. To do this we will use another
+Watson feature: definitions.
+
+Definitions allow as to define new notation along with a replacement rule to 
+explain what the definition means. Internally, Watson expands definitions into
+the underlying formal language before checking proofs. So definitions have no
+effect on proof checking. Instead they are simply a convenience for writing 
+proofs. In theory, we do not need to employ definitions at all.
+
+Let us make our first definition in order to define the negation operator. How
+can we express negation using only implication and falsum? If a proposition $p$
+leads to a contradiction, then we can conclude that $p$ is false. We can write
+$p$ leading to a contradiction as $p \to \bot$ since $\bot$ represents a false
+statement, a.k.a. a contradiction. So since we know that $p \to \bot$ means 
+$p$ is false, we can make this our definition of $\neg p$.
+
+In order to explain this definition to Watson there are two steps. First we 
+must define the actual syntax of the notation we want to use.
+
+notation not
+    sentence (600) ::= "¬" sentence
+end
+
+This allows Watson to correctly parse the notation when we later write it. But
+we also need to define what the notation means. We can do this with a 
+replacement rule. The reason these are separated into two different steps is 
+that often we use the same notation to refer to multiple different things. For
+example, later we will use `|x|` to mean both numeric absolute value and set 
+cardinality.
+
+definition
+    ¬p := p → ⊥
+end
+
+The definition syntax is intuitive. You simply place the expression you want
+to define on the left, and the definition on the right. Where we wrote `sentence`
+in the notation command we give a variable name `p` in the definition command. 
+We use `:=` instead of  `=` because `=` is a part of our formal language that we 
+will latter want to define. Instead we use `:=` as a metalogical symbol for 
+definitions. Note that this means it is not a good idea to make `:=` a symbol
+in your formal language.
+
+Next we can define or. Again we must think in terms of the operations we have
+already defined. One property of or that we know is that if $p \lor q$ is true 
+and $p$ is not true, then $q$ is true. In fact, we can use this as our definition,
+defining $p \lor q$ as $\neg p \to q$.
+
+notation or
+    sentence ::= sentence " ∨ " sentence
+end
+
+definition
+    p ∨ q := ¬p → q
+end
+
+Notice that the definition is not symmetric. When we prove the properties of or
+we will initially have to have separate proofs for the left and right sides.
+
+We can define and in terms of or using the standard DeMorgan's Law relationship.
+That is we define $p \land q$ to mean $\neg(\neg p \lor \neg q)$. However,
+before we can make this definition we need one other definition: parentheses!
+Don't laugh. Parentheses are a part of mathematical notation too and they need
+a definition just like everything else. Of course, the definition is rather simple.
+
+notation parentheses
+    sentence ::= "(" sentence ")"
+end
+
+definition
+    (p) := p
+end
+
+With this we are able to define and.
+
+notation and
+    sentence ::= sentence " ∧ " sentence
+end
+
+definition
+    p ∧ q := ¬(¬p ∨ ¬q)
+end
+
+There is one final definition we would like to make: $p \leftrightarrow q$. 
+The definition is completely standard however there is one thing to comment on.
+Notice that the definition of $p \leftrightarrow q$ includes two copies each
+of $p$ and $q$. If $p$ and $q$ themselves contain if and only ifs, then the 
+size of the formal language sentence our notation describes would grow
+exponentially! Luckily Watson is equipped to handle this and stores the formal
+language sentences in a form where the size is linear with respect to the notation
+used. 
+
+notation iff
+    sentence ::= sentence " ↔ " sentence
+end
+
+definition
+    p ↔ q := (p → q) ∧ (q → p)
+end
+
+=== Axioms
+
+Having defined our notation we are now ready to give the axioms of formal logic.
+Just as we amazingly need only two operators to define the complete syntax of
+propositional logic, we also need just four axioms to completely describe the
+properties of those operators. When we introduce quantifiers we will add two
+more axioms which means we need just six axioms to define all of logic!
+
+The first axiom is the most venerable and most intuitive of the four. It is 
+the axiom of modus ponens. It says that if $p \to q$ and $p$ are both true then
+$q$ is also true. This might seem so obvious as to barely require stating but
+remember from the introduction that it is only the axioms that give the
+sentences in our formal language meaning. So far all we have told Watson is that
+we are allowed to write the literal symbol `→`. We have not yet told Watson what
+this symbol means. The axiom of modus ponens is what gives the implication
+symbol its meaning.
+
+axiom modus_ponens [p q : sentence] : (p → q) (p)
+    |- q
+end
+
+Let's take a moment to understand the `axiom` command. Immediately following the
+keyword `axiom` is the name of the axiom. When we later write proofs we will
+invoke the axiom by referring to this name. Next comes the _templates_ of the axiom.
+When we say that $p \to q$ and $p$ together imply $q$ we mean that this 
+deduction holds for any possible $p$ and $q$. It is this idea of the statement
+being true for any possible $p$ and $q$ that the syntax `[p q : sentence]`
+tells Watson. After the templates comes a `:` to indicate the end of the 
+templates and the beginning of the hypotheses. Finally, we mark the conclusion
+of the axiom with the `|-` symbol. This is a standard symbol from logic called
+a _tack_ or _turnstile_ and can be read as "entails." So we get that the 
+hypotheses entail the conclusion.
+
+In the axiom the implication has been eliminated from the hypothesis to reach
+the conclusion. As such the axiom of modus ponens is also often called the axiom
+of implication elimination. Modus ponens allows us to derive a new fact if we 
+already know an implication. But how will we learn an implication in the first
+place? This will be accomplished with the second axiom of propositional logic:
+the axiom of implication introduction or, as we will call it, the deduction axiom.
+
+axiom deduction [p q : sentence] : (assume p |- q)
+    |- p → q
+end
+
+This axiom has a hypothesis which is quite different from the ones we have seen
+before. You will notice that `assume p |- q` is neither part of our formal
+language nor a piece of notation we have defined. In fact it is not a 
+mathematical statement at all, it is a _meta_mathematical statement. When we
+write `assume p |- q` as a hypothesis, what we are telling Watson is that the 
+conclusion can be reached if knowing that $p$ was true would allow us to prove 
+that $q$ was true. Thus `assume p |- q` is not a statement that has a truth 
+value within the mathematical system we are defining. It is not even a statement
+in that system! This is a question about the behavior of the proof system itself.
+Therefore it is _meta_mathematical.
+
+In Watson we call statements of the form `assume p |- q` _facts_ to distinguish
+them from statements in our formal mathematical system which you will recall we
+are calling _sentences_. Watson will record which facts have been proven and
+facts can be hypotheses but a fact cannot be a conclusion of an axiom. To do so
+would be a category error. An axiom tells Watson about the definition of truth
+in the formal language we are defining. However it is Watson itself that decides
+which things are provable. To make a fact the conclusion of an axiom would be to
+declare that a certain proof exists, which might not be true. Whether such a
+proof exists is a concrete fact about the world, not an abstract truth function
+we can define specific cases of.
+
+The final two axioms concern the falsum constant. The third axiom is the axiom of 
+double negation. It says that if $\neg\neg p$ is true then $p$ is also true.
+It is the addition of this deduction that makes our logic classical. Because we
+defined and and or in terms of implication and falsum this axiom is required to
+prove facts about and and or. So almost no intuitionist reasoning will be 
+possible in our system.
+
+axiom not_not.elim [p : sentence] : (¬¬p)
+    |- p
+end
+
+The fourth and final axiom is the principal of explosion. It states that if we
+know $\bot$ to be true, anything at all can be proven.
+
+axiom explosion [p : sentence] : (⊥)
+    |- p
+end
+
+This axiom may seem surprising but it would actually be implied by any system of
+reasoning about falsity. If we know that $q$ and $\neg q$ are both true then we
+can make the following (right now informal) argument that an arbitrary $p$ is
+true. Since $q$ is true $q \lor p$ is true. But $\neg q$ is true so since 
+$q \lor p$ is true it must be that $p$ is true. Hence $p$. As we can see the
+principal of explosion will be true once we have defined all the normal logical
+deductions anyway. So, since it turns out that the principal of explosion will
+help us prove those deductions, it is reasonable to add it as an axiom.

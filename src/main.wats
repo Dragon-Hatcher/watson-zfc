@@ -191,18 +191,18 @@ form to be valid a priori. (Usually if $n=0$ such deductions are called _axioms_
 and if $n>0$ they are called _rules of inference_. But Watson makes no distinction
 and calls both axioms). By applying these deductions we can create new 
 deductions. For example, the classic rule of inference modus ponens tells us 
-that if $p$ and $p \rightarrow q$ are known to be true then $q$ can be derived.
+that if $p$ and $p \to q$ are known to be true then $q$ can be derived.
 By applying this inference twice we can produce the new inference that if 
-$p$, $p \rightarrow q$, and $q \rightarrow r$ are all known to be true then $r$
+$p$, $p \to q$, and $q \to r$ are all known to be true then $r$
 can be derived.
 
 Fitch style proofs also include one other feature: natural deduction. Returning
 to the same example, we would like to be able to prove the deduction that if 
-$p \rightarrow q$ and $q \rightarrow r$ are true then $p \rightarrow r$ is true.
+$p \to q$ and $q \to r$ are true then $p \to r$ is true.
 Although there are additional axioms we could add that would allow us to prove 
 this the "natural" way of reasoning uses only modus ponens. We would like to be
 able to "assume" $p$, from this deduce $q$ and then $r$. Since assuming $p$
-allowed us to deduce $r$ we would then like to conclude that $p \rightarrow r$.
+allowed us to deduce $r$ we would then like to conclude that $p \to r$.
 This form of reasoning is called _natural deduction_ and Watson allows us to 
 express this form of reasoning as an axiom.
 
@@ -285,3 +285,5 @@ understanding of traditional mathematics, this introduction is all the
 additional background you should need to understand how Watson works.
 
 In the next chapter, let us begin.
+
+module math.logic
