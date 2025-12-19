@@ -39,7 +39,7 @@ jobs:
         run: watson check
 
       - name: Build book
-        run: watson book
+        run: watson book --base-path "/watson-zfc/"
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
