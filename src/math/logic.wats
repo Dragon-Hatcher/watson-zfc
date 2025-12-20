@@ -1,4 +1,4 @@
-= Logic
+# Logic
 
 In this chapter we will develop the formal language of first order logic upon
 which we will build mathematics. Although the objects of our study will be sets
@@ -9,9 +9,9 @@ logic. Propositional logic encompasses all the logical statements that do not
 involve the quantifiers $\exists$ and $\forall$. This include and, or, not,
 and implications.
 
-== Propositional Logic
+## Propositional Logic
 
-=== Formal Language
+### Formal Language
 
 When defining propositional logic we will eventually want to be able to express
 all of and, or, not, and implies. One possibility is to make all four operators
@@ -51,7 +51,7 @@ end
 This is the entire formal language of propositional logic. It is remarkably
 small yet it is capable of expressing all quantifier free logical statements.
 
-=== Other Logical Operators
+### Other Logical Operators
 
 Although only implication and falsum are part of our formal language, we still
 need to be able to discuss and, or, and not. To do this we will use another
@@ -153,12 +153,12 @@ definition
     p ↔ q := (p → q) ∧ (q → p)
 end
 
-=== Axioms
+### Axioms
 
-Having defined our notation we are now ready to give the axioms of formal logic.
-Just as we amazingly need only two operators to define the complete syntax of
-propositional logic, we also need just four axioms to completely describe the
-properties of those operators. When we introduce quantifiers we will add two
+Having defined our notation we are now ready to give the axioms of propositional 
+logic. Just as we amazingly need only two operators to define the complete syntax 
+of propositional logic, we also need just four axioms to completely describe the 
+properties of those operators. When we introduce quantifiers we will add two 
 more axioms which means we need just six axioms to define all of logic!
 
 The first axiom is the most venerable and most intuitive of the four. It is 
@@ -200,13 +200,13 @@ end
 This axiom has a hypothesis which is quite different from the ones we have seen
 before. You will notice that `assume p |- q` is neither part of our formal
 language nor a piece of notation we have defined. In fact it is not a 
-mathematical statement at all, it is a _meta_mathematical statement. When we
+mathematical statement at all, it is a *meta*mathematical statement. When we
 write `assume p |- q` as a hypothesis, what we are telling Watson is that the 
 conclusion can be reached if knowing that $p$ was true would allow us to prove 
 that $q$ was true. Thus `assume p |- q` is not a statement that has a truth 
 value within the mathematical system we are defining. It is not even a statement
 in that system! This is a question about the behavior of the proof system itself.
-Therefore it is _meta_mathematical.
+Therefore it is *meta*mathematical.
 
 In Watson we call statements of the form `assume p |- q` _facts_ to distinguish
 them from statements in our formal mathematical system which you will recall we
@@ -245,3 +245,122 @@ $q \lor p$ is true it must be that $p$ is true. Hence $p$. As we can see the
 principal of explosion will be true once we have defined all the normal logical
 deductions anyway. So, since it turns out that the principal of explosion will
 help us prove those deductions, it is reasonable to add it as an axiom.
+
+### Tactics
+
+With our definitions and axioms in hand, we are now ready to begin proving
+theorems. Theorem statements in Watson look identical to axioms except, of 
+course, that they come with a proof. What is the syntax for these proofs? 
+The syntax is entirely defined by us! Watson has no built in proof syntax.
+Instead we use the `tactic` command to define a new type of proof syntax and 
+then write code in the scripting language Lua that transforms this proof syntax
+into a formal deduction that Watson can check. Let's define a simple proof syntax
+we can use to prove our first theorems.
+
+First we will define a way to structure our proofs. We will write `have p` to
+start a new subproof of $p$. We will have a tactic to prove $p$ and another tactic
+to continue the proof of the original fact we were proving before we started
+proving $p$. 
+
+tactic tactic.have
+    -- The name before the colon is the name that can be used in our Lua code
+    -- to access that syntax. The name after the colon is the non-terminal.
+    tactic ::= @kw"have" show:@fact @kw"as" subproof:tactic ";" next:tactic
+end
+
+Next we will need a way to apply previously proven theorems and axioms. We will
+call this the `by` tactic. To apply a theorem we will need to provide the
+template instantiations for the `. To do this we will need to define a 
+new non-terminal symbol just for tactics. We can do this with the `tactic_category`
+command.
+
+tactic_category templates
+
+Then we can define the `by` command.
+
+tactic tactic.by
+    tactic ::= @kw"by" theorem:@name templates:templates
+end
+
+And now we need to define the syntax for the template instantiations. First we
+need to define a single template.
+
+tactic_category template
+
+tactic template
+    template ::= "[" inst:@any_fragment "]"
+end
+
+And then we can use this definition to define a list of templates.
+
+tactic templates.some
+    templates ::= template:template rest:templates
+end
+
+tactic templates.none
+    templates ::= 
+end
+
+Let's also define a shorthand for the common case of using just a single theorem
+application for a subproof.
+
+tactic tactic.have_by
+    tactic ::= @kw"have" show:@fact @kw"by" theorem:@name templates:templates 
+               ";" next:tactic
+end
+
+Another useful tactic will be `todo`. This is useful when we are in the middle 
+of writing our proofs. It will prove anything we want but Watson will mark our
+proof as unfinished so we know to return and finish it later. This is similar to
+`sorry` in lean.
+
+tactic tactic.todo
+    tactic ::= @kw"todo"
+end
+
+The final tactic we will need is the simplest tactic of all: do nothing. This is
+useful if the goal of our proof has already been proven and we don't need to do
+anything more.
+
+tactic tactic.empty
+    tactic ::=
+end
+
+### Theorems
+
+We will start by proving the basic facts about or. For or there are two 
+introduction rules. Left and right introduction. That is, if we know $p$ is true
+then we know $p \lor q$ is true. And also if we know $q$ is true then $p \lor q$
+is true. As we mentioned before, the definition of or is non-symmetrical so the
+proofs of these two facts are different.
+
+theorem or.intro_right [p q : sentence] : (q)
+    |- p ∨ q
+proof
+    -- Recall that the definition of p ∨ q is ¬p → q. So we really want to 
+    -- prove an implication. We will start by assuming ¬p and then derive q.
+    have assume ¬p |- q as
+        -- But we already know q from the hypothesis. So the subproof is complete!
+    ;
+    -- We now know assume ¬p |- q but we want ¬p → q so we will apply the 
+    -- deduction axiom.
+    have ¬p → q by deduction [¬p] [q];
+qed
+
+This proof features a very common style of deduction: we assume $p$ and
+deduce $q$. Then we apply the deduction theorem to conclude $p \to q$. Let's
+add a new tactic to make this a little cleaner.
+
+tactic tactic.assume
+    tactic ::= assume:@kw"assume" assumption:@fragment(sentence) ";" next:tactic
+end
+
+theorem or.intro_left [p q : sentence] : (p)
+    |- p ∨ q
+proof
+    have ¬p → q as
+        assume ¬p;
+        have ⊥ by modus_ponens [p] [⊥];
+        have q by explosion [q];
+    ;
+qed
