@@ -257,59 +257,61 @@ then write code in the scripting language Lua that transforms this proof syntax
 into a formal deduction that Watson can check. Let's define a simple proof syntax
 we can use to prove our first theorems.
 
-First we will define a way to structure our proofs. We will write `have p` to
-start a new subproof of $p$. We will have a tactic to prove $p$ and another tactic
-to continue the proof of the original fact we were proving before we started
-proving $p$. 
+The simplest proof step is claiming that a fact is true and providing a
+justification for that step. There are multiple ways of justifying a fact so we
+will create a non-terminal symbol that represents justifications. We can do this
+with the `tactic_category` command.
 
-tactic tactic.have
-    -- The name before the colon is the name that can be used in our Lua code
-    -- to access that syntax. The name after the colon is the non-terminal.
-    tactic ::= @kw"have" show:@fact @kw"as" subproof:tactic ";" next:tactic
+tactic_category justification
+
+Then we will claim that a fact is true by using the `follows` tactic. Notice
+that we provide both the justification for the given fact and the tactic that
+will complete the rest of the proof given this new fact.
+
+tactic tactic.follows
+    -- The name before the colon is the name that can be used in Lua to access 
+    -- the sub-tactic. The name after the colon is the non-terminal.
+    tactic ::= @kw"follows" goal:@fact just:justification ";" next:tactic
 end
 
-Next we will need a way to apply previously proven theorems and axioms. We will
-call this the `by` tactic. To apply a theorem we will need to provide the
-template instantiations for the `. To do this we will need to define a 
-new non-terminal symbol just for tactics. We can do this with the `tactic_category`
-command.
+One form of justification for a fact is applying a theorem. We will call this
+justification `by`. To use a theorem we need to fill in any template parameters
+the theorem has. We will create a new non-terminal for the templates.
 
 tactic_category templates
 
-Then we can define the `by` command.
-
-tactic tactic.by
-    tactic ::= @kw"by" theorem:@name templates:templates
+tactic justification.by
+    justification ::= @kw"by" thm:@name tmps:templates
 end
 
-And now we need to define the syntax for the template instantiations. First we
-need to define a single template.
+And then we will fill in the syntax for a list of template instantiations.
 
 tactic_category template
 
-tactic template
-    template ::= "[" inst:@any_fragment "]"
-end
-
-And then we can use this definition to define a list of templates.
-
 tactic templates.some
-    templates ::= template:template rest:templates
+    templates ::= tmp:template rest:templates
 end
 
 tactic templates.none
-    templates ::= 
+    templates ::=
 end
 
-Let's also define a shorthand for the common case of using just a single theorem
-application for a subproof.
-
-tactic tactic.have_by
-    tactic ::= @kw"have" show:@fact @kw"by" theorem:@name templates:templates 
-               ";" next:tactic
+tactic template
+    template ::= "[" frag:@any_fragment "]"
 end
 
-Another useful tactic will be `todo`. This is useful when we are in the middle 
+The pattern of a `some` and `none` variant is a common way of expressing a list
+within a context free grammar.
+
+Another possible justification is using a whole subproof to prove a given fact.
+We will call this justification `as` which reminds us of a proof remark like
+"the fact follows as this subproof demonstrates."
+
+tactic justification.tactic
+    justification ::= @kw"as" tactic:tactic
+end
+
+Another useful tactic will be `todo`. This can be used when we are in the middle 
 of writing our proofs. It will prove anything we want but Watson will mark our
 proof as unfinished so we know to return and finish it later. This is similar to
 `sorry` in lean.
@@ -326,7 +328,7 @@ tactic tactic.empty
     tactic ::=
 end
 
-### Theorems
+### And and Or
 
 We will start by proving the basic facts about or. For or there are two 
 introduction rules. Left and right introduction. That is, if we know $p$ is true
@@ -337,30 +339,290 @@ proofs of these two facts are different.
 theorem or.intro_right [p q : sentence] : (q)
     |- p ∨ q
 proof
-    -- Recall that the definition of p ∨ q is ¬p → q. So we really want to 
-    -- prove an implication. We will start by assuming ¬p and then derive q.
-    have assume ¬p |- q as
-        -- But we already know q from the hypothesis. So the subproof is complete!
+    -- p ∨ q means ¬p → q by definition. so we want to prove an implication.
+    -- we will start by assuming that ¬p is true.
+    follows assume ¬p |- q as
+        -- however q is a hypothesis so there is nothing to be proved
     ;
-    -- We now know assume ¬p |- q but we want ¬p → q so we will apply the 
-    -- deduction axiom.
-    have ¬p → q by deduction [¬p] [q];
+
+    -- we have assume ¬p |- q but we want ¬p → q so we will use the deduction
+    -- theorem to convert between these
+    follows ¬p → q by deduction [¬p] [q];
 qed
 
 This proof features a very common style of deduction: we assume $p$ and
 deduce $q$. Then we apply the deduction theorem to conclude $p \to q$. Let's
-add a new tactic to make this a little cleaner.
+add a new tactic that automatically performs this reasoning.
 
-tactic tactic.assume
-    tactic ::= assume:@kw"assume" assumption:@fragment(sentence) ";" next:tactic
+tactic tactic.assume_then
+    tactic ::= @kw"assume" assumption:@fragment(sentence) @kw"then" 
+               conclusion:@fragment(sentence) just:justification ";" next:tactic
 end
+
+We can use this new tactic to prove the other or introduction rule.
 
 theorem or.intro_left [p q : sentence] : (p)
     |- p ∨ q
 proof
-    have ¬p → q as
-        assume ¬p;
-        have ⊥ by modus_ponens [p] [⊥];
-        have q by explosion [q];
+    -- since p ∨ q is really ¬p → q it suffices to show ¬p → q.
+    assume ¬p then q as
+        -- we have both p and ¬p which is a contradiction. recall that ¬p means
+        -- p → ⊥ so we can derive ⊥ and then use explosion to get q.
+        follows ⊥ by modus_ponens [p] [⊥];
+        follows q by explosion [q];
     ;
 qed
+
+In this proof we see two more common proof patterns that we will make into
+tactics. If we can derive $\bot$ then our proof is always done because we can
+use the explosion theorem. This represents the normal proof idea of having 
+reached a contradiction. The `contradiction` tactic will automatically search
+the facts we have proven to see if we have both a fact and its negation. If it
+finds such a contradiction it will complete the proof. Otherwise it will produce
+an error.
+
+tactic tactic.contradiction
+    tactic ::= @kw"contradiction"
+end
+
+The other proof pattern we observed came at the start. We saw that $p \lor q$
+was defined as $\neg p \to q$ so it suffices to show this second fact. We wrote
+a comment to explain this but it is better to have Watson actually check the 
+equivalence for us. We will introduce a new tactic `suffices` that changes the
+goal to a new goal using the given justification to show that the new goal is
+sufficient to prove the old goal.
+
+tactic tactic.suffices
+    tactic ::= @kw"suffices" goal:@fragment(sentence) just:justification ";" 
+               next:tactic
+end
+
+If the two goals are definitionally equal, as they were in `or.intro_left`, no
+justification is needed. Let's add a new, empty, justification for when there
+isn't actually anything to prove.
+
+tactic justification.empty
+    justification ::=
+end
+
+Armed with these new tactics we can prove the elimination rule for or. It says
+that if we know $p \lor q$ is true and that both $p$ and $q$ imply $r$ then $r$
+is also true. This is a natural inference rule and we could have chosen this as
+an axiom instead of double negation elimination.
+
+theorem or.elim [p q r : sentence] : (p ∨ q) (p → r) (q → r)
+    |- r
+proof
+    -- assuming ¬r will lead to a contradiction. thus we will have ¬¬r which
+    -- we can convert to r using the not_not.elim axiom.
+    assume ¬r then ⊥ as
+        -- p gives us r which is a contradiction. so we have ¬p
+        assume p then ⊥ as
+            follows r by modus_ponens [p] [r];
+            contradiction
+        ;
+        -- but since p ∨ q we must then have q
+        follows q by modus_ponens [¬p] [q];
+        -- which also gives us r
+        follows r by modus_ponens [q] [r];
+        -- so we have a contradiction still
+        contradiction
+    ;
+    follows r by not_not.elim [r];
+qed
+
+Once again there is a common proof pattern here we can make into a tactic. We
+assume a fact and then derive a contradiction from it. This allows us to 
+conclude the negation of that fact. We will call the tactic `assume for_contra`.
+
+tactic tactic.assume_contra
+    tactic ::= @kw"assume" assumption:@fragment(sentence) @kw"for_contra" ";" 
+               next:tactic
+end
+
+Also, and this is an entirely aesthetic concern, writing `follows` everywhere is
+boring. Let's introduce `thus` which does the same thing as `follows` but is
+easier to read when one fact follows directly from what was previously shown.
+
+tactic tactic.thus
+    tactic ::= @kw"thus" goal:@fact just:justification ";" next:tactic
+end
+
+We are now ready to prove that or is commutative.
+
+theorem or.comm [p q : sentence] : (p ∨ q)
+    |- q ∨ p
+proof
+    assume p then q ∨ p by or.intro_right [q] [p];
+    assume q then q ∨ p by or.intro_left [q] [p];
+    thus q ∨ p by or.elim [p] [q] [q ∨ p];
+qed
+
+If we know $p \lor q$ and that $p$ is false then we must have $q$. Once again,
+since the definition of or is asymmetric the two proofs are not the same. 
+
+theorem or.not_left [p q : sentence] : (p ∨ q) (¬p)
+    |- q
+proof
+    -- this theorem is how we defined or! p ∨ q is by definition ¬p → q
+    follows ¬p → q;
+    thus q by modus_ponens [¬p] [q];
+qed
+
+Just like with `suffices` it is helpful to have Watson check if our goal is
+definitionally equal, let's add the `have` tactic when we are claiming a fact
+we already have is definitionally equal to a new form.
+
+tactic tactic.have
+    tactic ::= @kw"have" f1:@fragment(sentence) @kw"from" f2:@fragment(sentence)
+               ";" next:tactic
+end
+
+We can apply `or.not_left` to prove `or.not_right`.
+
+theorem or.not_right [p q : sentence] : (p ∨ q) (¬q)
+    |- p
+proof
+    assume ¬p for_contra;
+    thus q by or.not_left [p] [q];
+    contradiction
+qed
+
+Next let's move on to proving properties about and. Whereas or has two 
+introduction rules and one elimination rule, and has one introduction rule and
+two elimination rules.
+
+theorem and.intro [p q : sentence] : (p) (q)
+    |- p ∧ q
+proof
+    -- we can expand the definition of p ∧ q
+    suffices ¬(¬p ∨ ¬q);
+    assume ¬p ∨ ¬q for_contra;
+    -- but either of these possibilities leads to a contradiction
+    assume ¬p then ⊥ as contradiction;
+    assume ¬q then ⊥ as contradiction;
+    thus ⊥ by or.elim [¬p] [¬q] [⊥];
+qed
+
+This time the definition of and is symmetrical so the proofs of the two 
+elimination rules are the same.
+
+theorem and.elim_left [p q : sentence] : (p ∧ q)
+    |- p
+proof
+    assume ¬p for_contra;
+    thus ¬p ∨ ¬q by or.intro_left [¬p] [¬q];
+    have ¬(¬p ∨ ¬q) from p ∧ q;
+    contradiction
+qed
+
+theorem and.elim_right [p q : sentence] : (p ∧ q)
+    |- q
+proof
+    assume ¬q for_contra;
+    thus ¬p ∨ ¬q by or.intro_right [¬p] [¬q];
+    have ¬(¬p ∨ ¬q) from p ∧ q;
+    contradiction
+qed
+
+Then the proof of and commutativity is very simple.
+
+theorem and.comm [p q : sentence] : (p ∧ q)
+    |- q ∧ p
+proof
+    follows p by and.elim_left [p] [q];
+    follows q by and.elim_right [p] [q];
+    thus q ∧ p by and.intro [q] [p];
+qed
+
+### If And Only If
+
+Since if and only if is just a special case of and it has the same introduction
+and elimination rules. We just refer to the theorems we proved for and.
+
+theorem iff.intro [p q : sentence] : (p → q) (q → p)
+    |- p ↔ q
+proof
+    suffices (p → q) ∧ (q → p);
+    follows (p → q) ∧ (q → p) by and.intro [p → q] [q → p];
+qed
+
+theorem iff.elim_fwd [p q : sentence] : (p ↔ q)
+    |- p → q
+proof
+    follows p → q by and.elim_left [p → q] [q → p];
+qed
+
+theorem iff.elim_rev [p q : sentence] : (p ↔ q)
+    |- q → p
+proof
+    follows q → p by and.elim_right [p → q] [q → p];
+qed
+
+And we can also prove a few more standard properties.
+
+theorem iff.mp [p q : sentence] : (p ↔ q) (p)
+    |- q
+proof
+    follows p → q by iff.elim_fwd [p] [q];
+    thus q by modus_ponens [p] [q];
+qed
+
+theorem iff.mpr [p q : sentence] : (p ↔ q) (q)
+    |- p
+proof
+    follows q → p by iff.elim_rev [p] [q];
+    thus p by modus_ponens [q] [p];
+qed
+
+Sometimes if $p \leftrightarrow q$ we say that $p$ and $q$ are equivalent. We
+can make this notion rigorous in the following sense: for any property that 
+holds of $p$, that same property also holds of $q$ (and vice versa). We can 
+show that this equivalence holds by induction over all possible formal sentences
+containing $p$.
+
+theorem iff.equiv.imp1 [p q r : sentence] : (p ↔ q) (p → r)
+    |- q → r
+proof
+    assume q then r as
+        follows p by iff.mpr [p] [q];
+        thus r by modus_ponens [p] [r];
+    ;
+qed
+
+theorem iff.equiv.imp2 [p q r : sentence] : (p ↔ q) (r → p)
+    |- r → q
+proof
+    assume r then q as
+        follows p by modus_ponens [r] [p];
+        thus q by iff.mp [p] [q];
+    ;
+qed
+
+theorem iff.equiv.falsum [p q : sentence] : (p ↔ q) (⊥)
+    |- ⊥
+proof
+    -- not much to prove... 
+qed
+
+With these three proofs we can see that for any property $m(p)$, if 
+$p \leftrightarrow q$ then we will also have $m(q)$. To complete the proof we
+would have to perform induction over all possible properties $m$. However such
+an induction would have to take place outside of the formal system. In any 
+specific case we could prove it as a theorem, but the general case is a
+*meta*theorem. Watson is not capable of proving such metatheorems, so we will
+have to add it as an axiom. But we should remember that our reasons for 
+adding this axiom are different than our reasons for the other axioms.
+
+To write the axiom we will need some way of denoting a property of $p$.
+
+notation sentence.prop
+    sentence ::= @name "[" sentence "]"
+end
+
+Then we can state the axiom, which we will call `iff.rw` for if and only if
+rewrite.
+
+axiom iff.rw [p q m[_] : sentence] : (p ↔ q) (m[p])
+    |- m[q]
+end
