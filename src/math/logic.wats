@@ -616,13 +616,62 @@ adding this axiom are different than our reasons for the other axioms.
 
 To write the axiom we will need some way of denoting a property of $p$.
 
-notation sentence.prop
-    sentence ::= @name "[" sentence "]"
+notation prop.sentence
+    sentence ::= @name "(" sentence ")"
 end
 
 Then we can state the axiom, which we will call `iff.rw` for if and only if
 rewrite.
 
-axiom iff.rw [p q m[_] : sentence] : (p ↔ q) (m[p])
-    |- m[q]
+axiom iff.rw [p q m(_) : sentence] : (p ↔ q) (m(p))
+    |- m(q)
 end
+
+-- ## First Order Logic
+
+-- syntax_category term
+
+-- notation prop.term
+--     sentence ::= @name "(" term ")"
+-- end
+
+-- syntax exists
+--     sentence ::= "∃" @binding(term) "," sentence
+-- end
+
+-- axiom exists.intro [p(_:term) : sentence] [t : term] : (p(t))
+--     |- ∃x, p(x)
+-- end
+
+-- syntax exists_eliminator
+--     term ::= "∃ᵉ" @binding(term) "," sentence "=>" sentence
+-- end
+
+-- axiom exists.elim [p(_:sentence) q : sentence] : 
+--     (∃x, p(x)) (assume p(∃ᵉ x, p(x) => q) |- q)
+--     |- q
+-- end
+
+-- notation forall
+--     sentence ::= "∀" x:@binding(term) "," sentence(x)
+-- end
+
+-- definition
+--     ∀x, p(x) := ¬∃x, ¬p(x)
+-- end
+
+-- theorem forall.elim [p(_:sentence) : sentence] [t : term] : (∀x, p(x))
+--     |- p(t)
+-- proof
+--     todo
+-- qed
+
+-- notation exists_unique
+--     sentence ::= "∃!" @binding(term) "," sentence
+-- end
+
+-- definition
+--     ∃!x, p(x) := (∃x, p(x) ∧ ∀y, p(y) → x = y)
+-- end
+
+

@@ -46,8 +46,10 @@ function M.handleContradiction(
     end
 
     -- We failed to find the contradiction, so report an error
-    Diagnostic:new("could not find contradiction")
-        :withError("", tactic._span)
+    Diagnostic:new(
+        "could not find contradiction",
+        tactic._span:label("")
+    )
         :withTacticInfo(state.info)
         :report()
     return state:error()

@@ -16,9 +16,11 @@ function M.handleHave(
 
     -- Check that the fragments are definitionally equivalent
     if f1.formal ~= f2.formal then
-        Diagnostic:new("`" .. tostring(f1) .. "` is not definitionally equal to `" .. tostring(f2) .. "`")
-            :withError("", tactic.f1.span)
-            :withError("", tactic.f2.span)
+        Diagnostic:new(
+            "`" .. tostring(f1) .. "` is not definitionally equal to `" .. tostring(f2) .. "`",
+            tactic.f1.span:label(""),
+            tactic.f2.span:label("")
+        )
             :withTacticInfo(state.info)
             :report()
         return state:error()
@@ -26,8 +28,10 @@ function M.handleHave(
 
     -- Check that we actually know this fact
     if not state.knowns:get(f2.formal:fact()) then
-        Diagnostic:new("`" .. tostring(f2) .. "` isn't already known")
-            :withError("", tactic.f2.span)
+        Diagnostic:new(
+            "`" .. tostring(f2) .. "` isn't already known",
+            tactic.f2.span:label("")
+        )
             :withTacticInfo(state.info)
             :report()
         return state:error()

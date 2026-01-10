@@ -8,8 +8,10 @@ function M.handleEmpty(
 ): state.State
     -- Check that the goal has been proven
     if not state.knowns:get(state.goal.formal:fact()) then
-        Diagnostic:new("goal `" .. tostring(state.goal) .. "` unproven at end of proof")
-            :withError("", tactic._span)
+        Diagnostic:new(
+            "goal `" .. tostring(state.goal) .. "` unproven at end of proof",
+            tactic._span:label("")
+        )
             :withTacticInfo(state.info)
             :report()
         return state:error()

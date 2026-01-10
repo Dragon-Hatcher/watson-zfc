@@ -25,8 +25,10 @@ function M.handleBy(
     -- Lookup the theorem we are supposed to be applying
     local thm = Theorem:lookupByName(just.thm.str)
     if thm == nil then
-        Diagnostic:new("unknown theorem `" .. just.thm.str .. "`")
-            :withError("", just.thm.span)
+        Diagnostic:new(
+            "unknown theorem `" .. just.thm.str .. "`",
+            just.thm.span:label("")
+        )
             :withTacticInfo(state.info)
             :report()
         return state:error()
@@ -38,8 +40,10 @@ function M.handleBy(
 
     -- The number of instantiations should match the number of templates
     if #templates ~= #instantiations then
-        Diagnostic:new("wrong number of template instantiations")
-            :withError("expected " .. #templates .. ", found " .. #instantiations, just.tmps._span)
+        Diagnostic:new(
+            "wrong number of template instantiations",
+            just.tmps._span:label("expected " .. #templates .. ", found " .. #instantiations)
+        )
             :withTacticInfo(state.info)
             :report()
         return state:error()
@@ -68,8 +72,10 @@ function M.handleBy(
     for i, hyp in thm.hypotheses do
         local inst = hyp:instantiateTemplates(resolved)
         if not state.knowns:get(inst.formal) then
-            Diagnostic:new("missing hypothesis `" .. tostring(inst) .. "`")
-                :withError("while applying theorem `" .. thm.name .. "`", just.thm.span)
+            Diagnostic:new(
+                "missing hypothesis `" .. tostring(inst) .. "`",
+                just.thm.span:label("while applying theorem `" .. thm.name .. "`")
+            )
                 :withTacticInfo(state.info)
                 :report()
             missingHyp = true
@@ -85,8 +91,11 @@ function M.handleBy(
 
     -- If the conclusion isn't the goal then this proof doesn't suffice.
     if conclusion.formal ~= state.goal.formal then
-        Diagnostic:new("theorem does not solve goal")
-            :withError("theorem show `" .. tostring(conclusion) .. "` not `" .. tostring(state.goal) .. "`", just.thm.span)
+        Diagnostic:new(
+            "theorem does not solve goal",
+            just.thm.span:label("theorem show `" .. tostring(conclusion) .. "` not `" .. tostring(state.goal) .. "`")
+        )
+            :withTacticInfo(state.info)
             :report()
         return state:error()
     end

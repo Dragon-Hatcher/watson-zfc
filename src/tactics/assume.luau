@@ -23,7 +23,7 @@ function M.handleAssumeThen(
     -- Create a subState whose goal is the conclusion and knowns the assumption
     local subState = state:copy()
     subState.formal = subState.formal:addAssumption(assumption)
-    subState.info = subState.info:withAssume(assumption)
+    subState.info = subState.info:withAssume(assumption):withGoal(conclusion)
     subState.goal = conclusion
     subState.knowns:set(assumption.formal:fact(), true)
 
@@ -98,8 +98,10 @@ function M.handleAssumeContra(
         return state
     else
         -- the assumption isn't related to the goal
-        Diagnostic:new("assumption being false does not prove goal")
-            :withError("", tactic.assumption.span)
+        Diagnostic:new(
+            "assumption being false does not prove goal",
+            tactic.assumption.span:label("")        
+        )
             :withTacticInfo(state.info)
             :report()
         return state:error()
