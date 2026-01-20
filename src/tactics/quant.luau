@@ -54,7 +54,7 @@ function M.handleObtain(
     local stScope = state.scope:bindFrag(binding, stTerm)
 
     local st, diag = tactic.st:resolve(stScope)
-    if diag ~= nil then diag:withTacticInfo(state.info) end
+    if diag ~= nil then diag:withTacticInfo(state.info):report() end
     if st == nil then return state:error() end
 
     -- this is the existential we expect to exist to justify obtaining
@@ -73,6 +73,7 @@ function M.handleObtain(
     -- now we construct the witness for the existential. the exists.elim
     -- axiom allows us to reason as if this witness had the desired property.
     local witness = witnessPattern:instantiateHoles({st, state.goal})
+    witness = witness:named(tactic.var.str)
 
     -- bind the witness to the given variable name
     state.scope = state.scope:bindFrag(binding, witness)
@@ -84,7 +85,9 @@ function M.handleObtain(
     -- for the info call it a deduction not an assumption because that more
     -- closely matches what it is. We aren't really assuming anything; we know
     -- that the witness exists.
-    subState.info = subState.info:withDeduce(assumption:fact())
+    subState.info = subState.info
+        :withLet(binding)
+        :withDeduce(assumption:fact())
     subState.formal = subState.formal:addAssumption(assumption)
 
     -- prove the goal using this assumption
@@ -116,7 +119,7 @@ function M.handleArbitrary(
     state: state.State
 ): state.State
     -- extract the property we are trying to prove from the goal
-    local matches = state.goal:match(forallPattern)
+    local matches = state.goal.noName:match(forallPattern.noName)
     if matches == nil then
         Diagnostic:new("goal must be a forall statement", tactic.kw.span:label("")):report()
         return state:error()
@@ -128,12 +131,15 @@ function M.handleArbitrary(
     -- this is the variable we want to prove the goal about
     local binding = Binding:name(tactic.var.str, termCat)
     local var = arbitraryPattern:instantiateHoles({prop})
+    var = var:named(tactic.var.str)
 
     -- create a sub state with the new goal
     local goal = propHole:instantiateHoles({var})
     local subState = state:copy()
     subState.goal = goal
-    subState.info = subState.info:withGoal(goal)
+    subState.info = subState.info
+        :withLet(binding)
+        :withGoal(goal)
 
     -- and add the variable to the scope
     subState.scope = subState.scope:bindFrag(binding, var)
@@ -154,7 +160,7 @@ function M.handleUsing(
     state: state.State
 ): state.State
     -- extract the property we are trying to prove from the goal
-    local matches = state.goal:match(existsPattern)
+    local matches = state.goal.formal:match(existsPattern.formal)
     if matches == nil then
         Diagnostic:new("goal must be an exists statement", just.kw.span:label("")):report()
         return state:error()
@@ -194,7 +200,7 @@ function M.handleSpecializing(
     if forall == nil then return state:error() end
 
     -- extract the property we are trying to prove from the forall
-    local matches = forall:match(forallPattern)
+    local matches = forall.formal:match(forallPattern.formal)
     if matches == nil then
         Diagnostic:new("specialization must be a forall statement", just.forall.span:label(""))
             :withTacticInfo(state.info)
@@ -206,7 +212,7 @@ function M.handleSpecializing(
     local propHole = prop:instantiateVars({Frag:hole(termCat, 0)})
 
     -- now we try to match the goal against the property
-    matches = state.goal:match(propHole)
+    matches = state.goal.formal:match(propHole.formal)
     if matches == nil then
         Diagnostic:new("couldn't specialize forall into goal", just.forall.span:label(""))            
             :withTacticInfo(state.info)
