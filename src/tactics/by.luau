@@ -72,6 +72,7 @@ function M.handleBy(
     for i, hyp in thm.hypotheses do
         local inst = hyp:instantiateTemplates(resolved)
         if not state.knowns:get(inst.formal) then
+            log(tostring(inst))
             Diagnostic:new(
                 "missing hypothesis `" .. tostring(inst) .. "`",
                 just.thm.span:label("while applying theorem `" .. thm.name .. "`")

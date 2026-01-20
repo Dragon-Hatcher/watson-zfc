@@ -7,6 +7,7 @@
     "luau-lsp.fflags.enableNewSolver": true,
     "luau-lsp.server.baseLuaurc": "build/luau/.luaurc",
     "cSpell.words": [
+        "extensionality",
         "falsum",
         "ponens"
     ]

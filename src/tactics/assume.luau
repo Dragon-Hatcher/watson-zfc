@@ -41,6 +41,67 @@ function M.handleAssumeThen(
     return dispatch.handleTactic(tactic.next, state)
 end
 
+local impPattern = frag.makePattern(
+    "p → q", FormalCat:sentence(), 
+    "tactic.assume",
+    {
+        {name = "p", cat = FormalCat:sentence()},
+        {name = "q", cat = FormalCat:sentence()},
+    }
+)
+
+function M.handleAssume(
+    tactic: { _span: Span, kw: SpannedString, assumption: UnResFrag, next: Tactic },
+    state: state.State
+): state.State
+    -- match the goal as an implication
+    local matches = state.goal:match(impPattern)
+    if matches == nil then
+        Diagnostic:new("goal must be an implication", tactic.kw.span:label(""))
+            :withTacticInfo(state.info)
+            :report()
+        return state:error()
+    end
+
+    local goalAssumption = matches[0]
+    local goalConclusion = matches[1]
+
+    -- check that the assumption the user made matches the goal
+    local parsedAssumption, diag = tactic.assumption:resolve(state.scope)
+    if diag ~= nil then diag:withTacticInfo(state.info):report() end
+    if parsedAssumption == nil then return state:error() end
+
+    if goalAssumption.formal ~= parsedAssumption.formal then
+        Diagnostic:new(
+            "stated assumption `" .. tostring(parsedAssumption) .. "` doesn't match goal",
+            tactic.assumption.span:label("")
+        )
+            :withTacticInfo(state.info)
+            :report()
+        return state:error()
+    end
+
+    -- now we finish the proof
+    local subState = state:copy()
+    subState.formal = subState.formal:addAssumption(parsedAssumption)
+    subState.knowns:set(parsedAssumption.formal:fact(), true)
+    subState.info = subState.info:withAssume(parsedAssumption):withGoal(goalConclusion)
+    subState.goal = goalConclusion
+
+    -- hand off to the continuation tactic
+    subState = dispatch.handleTactic(tactic.next, subState)
+
+    -- now we have assumption |- conclusion
+    state.formal = subState.formal:popAssumption(goalConclusion)
+
+    -- convert that to an implication which was the original goal
+    state.formal = state.formal:applyTheorem(deductionThm, {parsedAssumption, goalConclusion})
+    state.knowns:set(state.goal.formal:fact(), true)
+    state.info = state.info:withDeduce(state.goal:fact())
+
+    return state
+end
+
 local falsum = frag.makePattern(
     "⊥", FormalCat:sentence(), 
     "tactic.assume_contra", 

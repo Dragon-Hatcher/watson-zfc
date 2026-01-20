@@ -51,4 +51,11 @@ function State.error(self: State): State
     return self
 end
 
+function State.todo(self: State): State
+    self.formal = self.formal:applyTodo(self.goal)
+    self.info = self.info:withDeduce(self.goal:fact())
+    self.knowns:set(self.goal.formal:fact(), true)
+    return self
+end
+
 return { State = State }

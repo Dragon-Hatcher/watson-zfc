@@ -25,6 +25,7 @@ dispatch.justificationTable = {
 dispatch.tacticTable = {
 	["tactic.follows"] = thus.handleThus,
 	["tactic.thus"] = thus.handleThus,
+	["tactic.assume"] = assume.handleAssume,
 	["tactic.assume_then"] = assume.handleAssumeThen,
 	["tactic.assume_contra"] = assume.handleAssumeContra,
 	["tactic.suffices"] = suffices.handleSuffices,
@@ -33,6 +34,9 @@ dispatch.tacticTable = {
 	["tactic.obtain"] = quant.handleObtain,
 	["tactic.arbitrary"] = quant.handleArbitrary,
 	["tactic.empty"] = empty.handleEmpty,
+	["tactic.todo"] = function(tactic: {}, state: state.State)
+		return state:todo()
+	end,
 	["tactic.print"] = print.handleEmpty,
 }
 

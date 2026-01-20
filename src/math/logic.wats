@@ -359,6 +359,11 @@ tactic tactic.assume_then
                conclusion:@fragment(sentence) just:justification ";" next:tactic
 end
 
+TODO: explanation
+tactic tactic.assume
+    tactic ::= kw:@kw"assume" assumption:@fragment(sentence) ";" next:tactic
+end
+
 We can use this new tactic to prove the other or introduction rule.
 
 theorem or.intro_left [p q : sentence] : (p)
@@ -631,12 +636,20 @@ end
 
 syntax_category term
 
+notation prop.term
+    sentence ::= @name "(" term ")"
+end
+
 syntax equals
     sentence ::= term " = " term
 end
 
-notation prop.term
-    sentence ::= @name "(" term ")"
+axiom equals.refl [a : term] :
+    |- a = a
+end
+
+axiom equals.subst [p(_:term) : sentence] [a b : term] : (a = b) (p(a))
+    |- p(b)
 end
 
 syntax exists
@@ -719,14 +732,241 @@ proof
     arbitrary y;
     follows p(x, y) specializing ∀y, p(x, y);
     thus ∃x, p(x, y) using x;
+    -- test 
 qed
 
 notation exists_unique
-    sentence ::= "∃!" x:@binding(term) "," sentence(x)
+    sentence ::= "∃!" x:@binding(term) ", " sentence(x)
 end
 
 definition
     ∃!x, p(x) := (∃x, p(x) ∧ ∀y, p(y) → x = y)
 end
 
+syntax membership
+    sentence ::= term " ∈ " term
+end
 
+notation membership.not
+    sentence ::= term " ∉ " term
+end
+
+definition
+    x ∉ y := ¬(x ∈ y)
+end
+
+syntax iota
+    term ::= "ι" @binding(term) ", " sentence
+end
+
+axiom iota_unique [p(_:term) : sentence] : (∃!x, p(x))
+    |- p(ιx, p(x))
+end
+
+notation empty_set
+    term ::= "∅"
+end
+
+definition
+    ∅ := ιx, ∀y, y ∉ x
+end
+
+axiom extensionality [a b : term] : (∀x, x ∈ a ↔ x ∈ b)
+    |- a = b
+end
+
+axiom empty_set :
+    |- ∃x, ∀y, y ∉ x
+end
+
+theorem empty_set.def :
+    |- ∀y, y ∉ ∅
+proof
+    -- using the iota axiom we just have to prove the uniqueness of the
+    -- empty set.
+    suffices ∃!x, ∀y, y ∉ x by iota_unique [∀y, y ∉ _];
+    suffices ∃x, (∀y, y ∉ x) ∧ ∀z, (∀y, y ∉ z) → x = z;
+
+    -- we know that at least one such set exists by the empty set axiom. 
+    follows ∃x, ∀y, y ∉ x by empty_set;
+    obtain e st ∀y, y ∉ e;
+
+    -- now we show that it is unique
+    follows ∀z, (∀y, y ∉ z) → e = z as
+        arbitrary z;
+        assume ∀y, y ∉ z;
+
+        -- we can deduce the equality using extensionality.
+        suffices ∀w, w ∈ e ↔ w ∈ z by extensionality [e] [z];
+        arbitrary w;
+
+        -- membership is always false so the iff follows easily
+        follows w ∉ e specializing ∀y, y ∉ e;
+        follows w ∉ z specializing ∀y, y ∉ z;
+        assume w ∈ e then w ∈ z as contradiction;
+        assume w ∈ z then w ∈ e as contradiction;
+
+        thus w ∈ e ↔ w ∈ z by iff.intro [w ∈ e] [w ∈ z];
+    ;
+
+    thus (∀y, y ∉ e) ∧ ∀z, (∀y, y ∉ z) → e = z by and.intro [∀y, y ∉ e] [∀z, (∀y, y ∉ z) → e = z];
+    thus ∃x, (∀y, y ∉ x) ∧ ∀z, (∀y, y ∉ z) → x = z using e;
+qed
+
+axiom pairing [a b : term] :
+    |- ∃x, ∀y, y ∈ x ↔ (y = a ∨ y = b)
+end
+
+notation pair
+    term ::= "{" term ", " term "}"
+end
+
+definition
+    {a, b} := ιx, ∀y, y ∈ x ↔ (y = a ∨ y = b)
+end
+
+theorem pair.def [a b : term] :
+    |- ∀y, y ∈ {a, b} ↔ (y = a ∨ y = b)
+proof
+    todo
+qed
+
+theorem pair.left_in [a b : term] :
+    |- a ∈ {a, b}
+proof
+    follows ∀y, y ∈ {a, b} ↔ (y = a ∨ y = b) by pair.def [a] [b];
+    thus a ∈ {a, b} ↔ (a = a ∨ a = b) specializing ∀y, y ∈ {a, b} ↔ (y = a ∨ y = b);
+    follows a = a by equals.refl [a];
+    thus a = a ∨ a = b by or.intro_left [a = a] [a = b];
+    thus a ∈ {a, b} by iff.mpr [a ∈ {a, b}] [a = a ∨ a = b];
+qed
+
+theorem pair.right_in [a b : term] :
+    |- b ∈ {a, b}
+proof
+    follows ∀y, y ∈ {a, b} ↔ (y = a ∨ y = b) by pair.def [a] [b];
+    thus b ∈ {a, b} ↔ (b = a ∨ b = b) specializing ∀y, y ∈ {a, b} ↔ (y = a ∨ y = b);
+    follows b = b by equals.refl [b];
+    thus b = a ∨ b = b by or.intro_right [b = a] [b = b];
+    thus b ∈ {a, b} by iff.mpr [b ∈ {a, b}] [b = a ∨ b = b];
+qed
+
+notation singleton
+    term ::= "{" term "}"
+end
+
+definition
+    {a} := {a, a}
+end
+
+theorem or.self [p : sentence] :
+    |- p ↔ (p ∨ p)
+proof
+    assume p then p ∨ p by or.intro_left [p] [p];
+    assume p ∨ p then p as
+        assume p then p;
+        thus p by or.elim [p] [p] [p];
+    ;
+    thus p ↔ (p ∨ p) by iff.intro [p] [p ∨ p];
+qed
+
+theorem singleton.def [a : term] :
+    |- ∀y, y ∈ {a} ↔ y = a
+proof
+    arbitrary y;
+
+    follows ∀z, z ∈ {a, a} ↔ (z = a ∨ z = a) by pair.def [a] [a];
+    assume y ∈ {a} then y = a as
+        have y ∈ {a, a} from y ∈ {a};
+        thus y = a ∨ y = a as
+            thus y ∈ {a, a} ↔ (y = a ∨ y = a) specializing ∀z, z ∈ {a, a} ↔ (z = a ∨ z = a);
+            thus y = a ∨ y = a by iff.mp [y ∈ {a, a}] [y = a ∨ y = a];
+        ;
+        follows y = a ↔ (y = a ∨ y = a) by or.self [y = a];
+        thus y = a by iff.mpr [y = a] [y = a ∨ y = a];
+    ;
+    assume y = a then y ∈ {a} as
+        thus y = a ∨ y = a by or.intro_left [y = a] [y = a];
+        follows y ∈ {a, a} ↔ (y = a ∨ y = a) specializing ∀z, z ∈ {a, a} ↔ (z = a ∨ z = a);
+        thus y ∈ {a, a} by iff.mpr [y ∈ {a, a}] [y = a ∨ y = a];
+    ; 
+
+    thus y ∈ {a} ↔ y = a by iff.intro [y ∈ {a}] [y = a];
+qed
+
+notation big_union
+    term ::= "⋃" term
+end
+
+definition
+    ⋃A := ιx, ∀y, y ∈ x ↔ (∃z, y ∈ z ∧ z ∈ A)
+end
+
+axiom union [A : term] :
+    |- ∃x, ∀y, y ∈ x ↔ (∃z, y ∈ z ∧ z ∈ A)
+end
+
+theorem big_union.def [A : term] :
+    |- ∀x, x ∈ ⋃A ↔ (∃y, x ∈ y ∧ y ∈ A)
+proof
+    todo
+qed
+
+notation union
+    term ::= term " ∪ " term
+end
+
+definition
+    a ∪ b := ⋃{a, b}
+end
+
+theorem union.def [a b : term] :
+    |- ∀x, x ∈ a ∪ b ↔ (x ∈ a ∨ x ∈ b)
+proof
+    arbitrary x;
+
+    assume x ∈ a ∪ b then x ∈ a ∨ x ∈ b as
+        have x ∈ ⋃{a, b} from x ∈ a ∪ b;
+        follows ∀y, y ∈ ⋃{a, b} ↔ (∃z, y ∈ z ∧ z ∈ {a, b}) by big_union.def [{a, b}];
+        thus x ∈ ⋃{a, b} ↔ (∃z, x ∈ z ∧ z ∈ {a, b}) specializing ∀y, y ∈ ⋃{a, b} ↔ (∃z, y ∈ z ∧ z ∈ {a, b});
+        thus ∃z, x ∈ z ∧ z ∈ {a, b} by iff.mp [x ∈ ⋃{a, b}] [∃z, x ∈ z ∧ z ∈ {a, b}];
+        obtain z st x ∈ z ∧ z ∈ {a, b};
+        thus x ∈ z by and.elim_left [x ∈ z] [z ∈ {a, b}];
+        thus z ∈ {a, b} by and.elim_right [x ∈ z] [z ∈ {a, b}];
+
+        follows ∀y, y ∈ {a, b} ↔ (y = a ∨ y = b) by pair.def [a] [b];
+        thus z ∈ {a, b} ↔ (z = a ∨ z = b) specializing ∀y, y ∈ {a, b} ↔ (y = a ∨ y = b);
+        thus z = a ∨ z = b by iff.mp [z ∈ {a, b}] [z = a ∨ z = b];
+
+        assume z = a then x ∈ a ∨ x ∈ b as
+            thus x ∈ a by equals.subst [x ∈ _] [z] [a];
+            thus x ∈ a ∨ x ∈ b by or.intro_left [x ∈ a] [x ∈ b];
+        ;
+        assume z = b then x ∈ a ∨ x ∈ b as
+            thus x ∈ b by equals.subst [x ∈ _] [z] [b];
+            thus x ∈ a ∨ x ∈ b by or.intro_right [x ∈ a] [x ∈ b];
+        ;
+        thus x ∈ a ∨ x ∈ b by or.elim [z = a] [z = b] [x ∈ a ∨ x ∈ b]; 
+    ;
+    assume x ∈ a ∨ x ∈ b then x ∈ a ∪ b as
+        assume x ∈ a then x ∈ a ∪ b as
+            follows ∀y, y ∈ a ∪ b ↔ (∃z, y ∈ z ∧ z ∈ {a, b}) by big_union.def [{a, b}];
+            follows x ∈ a ∪ b ↔ (∃z, x ∈ z ∧ z ∈ {a, b}) specializing ∀y, y ∈ a ∪ b ↔ (∃z, y ∈ z ∧ z ∈ {a, b});
+            suffices ∃z, x ∈ z ∧ z ∈ {a, b} by iff.mpr [x ∈ a ∪ b] [∃z, x ∈ z ∧ z ∈ {a, b}];
+            follows a ∈ {a, b} by pair.left_in [a] [b];
+            thus x ∈ a ∧ a ∈ {a, b} by and.intro [x ∈ a] [a ∈ {a, b}];
+            thus ∃z, x ∈ z ∧ z ∈ {a, b} using a;
+        ;
+        assume x ∈ b then x ∈ a ∪ b as
+            follows ∀y, y ∈ a ∪ b ↔ (∃z, y ∈ z ∧ z ∈ {a, b}) by big_union.def [{a, b}];
+            follows x ∈ a ∪ b ↔ (∃z, x ∈ z ∧ z ∈ {a, b}) specializing ∀y, y ∈ a ∪ b ↔ (∃z, y ∈ z ∧ z ∈ {a, b});
+            suffices ∃z, x ∈ z ∧ z ∈ {a, b} by iff.mpr [x ∈ a ∪ b] [∃z, x ∈ z ∧ z ∈ {a, b}];
+            follows b ∈ {a, b} by pair.right_in [a] [b];
+            thus x ∈ b ∧ b ∈ {a, b} by and.intro [x ∈ b] [b ∈ {a, b}];
+            thus ∃z, x ∈ z ∧ z ∈ {a, b} using b;
+        ;
+        thus x ∈ a ∪ b by or.elim [x ∈ a] [x ∈ b] [x ∈ a ∪ b];
+    ;
+
+    thus x ∈ a ∪ b ↔ (x ∈ a ∨ x ∈ b) by iff.intro [x ∈ a ∪ b] [x ∈ a ∨ x ∈ b];
+qed
