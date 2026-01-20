@@ -7,6 +7,8 @@ local have = require("./have")
 local state = require("./state")
 local suffices = require("./suffices")
 local thus = require("./thus")
+local quant = require("./quant")
+local print = require("./print")
 
 local M = {}
 
@@ -16,6 +18,8 @@ dispatch.justificationTable = {
 		return dispatch.handleTactic(sp.tactic, state)
 	end,
 	["justification.by"] = by.handleBy,
+	["justification.using"] = quant.handleUsing,
+	["justification.specializing"] = quant.handleSpecializing,
 }
 
 dispatch.tacticTable = {
@@ -26,7 +30,10 @@ dispatch.tacticTable = {
 	["tactic.suffices"] = suffices.handleSuffices,
 	["tactic.have"] = have.handleHave,
 	["tactic.contradiction"] = contradiction.handleContradiction,
+	["tactic.obtain"] = quant.handleObtain,
+	["tactic.arbitrary"] = quant.handleArbitrary,
 	["tactic.empty"] = empty.handleEmpty,
+	["tactic.print"] = print.handleEmpty,
 }
 
 function M.run(tactic: Tactic, formalProof: ProofState, tacticInfo: TacticInfo)

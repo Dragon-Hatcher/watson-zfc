@@ -627,51 +627,106 @@ axiom iff.rw [p q m(_) : sentence] : (p ↔ q) (m(p))
     |- m(q)
 end
 
--- ## First Order Logic
+## First Order Logic
 
--- syntax_category term
+syntax_category term
 
--- notation prop.term
---     sentence ::= @name "(" term ")"
--- end
+syntax equals
+    sentence ::= term " = " term
+end
 
--- syntax exists
---     sentence ::= "∃" @binding(term) "," sentence
--- end
+notation prop.term
+    sentence ::= @name "(" term ")"
+end
 
--- axiom exists.intro [p(_:term) : sentence] [t : term] : (p(t))
---     |- ∃x, p(x)
--- end
+syntax exists
+    sentence ::= "∃" @binding(term) ", " sentence
+end
 
--- syntax exists_eliminator
---     term ::= "∃ᵉ" @binding(term) "," sentence "=>" sentence
--- end
+notation forall
+    sentence ::= "∀" x:@binding(term) ", " sentence(x)
+end
 
--- axiom exists.elim [p(_:sentence) q : sentence] : 
---     (∃x, p(x)) (assume p(∃ᵉ x, p(x) => q) |- q)
---     |- q
--- end
+definition
+    ∀x, p(x) := ¬∃x, ¬p(x)
+end
 
--- notation forall
---     sentence ::= "∀" x:@binding(term) "," sentence(x)
--- end
+axiom exists.intro [p(_:term) : sentence] [t : term] : (p(t))
+    |- ∃x, p(x)
+end
 
--- definition
---     ∀x, p(x) := ¬∃x, ¬p(x)
--- end
+syntax exists_eliminator
+    term ::= "∃ᵉ" @binding(term) ", " sentence " ⊢ " sentence
+end
 
--- theorem forall.elim [p(_:sentence) : sentence] [t : term] : (∀x, p(x))
---     |- p(t)
--- proof
---     todo
--- qed
+axiom exists.elim [p(_:term) q : sentence] : 
+    (∃x, p(x)) (p(∃ᵉ x, p(x) ⊢ q) → q)
+    |- q
+end
 
--- notation exists_unique
---     sentence ::= "∃!" @binding(term) "," sentence
--- end
+theorem forall.elim [p(_:term) : sentence] [t : term] : (∀x, p(x))
+    |- p(t)
+proof
+    assume ¬p(t) for_contra;
+    follows ∃x, ¬p(x) by exists.intro [¬p(_)] [t];
+    have ¬∃x, ¬p(x) from ∀x, p(x);
+    contradiction
+qed
 
--- definition
---     ∃!x, p(x) := (∃x, p(x) ∧ ∀y, p(y) → x = y)
--- end
+tactic tactic.print
+    tactic ::= @kw"print" frag:@fragment(sentence) ";" next:tactic
+end
+
+theorem forall.intro [r(_:term) : sentence] : (r(∃ᵉx, ¬r(x) ⊢ ⊥))
+    |- ∀x, r(x)
+proof
+    suffices ¬∃x, ¬r(x);
+    assume ∃x, ¬r(x) for_contra;
+    
+    -- We make a witness for use with the elimination axiom. We specifically 
+    -- chose the hypothesis to lead to a contradiction here.
+    assume ¬r(∃ᵉx, ¬r(x) ⊢ ⊥) then ⊥ as contradiction;
+
+    -- Now apply the axiom.
+    thus ⊥ by exists.elim [¬r(_)] [⊥];
+qed
+
+tactic justification.using
+    justification ::= kw:@kw"using" use:@fragment(term)
+end
+
+tactic tactic.obtain
+    tactic ::= @kw"obtain" var:@name "st" st:@fragment(sentence) 
+               just:justification ";" next:tactic
+end
+
+tactic tactic.arbitrary
+    tactic ::= kw:@kw"arbitrary" var:@name ";" next:tactic
+end
+
+tactic justification.specializing
+    justification ::= @kw"specializing" forall:@fragment(sentence)
+end
+
+notation prop.term_term
+    sentence ::= @name "(" term ", " term ")"
+end
+
+theorem exists_forall.swap [p(_0:term, _1:term) : sentence] : (∃x, ∀y, p(x, y))
+    |- ∀y, ∃x, p(x, y)
+proof    
+    obtain x st ∀y, p(x, y);
+    arbitrary y;
+    follows p(x, y) specializing ∀y, p(x, y);
+    thus ∃x, p(x, y) using x;
+qed
+
+notation exists_unique
+    sentence ::= "∃!" x:@binding(term) "," sentence(x)
+end
+
+definition
+    ∃!x, p(x) := (∃x, p(x) ∧ ∀y, p(y) → x = y)
+end
 
 

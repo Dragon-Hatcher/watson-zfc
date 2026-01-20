@@ -14,6 +14,7 @@ function M.handleThus(
     if goal == nil then return state:error() end
 
     local subState = state:copy()
+    subState.info = subState.info:withGoal(goal.conclusion)
     subState.goal = goal.conclusion
 
     -- Now if there is an assumption add it to the subproof.

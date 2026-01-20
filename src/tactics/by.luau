@@ -93,7 +93,7 @@ function M.handleBy(
     if conclusion.formal ~= state.goal.formal then
         Diagnostic:new(
             "theorem does not solve goal",
-            just.thm.span:label("theorem show `" .. tostring(conclusion) .. "` not `" .. tostring(state.goal) .. "`")
+            just.thm.span:label("theorem shows `" .. tostring(conclusion) .. "` not `" .. tostring(state.goal) .. "`")
         )
             :withTacticInfo(state.info)
             :report()
