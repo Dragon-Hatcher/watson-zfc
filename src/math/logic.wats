@@ -696,7 +696,7 @@ tactic justification.using
 end
 
 tactic tactic.obtain
-    tactic ::= @kw"obtain" var:@name "st" st:@fragment(sentence) 
+    tactic ::= @kw"obtain" var:@name @kw"st" st:@fragment(sentence) 
                just:justification ";" next:tactic
 end
 
