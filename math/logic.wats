@@ -970,3 +970,13 @@ proof
 
     thus x ∈ a ∪ b ↔ (x ∈ a ∨ x ∈ b) by iff.intro [x ∈ a ∪ b] [x ∈ a ∨ x ∈ b];
 qed
+
+tactic tactic.recall
+    tactic ::= @kw"recall" thm:@name ";" next:tactic
+end
+
+theorem tester :
+    |- ∀a, ∀b, (∀x, x ∈ b ↔ x ∈ a) → b = a
+proof
+    recall extensionality;
+qed

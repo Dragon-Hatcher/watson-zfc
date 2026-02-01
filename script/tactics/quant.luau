@@ -119,9 +119,11 @@ function M.handleArbitrary(
     state: state.State
 ): state.State
     -- extract the property we are trying to prove from the goal
-    local matches = state.goal.noName:match(forallPattern.noName)
+    local matches = state.goal:changeBinderNames({}):match(forallPattern:changeBinderNames({}))
     if matches == nil then
-        Diagnostic:new("goal must be a forall statement", tactic.kw.span:label("")):report()
+        Diagnostic:new("goal must be a forall statement", tactic.kw.span:label(""))
+            :withTacticInfo(state.info)
+            :report()
         return state:error()
     end
 

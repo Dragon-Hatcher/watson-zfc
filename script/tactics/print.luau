@@ -11,6 +11,8 @@ function M.handleEmpty(
     if res ~= nil then 
         log(`Normal: {res}`) 
         log(`Formal: {res.formal}`) 
+    else
+        log("Doesn't parse")
     end
 
     return dispatch.handleTactic(tactic.next, state)
