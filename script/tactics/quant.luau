@@ -1,56 +1,16 @@
-local frag = require("./frag")
 local dispatch = require("./dispatch")
 local state = require("./state")
+local shared = require("./shared")
 
 local M = {}
-
-local sentenceCat = FormalCat:sentence()
-local termCat = FormalCat:get("term")
-assert(termCat ~= nil)
-
-local deductionThm = Theorem:lookupByName("deduction")
-assert(deductionThm ~= nil)
-
-local existsElimThm = Theorem:lookupByName("exists.elim")
-assert(existsElimThm ~= nil)
-
-local existsIntroThm = Theorem:lookupByName("exists.intro")
-assert(existsIntroThm ~= nil)
-
-local forallIntroThm = Theorem:lookupByName("forall.intro")
-assert(forallIntroThm ~= nil)
-
-local forallElimThm = Theorem:lookupByName("forall.elim")
-assert(forallElimThm ~= nil)
-
-local existsPattern = frag.makePattern(
-    "∃x, p", sentenceCat, 
-    "tactic.obtain",
-    {{name = "p", cat = sentenceCat}}
-)
-
-local forallPattern = frag.makePattern(
-    "∀x, p", sentenceCat, 
-    "tactic.obtain",
-    {{name = "p", cat = sentenceCat}}
-)
-
-local witnessPattern = frag.makePattern(
-    "∃ᵉ x, p ⊢ q", termCat,
-    "tactic.obtain",
-    {
-        {name = "p", cat = sentenceCat},
-        {name = "q", cat = sentenceCat}
-    }
-)
 
 function M.handleObtain(
     tactic: { _span: Span, var: SpannedString, st: UnResFrag, just: Justification, next: Tactic },
     state: state.State
 ): state.State
     -- first we are going to parse the such that with the given name
-    local binding = Binding:name(tactic.var.str, termCat)
-    local stTerm = Frag:var(termCat, 0) -- the first variable
+    local binding = Binding:name(tactic.var.str, shared.termCat)
+    local stTerm = Frag:var(shared.termCat, 0) -- the first variable
     local stScope = state.scope:bindFrag(binding, stTerm)
 
     local st, diag = tactic.st:resolve(stScope)
@@ -59,7 +19,7 @@ function M.handleObtain(
 
     -- this is the existential we expect to exist to justify obtaining
     -- the new variable
-    local existential = existsPattern:instantiateHoles({st})
+    local existential = shared.existsPattern:instantiateHoles({st})
 
     -- apply the justification to conclude the existential
     local subState = state:copy()
@@ -72,7 +32,7 @@ function M.handleObtain(
 
     -- now we construct the witness for the existential. the exists.elim
     -- axiom allows us to reason as if this witness had the desired property.
-    local witness = witnessPattern:instantiateHoles({st, state.goal})
+    local witness = shared.witnessPattern:instantiateHoles({st, state.goal})
     witness = witness:named(tactic.var.str)
 
     -- bind the witness to the given variable name
@@ -97,29 +57,25 @@ function M.handleObtain(
     state.formal = subState.formal:popAssumption(state.goal)
 
     -- convert that to an implication
-    state.formal = state.formal:applyTheorem(deductionThm, {assumption, state.goal})
+    state.formal = state.formal:applyTheorem(shared.deductionThm, {assumption, state.goal})
 
     -- and now we get the goal by exists.elim
-    local stHole = st:instantiateVars({Frag:hole(termCat, 0)})
-    state.formal = state.formal:applyTheorem(existsElimThm, {stHole, state.goal})
+    local stHole = st:instantiateVars({Frag:hole(shared.termCat, 0)})
+    state.formal = state.formal:applyTheorem(shared.existsElimThm, {stHole, state.goal})
     state.knowns:set(state.goal.formal:fact(), true)
     state.info = state.info:withDeduce(state.goal:fact())
 
     return state
 end
 
-local arbitraryPattern = frag.makePattern(
-    "∃ᵉx, ¬p ⊢ ⊥", termCat,
-    "tactic.obtain",
-    {{name = "p", cat = sentenceCat}}
-)
+local arbitraryPattern = shared.arbitraryPattern
 
 function M.handleArbitrary(
     tactic: { _span: Span, kw: SpannedString, var: SpannedString, next: Tactic },
     state: state.State
 ): state.State
     -- extract the property we are trying to prove from the goal
-    local matches = state.goal:changeBinderNames({}):match(forallPattern:changeBinderNames({}))
+    local matches = state.goal:changeBinderNames({}):match(shared.forallPattern:changeBinderNames({}))
     if matches == nil then
         Diagnostic:new("goal must be a forall statement", tactic.kw.span:label(""))
             :withTacticInfo(state.info)
@@ -128,10 +84,10 @@ function M.handleArbitrary(
     end
 
     local prop = matches[0]
-    local propHole = prop:instantiateVars({Frag:hole(termCat, 0)})
+    local propHole = prop:instantiateVars({Frag:hole(shared.termCat, 0)})
 
     -- this is the variable we want to prove the goal about
-    local binding = Binding:name(tactic.var.str, termCat)
+    local binding = Binding:name(tactic.var.str, shared.termCat)
     local var = arbitraryPattern:instantiateHoles({prop})
     var = var:named(tactic.var.str)
 
@@ -150,7 +106,7 @@ function M.handleArbitrary(
     subState = dispatch.handleTactic(tactic.next, subState)
 
     -- now it we simply apply forall.intro to get the original goal
-    state.formal = subState.formal:applyTheorem(forallIntroThm, {propHole})
+    state.formal = subState.formal:applyTheorem(shared.forallIntroThm, {propHole})
     state.info = state.info:withDeduce(state.goal:fact())
     state.knowns:set(state.goal.formal:fact(), true)
 
@@ -162,14 +118,14 @@ function M.handleUsing(
     state: state.State
 ): state.State
     -- extract the property we are trying to prove from the goal
-    local matches = state.goal.formal:match(existsPattern.formal)
+    local matches = state.goal.formal:match(shared.existsPattern.formal)
     if matches == nil then
         Diagnostic:new("goal must be an exists statement", just.kw.span:label("")):report()
         return state:error()
     end
 
     local prop = matches[0]
-    local propHole = prop:instantiateVars({Frag:hole(termCat, 0)})
+    local propHole = prop:instantiateVars({Frag:hole(shared.termCat, 0)})
 
     local use, diag = just.use:resolve(state.scope)
     if diag ~= nil then diag:withTacticInfo(state.info):report() end
@@ -185,7 +141,7 @@ function M.handleUsing(
     end
 
     -- resolve the goal using exists.intro
-    state.formal = state.formal:applyTheorem(existsIntroThm, {propHole, use})
+    state.formal = state.formal:applyTheorem(shared.existsIntroThm, {propHole, use})
     state.info = state.info:withDeduce(state.goal:fact())
     state.knowns:set(state.goal.formal:fact(), true)
 
@@ -202,7 +158,7 @@ function M.handleSpecializing(
     if forall == nil then return state:error() end
 
     -- extract the property we are trying to prove from the forall
-    local matches = forall.formal:match(forallPattern.formal)
+    local matches = forall.formal:match(shared.forallPattern.formal)
     if matches == nil then
         Diagnostic:new("specialization must be a forall statement", just.forall.span:label(""))
             :withTacticInfo(state.info)
@@ -211,7 +167,7 @@ function M.handleSpecializing(
     end
 
     local prop = matches[0]
-    local propHole = prop:instantiateVars({Frag:hole(termCat, 0)})
+    local propHole = prop:instantiateVars({Frag:hole(shared.termCat, 0)})
 
     -- now we try to match the goal against the property
     matches = state.goal.formal:match(propHole.formal)
@@ -224,7 +180,7 @@ function M.handleSpecializing(
     local term = matches[0]
 
     -- now the goal should follow by forall.elim
-    state.formal = state.formal:applyTheorem(forallElimThm, {propHole, term})
+    state.formal = state.formal:applyTheorem(shared.forallElimThm, {propHole, term})
     state.knowns:set(state.goal.formal:fact(), true)
     state.info = state.info:withDeduce(state.goal:fact())
 

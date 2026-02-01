@@ -1,36 +1,8 @@
 local dispatch = require("./dispatch")
 local state = require("./state")
-local frag = require("./frag")
+local shared = require("./shared")
 
 local M = {}
-
-local sentenceCat = FormalCat:sentence()
-local termCat = FormalCat:get("term")
-assert(termCat ~= nil)
-
-local holePattern = frag.makePattern(
-    "p", sentenceCat, 
-    "tactic.recall",
-    {{name = "p", cat = sentenceCat}}
-)
-
-local andPattern = frag.makePattern(
-    "p ∧ q", sentenceCat, 
-    "tactic.recall",
-    {{name = "p", cat = sentenceCat}, {name = "q", cat = sentenceCat}}
-)
-
-local impPattern = frag.makePattern(
-    "p → q", sentenceCat, 
-    "tactic.recall",
-    {{name = "p", cat = sentenceCat}, {name = "q", cat = sentenceCat}}
-)
-
-local forallPattern = frag.makePattern(
-    "∀x, p", sentenceCat, 
-    "tactic.recall",
-    {{name = "p", cat = sentenceCat}}
-)
 
 function M.handleRecall(
     tactic: { _span: Span, thm: SpannedString, next: Tactic },
@@ -46,7 +18,7 @@ function M.handleRecall(
 
     -- This is the first order statement of the theorem we are trying to
     -- recall.
-    local recalledTheorem = holePattern
+    local recalledTheorem = shared.holePattern
 
     -- First add each template as a forall statement.
     local templateInst = {}
@@ -54,7 +26,7 @@ function M.handleRecall(
         local template = thm.templates[i]
 
         -- Our logic is first order so we can't quantify over non-term templates.
-        if template.cat ~= termCat then
+        if template.cat ~= shared.termCat then
             Diagnostic:new("cannot recall theorem with non term templates", tactic.thm.span:label(""))
                 :withTacticInfo(state.info)
                 :report()
@@ -73,12 +45,12 @@ function M.handleRecall(
         local bindingNames = template.binding.names
         local name = #bindingNames > 0 and bindingNames[1] or `v{i}`
 
-        recalledTheorem = forallPattern
+        recalledTheorem = shared.forallPattern
             :changeBinderNames({name})
             :instantiateHoles({recalledTheorem})
 
         local dbIdx = #thm.templates - i
-        local var = Frag:var(termCat, dbIdx):named(name)
+        local var = Frag:var(shared.termCat, dbIdx):named(name)
         table.insert(templateInst, var)
     end
 
@@ -86,7 +58,7 @@ function M.handleRecall(
 
     -- Next add each of the hypotheses and conclusion
     if #thm.hypotheses ~= 0 then
-        local hs = holePattern
+        local hs = shared.holePattern
         for i, h in thm.hypotheses do
             if h.assumption ~= nil then
                 Diagnostic:new("cannot recall theorem with assumptions in hypotheses", tactic.thm.span:label(""))
@@ -100,12 +72,12 @@ function M.handleRecall(
             if i == #thm.hypotheses then
                 hs = hs:instantiateHoles({hConclusion})
             else
-                local hAnd = andPattern:instantiateHoles({hConclusion, holePattern})
+                local hAnd = shared.andPattern:instantiateHoles({hConclusion, shared.holePattern})
                 hs = hs:instantiateHoles({hAnd})
             end
         end
 
-        local hToC = impPattern:instantiateHoles({hs, conclusion})
+        local hToC = shared.impPattern:instantiateHoles({hs, conclusion})
         recalledTheorem = recalledTheorem:instantiateHoles({hToC})
     else
         -- No hypotheses. Add the conclusion directly

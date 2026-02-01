@@ -1,0 +1,95 @@
+local frag = require("./frag")
+
+local M = {}
+
+-- Categories
+M.sentenceCat = FormalCat:sentence()
+M.termCat = FormalCat:get("term")
+assert(M.termCat ~= nil)
+
+-- Theorems
+M.deductionThm = Theorem:lookupByName("deduction")
+assert(M.deductionThm ~= nil)
+
+M.notNotElimThm = Theorem:lookupByName("not_not.elim")
+assert(M.notNotElimThm ~= nil)
+
+M.mpThm = Theorem:lookupByName("modus_ponens")
+assert(M.mpThm ~= nil)
+
+M.explosionThm = Theorem:lookupByName("explosion")
+assert(M.explosionThm ~= nil)
+
+M.existsElimThm = Theorem:lookupByName("exists.elim")
+assert(M.existsElimThm ~= nil)
+
+M.existsIntroThm = Theorem:lookupByName("exists.intro")
+assert(M.existsIntroThm ~= nil)
+
+M.forallIntroThm = Theorem:lookupByName("forall.intro")
+assert(M.forallIntroThm ~= nil)
+
+M.forallElimThm = Theorem:lookupByName("forall.elim")
+assert(M.forallElimThm ~= nil)
+
+-- Patterns
+local scopeTactic = "tactic.recall"
+
+M.holePattern = frag.makePattern(
+    "p", M.sentenceCat,
+    scopeTactic,
+    {{name = "p", cat = M.sentenceCat}}
+)
+
+M.andPattern = frag.makePattern(
+    "p ∧ q", M.sentenceCat,
+    scopeTactic,
+    {{name = "p", cat = M.sentenceCat}, {name = "q", cat = M.sentenceCat}}
+)
+
+M.impPattern = frag.makePattern(
+    "p → q", M.sentenceCat,
+    scopeTactic,
+    {{name = "p", cat = M.sentenceCat}, {name = "q", cat = M.sentenceCat}}
+)
+
+M.forallPattern = frag.makePattern(
+    "∀x, p", M.sentenceCat,
+    scopeTactic,
+    {{name = "p", cat = M.sentenceCat}}
+)
+
+M.existsPattern = frag.makePattern(
+    "∃x, p", M.sentenceCat,
+    scopeTactic,
+    {{name = "p", cat = M.sentenceCat}}
+)
+
+M.witnessPattern = frag.makePattern(
+    "∃ᵉ x, p ⊢ q", M.termCat,
+    scopeTactic,
+    {
+        {name = "p", cat = M.sentenceCat},
+        {name = "q", cat = M.sentenceCat}
+    }
+)
+
+M.arbitraryPattern = frag.makePattern(
+    "∃ᵉx, ¬p ⊢ ⊥", M.termCat,
+    scopeTactic,
+    {{name = "p", cat = M.sentenceCat}}
+)
+
+M.falsum = frag.makePattern(
+    "⊥", M.sentenceCat,
+    scopeTactic,
+    {}
+)
+
+M.notPattern = frag.makePattern(
+    "¬p", M.sentenceCat,
+    scopeTactic,
+    {{name = "p", cat = M.sentenceCat}}
+)
+
+return M
