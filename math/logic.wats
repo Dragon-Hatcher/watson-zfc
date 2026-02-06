@@ -975,8 +975,44 @@ tactic tactic.recall
     tactic ::= @kw"recall" thm:@name ";" next:tactic
 end
 
-theorem tester :
-    |- ∀a, ∀b, (∀x, x ∈ b ↔ x ∈ a) → b = a
+tactic tactic.vampire
+    tactic ::= @kw"vampire"
+end
+
+theorem and_or.distrib [p q r : sentence] :
+    |- (p ∧ (q ∨ r)) ↔ ((p ∧ q) ∨ (p ∧ r))
+proof
+    vampire
+qed
+
+theorem subset_subset.eq [a b : term] : (∀x, x ∈ a → x ∈ b) (∀x, x ∈ b → x ∈ a)
+    |- a = b
 proof
     recall extensionality;
+    vampire
+qed
+
+theorem union.pair_def [a b : term] :
+    |- a ∪ b = ⋃{a, b}
+proof
+    follows a ∪ b = ⋃{a, b} by equals.refl [a ∪ b];
+qed
+
+theorem union.def2 [a b : term] :
+    |- ∀x, x ∈ a ∪ b ↔ (x ∈ a ∨ x ∈ b)
+proof
+    arbitrary x;
+
+    assume x ∈ a ∪ b then x ∈ a ∨ x ∈ b as
+        follows x ∈ ⋃{a, b}            as recall union.pair_def; vampire;
+        thus    ∃y, x ∈ y ∧ y ∈ {a, b} as recall big_union.def; vampire;
+        thus    x ∈ a ∨ x ∈ b          as recall pair.def; vampire;
+    ;
+
+    assume x ∈ a ∨ x ∈ b then x ∈ a ∪ b as
+        thus ∃y, x ∈ y ∧ y ∈ {a, b} as recall pair.def; vampire;
+        thus x ∈ ⋃{a, b}            as recall big_union.def; vampire;
+    ;
+
+    vampire
 qed

@@ -9,7 +9,7 @@ type StateData = {
     info: TacticInfo,
 
     --- list for tactics of what has been proven
-    knowns: FactMap<boolean>,
+    knowns: FactMap<Fact>,
     --- goal for tactics of what we are trying to prove
     goal: Frag,
     --- scope to resolve fragments in
@@ -27,7 +27,7 @@ function State.new(formal: ProofState, info: TacticInfo): State
 
     -- We know all the hypotheses to start
     for _, h in formal.theorem.hypotheses do
-        self.knowns:set(h.formal, true)
+        self.knowns:set(h.formal, h)
     end
 
     return setmetatable(self, State)
@@ -47,14 +47,14 @@ end
 function State.error(self: State): State
     self.formal = self.formal:applyError(self.goal)
     self.info = self.info:withDeduce(self.goal:fact())
-    self.knowns:set(self.goal.formal:fact(), true)
+    self.knowns:set(self.goal.formal:fact(), self.goal:fact())
     return self
 end
 
 function State.todo(self: State): State
     self.formal = self.formal:applyTodo(self.goal)
     self.info = self.info:withDeduce(self.goal:fact())
-    self.knowns:set(self.goal.formal:fact(), true)
+    self.knowns:set(self.goal.formal:fact(), self.goal:fact())
     return self
 end
 

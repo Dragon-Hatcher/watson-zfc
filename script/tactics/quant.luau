@@ -41,7 +41,7 @@ function M.handleObtain(
     -- now we are going to assume the witness has the property
     local assumption = st:instantiateVars({witness})
     subState = state:copy()
-    subState.knowns:set(assumption.formal:fact(), true)
+    subState.knowns:set(assumption.formal:fact(), assumption:fact())
     -- for the info call it a deduction not an assumption because that more
     -- closely matches what it is. We aren't really assuming anything; we know
     -- that the witness exists.
@@ -62,7 +62,7 @@ function M.handleObtain(
     -- and now we get the goal by exists.elim
     local stHole = st:instantiateVars({Frag:hole(shared.termCat, 0)})
     state.formal = state.formal:applyTheorem(shared.existsElimThm, {stHole, state.goal})
-    state.knowns:set(state.goal.formal:fact(), true)
+    state.knowns:set(state.goal.formal:fact(), state.goal:fact())
     state.info = state.info:withDeduce(state.goal:fact())
 
     return state
@@ -108,7 +108,7 @@ function M.handleArbitrary(
     -- now it we simply apply forall.intro to get the original goal
     state.formal = subState.formal:applyTheorem(shared.forallIntroThm, {propHole})
     state.info = state.info:withDeduce(state.goal:fact())
-    state.knowns:set(state.goal.formal:fact(), true)
+    state.knowns:set(state.goal.formal:fact(), state.goal:fact())
 
     return state
 end
@@ -143,7 +143,7 @@ function M.handleUsing(
     -- resolve the goal using exists.intro
     state.formal = state.formal:applyTheorem(shared.existsIntroThm, {propHole, use})
     state.info = state.info:withDeduce(state.goal:fact())
-    state.knowns:set(state.goal.formal:fact(), true)
+    state.knowns:set(state.goal.formal:fact(), state.goal:fact())
 
     return state
 end
@@ -181,7 +181,7 @@ function M.handleSpecializing(
 
     -- now the goal should follow by forall.elim
     state.formal = state.formal:applyTheorem(shared.forallElimThm, {propHole, term})
-    state.knowns:set(state.goal.formal:fact(), true)
+    state.knowns:set(state.goal.formal:fact(), state.goal:fact())
     state.info = state.info:withDeduce(state.goal:fact())
 
     return state

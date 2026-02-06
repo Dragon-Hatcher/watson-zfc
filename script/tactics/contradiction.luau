@@ -22,7 +22,7 @@ function M.handleContradiction(
                 :applyTheorem(shared.mpThm, {fact.conclusion, shared.falsum})
                 :applyTheorem(shared.explosionThm, {state.goal})
             state.info = state.info:withDeduce(state.goal:fact())
-            state.knowns:set(shared.falsum.formal:fact(), true)
+            state.knowns:set(shared.falsum.formal:fact(), shared.falsum:fact())
             return state
         end
     end

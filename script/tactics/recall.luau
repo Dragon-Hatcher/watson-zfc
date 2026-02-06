@@ -2,7 +2,40 @@ local dispatch = require("./dispatch")
 local state = require("./state")
 local shared = require("./shared")
 
+-- local quant = require("./quant")
+-- local assume = require("./assume")
+
 local M = {}
+
+-- function M.formalRecall(formal: ProofState, goal: Frag, thm: Theorem): ProofState
+
+--     -- Introduce arbitrary variables for each template param
+--     local arbitraryCleanups = {}
+--     local vars = {}
+--     for template in thm.templates do
+--         local arb = quant.formalArbitrary(formal, formalGoal)
+--         formal = arb.formal
+--         formalGoal = arb.goal
+--         table.insert(arbitraryCleanups, arb.cleanup)
+--         table.insert(vars, arb.var)
+--     end
+
+--     if #thm.hypotheses ~= 0 then
+--         -- Extract all the hypotheses
+--         local assump = assume.formalAssumeThen(formal, )
+
+--     else
+--         -- There are no hypotheses, so we can just conclude the theorem now.
+--         formal = formal:applyTheorem(thm, vars)
+--     end
+
+--     -- Close the scopes of all the arbitrary variables
+--     for i = #arbitraryCleanups, 1, -1 do
+--         state.formal = quant.formalArbitraryCleanup(state.formal, arbitraryCleanups[i])
+--     end
+
+--     return formal
+-- end
 
 function M.handleRecall(
     tactic: { _span: Span, thm: SpannedString, next: Tactic },
@@ -85,11 +118,11 @@ function M.handleRecall(
     end
 
     -- Now we can prove the theorem statement using the theorem.
-    state.info = state.info:withDeduce(recalledTheorem:fact())
-    state.knowns:set(recalledTheorem.formal:fact(), true)
-
-    -- TODO: actually formally prove the goal.
     state.formal = state.formal:applyTodo(recalledTheorem)
+    -- state.formal = M.formalRecall(state.formal, recalledTheorem)
+
+    state.info = state.info:withDeduce(recalledTheorem:fact())
+    state.knowns:set(recalledTheorem.formal:fact(), recalledTheorem:fact())
 
     return dispatch.handleTactic(tactic.next, state)
 end

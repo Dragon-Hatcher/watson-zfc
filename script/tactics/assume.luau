@@ -20,7 +20,7 @@ function M.handleAssumeThen(
     subState.formal = subState.formal:addAssumption(assumption)
     subState.info = subState.info:withAssume(assumption):withGoal(conclusion)
     subState.goal = conclusion
-    subState.knowns:set(assumption.formal:fact(), true)
+    subState.knowns:set(assumption.formal:fact(), assumption:fact())
 
     -- Use the assumption to prove the conclusion
     subState = dispatch.handleJustification(tactic.just, subState)
@@ -31,7 +31,7 @@ function M.handleAssumeThen(
     local implication = shared.deductionThm.conclusion:instantiateTemplates({assumption, conclusion})
     state.formal = subState.formal:applyTheorem(shared.deductionThm, {assumption, conclusion})
     state.info = state.info:withDeduce(implication:fact())
-    state.knowns:set(implication.formal:fact(), true)
+    state.knowns:set(implication.formal:fact(), implication:fact())
 
     return dispatch.handleTactic(tactic.next, state)
 end
@@ -70,7 +70,7 @@ function M.handleAssume(
     -- now we finish the proof
     local subState = state:copy()
     subState.formal = subState.formal:addAssumption(parsedAssumption)
-    subState.knowns:set(parsedAssumption.formal:fact(), true)
+    subState.knowns:set(parsedAssumption.formal:fact(), parsedAssumption:fact())
     subState.info = subState.info:withAssume(parsedAssumption):withGoal(goalConclusion)
     subState.goal = goalConclusion
 
@@ -82,7 +82,7 @@ function M.handleAssume(
 
     -- convert that to an implication which was the original goal
     state.formal = state.formal:applyTheorem(shared.deductionThm, {parsedAssumption, goalConclusion})
-    state.knowns:set(state.goal.formal:fact(), true)
+    state.knowns:set(state.goal.formal:fact(), state.goal:fact())
     state.info = state.info:withDeduce(state.goal:fact())
 
     return state
@@ -101,7 +101,7 @@ function M.handleAssumeContra(
     local subState = state:copy()
     subState.formal = subState.formal:addAssumption(assumption)
     subState.info = subState.info:withAssume(assumption):withGoal(shared.falsum)
-    subState.knowns:set(assumption.formal:fact(), true)
+    subState.knowns:set(assumption.formal:fact(), assumption:fact())
     subState.goal = shared.falsum
 
     -- Use the subproof to derive a contradiction from the assumption
@@ -123,13 +123,13 @@ function M.handleAssumeContra(
         -- case 1
         state.formal = subState.formal
         state.info = state.info:withDeduce(notAssumption:fact())
-        state.knowns:set(notAssumption.formal:fact(), true)
+        state.knowns:set(notAssumption.formal:fact(), notAssumption:fact())
         return state
     elseif notGoal.formal == assumption.formal then
         -- case 2
         state.formal = subState.formal:applyTheorem(shared.notNotElimThm, {state.goal})
         state.info = state.info:withDeduce(state.goal:fact())
-        state.knowns:set(state.goal.formal:fact(), true)
+        state.knowns:set(state.goal.formal:fact(), state.goal:fact())
         return state
     else
         -- the assumption isn't related to the goal

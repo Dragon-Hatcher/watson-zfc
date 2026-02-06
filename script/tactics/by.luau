@@ -103,7 +103,7 @@ function M.handleBy(
     -- Now we can apply the theorem to our local state
     state.formal = state.formal:applyTheorem(thm, resolved)
     state.info = state.info:withDeduce(conclusion:fact())
-    state.knowns:set(conclusion:fact(), true)
+    state.knowns:set(conclusion.formal:fact(), conclusion:fact())
 
     return state
 end

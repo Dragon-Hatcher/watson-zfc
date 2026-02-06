@@ -38,7 +38,7 @@ function M.handleHave(
     end
 
     state.info = state.info:withDeduce(f1:fact())
-    state.knowns:set(f1.formal:fact(), true)
+    state.knowns:set(f1.formal:fact(), f1:fact())
     return dispatch.handleTactic(tactic.next, state)
 end
 

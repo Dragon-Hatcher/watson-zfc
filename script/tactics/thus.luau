@@ -22,7 +22,7 @@ function M.handleThus(
     if a ~= nil then
         subState.formal = subState.formal:addAssumption(a)
         subState.info = subState.info:withAssume(a)
-        subState.knowns:set(a.formal:fact(), true)
+        subState.knowns:set(a.formal:fact(), a:fact())
     end
 
     -- Resolve the subproof
@@ -36,7 +36,7 @@ function M.handleThus(
     -- The subproof proved our goal so we can transfer over the formal proof.
     state.formal = subState.formal
     state.info = state.info:withDeduce(goal)
-    state.knowns:set(goal.formal, true)
+    state.knowns:set(goal.formal, goal)
 
     return dispatch.handleTactic(tactic.next, state)
 end

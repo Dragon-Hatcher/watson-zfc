@@ -10,6 +10,7 @@ local thus = require("./thus")
 local quant = require("./quant")
 local print = require("./print")
 local recall = require("./recall")
+local vampire = require("./vampire")
 
 local M = {}
 
@@ -35,6 +36,7 @@ dispatch.tacticTable = {
 	["tactic.obtain"] = quant.handleObtain,
 	["tactic.arbitrary"] = quant.handleArbitrary,
 	["tactic.recall"] = recall.handleRecall,
+	["tactic.vampire"] = vampire.handleVampire,
 	["tactic.empty"] = empty.handleEmpty,
 	["tactic.todo"] = function(tactic: {}, state: state.State)
 		return state:todo()
