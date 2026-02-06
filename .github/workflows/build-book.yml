@@ -27,7 +27,21 @@ jobs:
         with:
           cache: true
 
+      - name: Get Watson repository commit hash
+        id: watson-version
+        run: |
+          WATSON_COMMIT=$(git ls-remote https://github.com/Dragon-Hatcher/watson.git HEAD | awk '{print $1}')
+          echo "commit=$WATSON_COMMIT" >> $GITHUB_OUTPUT
+
+      - name: Cache Watson binary
+        id: cache-watson
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/bin/watson
+          key: watson-${{ runner.os }}-${{ steps.watson-version.outputs.commit }}
+
       - name: Clone and build Watson
+        if: steps.cache-watson.outputs.cache-hit != 'true'
         env:
           RUSTFLAGS: ""
         run: |
