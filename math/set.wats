@@ -1,0 +1,142 @@
+Set theory is almost the simplest possible first order logical system. It
+contains no formal terms and only a single binary predicate symbol: $\in$. 
+
+syntax membership
+    sentence ::= term " ∈ " term
+end
+
+The intended reading of $x \in y$ is that $y$ is a set of which $x$ is an element.
+In our version of set theory, *all* objects are sets. Despite this simplicity,
+we can encode essentially all of mathematics using set theory. We will find
+ways to encode objects not traditionally thought of as sets using sets.
+
+We have an intuitive notion of what a set is, but of course, we will need to
+provide axioms to make this understanding rigorous.
+
+
+## Axioms
+
+The set of axioms we will be using for our set theory is called the 
+Zermelo-Fraenkel axioms with Choice, abbreviated ZFC. There are other systems of
+axioms we could use, but ZFC is a commonly accepted set.
+
+You may be hoping that $\in$ will come with two axioms, an introduction and an
+elimination rule. Sadly this is not the case.
+
+We do get an elimination rule. It says that two sets are equal if they contain
+exactly the same elements. This is traditionally known as extensionality. 
+
+axiom zfc.extensionality :
+    |- ∀a, ∀b, (∀x, x ∈ a ↔ x ∈ b) → a = b
+end
+
+We will be presenting the axioms as unschematized statements in first-order
+logic without using the iota operator. This is done to make clear the 
+distinction between the axioms for which this can be done, and those for which 
+it can't. We will state more natural forms of these axioms as theorems later.
+
+Intuitively, a set is supposed to be a collection of all the objects with a
+certain property. Therefore, we might naturally expect to have an introduction
+rule similar to the following:
+
+```
+ axiom zfc.comprehension [p(_:term) : sentence] :
+    |- ∃x, ∀y, (y ∈ x ↔ p(y))
+ end
+```
+
+However, such an axiom would be inconsistent. In particular, we would run into
+Russell's paradox: the axiom allows us to construct the set $X = \{x ~|~ x \not\in x\}$
+which consists of all sets which do not contain themselves. Then we ask if
+$X \in X$. If it is then it should not be and if it isn't then it should be. We
+have a contradiction. 
+
+This leads us to the conclusion that not all properties can define sets. The
+remainder of the axioms of ZFC essentially define restricted forms of our
+idealized comprehension axioms which are believed not to lead to a contradiction.
+This will leave us with various operations which we can use to define our sets.
+In the end, almost all the sets we care about will be definable with these
+operations and so we will be able to act much as if we did have unrestricted
+comprehension.
+
+The empty set axiom asserts the existence of a set with no elements.
+
+axiom zfc.empty_set :
+    |- ∃x, ∀y, ¬y ∈ x 
+end
+
+For any two sets we can form the set containing exactly those two sets.
+
+axiom zfc.pairing :
+    |- ∀a, ∀b, ∃x, ∀y, y ∈ x ↔ (y = a ∨ y = b)
+end
+
+For any set we can take the union of all element in the set.
+
+axiom zfc.union :
+    |- ∀a, ∃x, ∀y, y ∈ x ↔ (∃z, y ∈ z ∧ z ∈ a)
+end
+
+For any set we can form the set of all subsets of the set (the powerset).
+
+axiom zfc.powerset :
+    |- ∀a, ∃x, ∀y, y ∈ x ↔ (∀z, z ∈ y → z ∈ a)
+end
+
+There is a set containing the empty set with the property that for any $x$ in
+the set, the set also contains $x \cup \{x\}$. Such a set is called an inductive
+set and must be infinite. Without this axiom we would have no way to prove any
+infinite sets exist.
+
+axiom zfc.infinity :
+    |- ∃x, (∃y, y ∈ x ∧ ∀z, ¬z ∈ y) 
+         ∧ (∀y, (y ∈ x → (∃z, (z ∈ x ∧ (∀w, (w ∈ z ↔ (w ∈ z ∨ w = z)))))))
+end
+
+Then we get the two axiom schemas. These are statements about all sentences
+which can't be stated using only quantifiers. The first says that for any set
+we can take the subset of all elements with a particular property. This is 
+quite similar to the rejected comprehension axiom, but this one doesn't lead to
+contradictions (as far as we know). This is sometimes also called seperation or
+restricted comprehension.
+
+axiom zfc.specification [p(_:term) : sentence] :
+    |- ∀a, ∃x, ∀y, y ∈ x ↔ (y ∈ a ∧ p(y))
+end
+
+This axiom asserts that the image of any set under a function (implicitly 
+defined by $p$) exists. This is surprisingly rarely required.
+
+axiom zfc.replacement [p(_0:term, _1:term) : sentence] :
+    |- ∀a, ((∀x, x ∈ a → ∃!y, p(x, y)) → (∃x, ∀y, y ∈ x ↔ (∃z, z ∈ a ∧ p(z, y))))
+end
+
+The final axiom has a formal statement that is somewhat difficult to parse. But
+the important point is that it guarantees that we do not get an infinite chain
+of descending sets $x_0 \ni x_1 \ni x_2 \ni \dots$. In other words, all sets
+are nested at a finite depth (despite the fact that some sets contain an 
+infinite number of elements). 
+
+axiom zfc.regularity :
+    |- ∀a, (∃x, x ∈ a) → (∃y, y ∈ a ∧ ¬∃z, (z ∈ y ∧ z ∈ a))
+end
+
+The final axiom is the famed Axiom of Choice. However it has a much longer
+first order statement and it is generally considered more polite to be clear
+when one is using it. So we will postpone adding it until it becomes necessary.
+
+
+## Set Operations
+
+The fundamental operation over sets is forming the set of all elements with a
+certain property. We discussed previously that this set does not always exist,
+however the iota operator allows us to define notation for it which will have
+the expected properties if it does exist.
+
+notation comprehension
+    term ::= "{" x:@binding(term) " | " sentence(x) "}"
+end
+
+definition
+    {x | p(x)} := ℩y, ∀x, x ∈ y ↔ p(x)
+end
