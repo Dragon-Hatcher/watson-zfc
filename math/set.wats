@@ -292,7 +292,10 @@ end
 Once more the existence of this set is guaranteed by the union axiom of ZFC.
 
 theorem big_union.def [a : term] :
-    |- ∀x, x ∈ a ↔ (∃y, x ∈ y ∧ y ∈ a)
+    |- ∀x, x ∈ ⋃a ↔ (∃y, x ∈ y ∧ y ∈ a)
 proof
-    todo
+    suffices ∀x, x ∈ {x | ∃y, x ∈ y ∧ y ∈ a} ↔ (∃y, x ∈ y ∧ y ∈ a);
+    recall zfc.union;
+    follows ∃x, ∀y, y ∈ x ↔ (∃z, y ∈ z ∧ z ∈ a) as vampire;
+    follows ∀x, x ∈ {x | ∃y, x ∈ y ∧ y ∈ a} ↔ (∃y, x ∈ y ∧ y ∈ a) by uncomp.def [∃y, _ ∈ y ∧ y ∈ a];
 qed
