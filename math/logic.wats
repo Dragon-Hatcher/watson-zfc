@@ -753,6 +753,25 @@ definition
     ∀x, p(x) := ¬∃x, ¬p(x)
 end
 
+We will also provide notations for the at most one and unique existential
+quantifiers.
+
+notation exists.at_most_one
+    sentence ::= "∃*" x:@binding(term) ", " sentence(x) 
+end
+
+definition
+    ∃*x, p(x) := ∀y, ∀z, (p(y) ∧ p(z)) → y = z
+end
+
+notation exists.unique
+    sentence ::= "∃!" x:@binding(term) ", " sentence(x) 
+end
+
+definition
+    ∃!x, p(x) := (∃x, p(x)) ∧ (∃*x, p(x)) 
+end
+
 To make sense of quantifiers we will need two axioms. Did you guess that they
 are once again an introduction rule and an elimination rule? The introduction
 rule for $\exists$ is simple: if we have a particular object with a property,
@@ -952,3 +971,65 @@ Everything we have done so far makes sense in almost any mathematical system.
 The next step on our journey is to introduce sentences and terms specific to our
 context, in this case set theory. However, before we do this, there is one
 extension we can make to our system that will make our lives easier.
+
+
+## The Iota Operator
+
+Using the tools of Watson it is easy to define complex sentences that take
+other terms or sentences as arguments. This is because, in some sense, a
+sentence is self contained. However, terms do not behave this way. Thus far,
+the only terms we have defined come on the inside of quantifiers. This makes
+it impossible to define self contained terms.
+
+```
+ definition my_term
+     foo := what could go here? we aren't in a quantifier
+ end
+```
+
+This situation could be resolved if our specific mathematical language contained
+some primitive, self-contained terms for us to use. However, set theory is
+usually presented without any such self contained terms. Of course, 
+mathematicians use self contained terms all the time. What do they mean by this?
+Take the empty set for example. Traditionally, it is understood that if you see
+a formula containing $\varnothing$ you are supposed to expand it using the 
+following three rules:
+
+$$ x = \varnothing \overset{\text{def}}{\iff} \forall y, y \not\in x $$
+$$ \varnothing \in x \overset{\text{def}}{\iff} \exists y, y \in x \land y = \varnothing $$
+$$ x \in \varnothing \overset{\text{def}}{\iff} \bot $$
+
+This is a significantly more complex notion of definition than the find and 
+replace system that Watson supports. These notions could be instead be added as 
+axioms, which is what the [Metamath](https://us.metamath.org/mpeuni/mmset.html#class)
+proof system does.
+
+However there is a different way of thinking about term definitions we can use
+instead. A term is well defined if we know that it exists and we know that it
+is unique. We can introduce a new term into our formula language that represents
+the unique term with a given property. Following the tradition of the Principia
+Mathematica, this is called the iota operator and is denoted with an upside
+down iota.
+
+syntax iota
+    term ::= "℩" @binding(term) ", " sentence
+end
+
+This term only has meaning if there is actually a unique object with the given
+property. Otherwise, it can be thought of as an arbitrary term.
+
+axiom iota.unique [p(_:term) : sentence] : (∃!x, p(x))
+    |- p(℩x, p(x))
+end
+
+In the future we will make definitions in terms of this iota operator. One
+advantage of the iota operator over other systems is that it makes sense
+for any first order logical system, regardless of the particular predicates
+or terms that are present. Additionally it is a 
+[conservative extension](https://en.wikipedia.org/wiki/Conservative_extension)
+meaning that every sentence containing an iota operator could be converted to
+one without and all sentences which correspond in this way will have the same
+truth value. This means that the iota operator is just a notation convenience
+and doesn't fundamentally change or system.
+
+With all the pieces in place, we are ready to begin set theory.
