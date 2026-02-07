@@ -1,5 +1,3 @@
-# Logic
-
 In this chapter we will develop the formal language of first order logic upon
 which we will build mathematics. Although the objects of our study will be sets
 it is first order logic which allows us to make statements about those sets.
@@ -621,7 +619,7 @@ adding this axiom are different than our reasons for the other axioms.
 
 To write the axiom we will need some way of denoting a property of $p$.
 
-notation prop.sentence
+notation sentence.with_sentence
     sentence ::= @name "(" sentence ")"
 end
 
@@ -632,29 +630,120 @@ axiom iff.rw [p q m(_) : sentence] : (p ↔ q) (m(p))
     |- m(q)
 end
 
+
 ## First Order Logic
+
+The logical connectives we have developed thus far allows us to discuss the 
+relationships between various propositions. However, if you examine the formal
+language we have thus far defined, you will realize that the only `sentence`
+that does not contain another sentence within it is $\bot$. This means that
+every sentence we can discuss is built up from logical combinations of $\bot$.
+This means that every formal sentence is either trivially false or trivially 
+true.  Obviously, this doesn't make for a very interesting mathematical system!
+
+### Terms and Equality
+
+When we do mathematics, what form do our most basic assertions take? That is,
+if you have some sentence with no logical connectives in it, what will it look
+like? We claim, rather boldly, that every single assertion in traditional
+mathematics that is not trivially true or false is a claim about the 
+relationship between two or more objects. (If you do not believe this, it may 
+help to consider the definition of the assertion you are thinking of. For 
+example, the statement "$n$ is even" may at first appear to be about just one 
+object, until you remember that the definition of "is even" is "there is some 
+$k$ such that $n = 2 \cdot k$".)
+
+Thus, in order to do mathematics, we will need both objects and at least one 
+relationship between them. We will call an object of study in our mathematical
+system a "term." (This name comes from the fact that all mathematical
+statements, if examined deeper and deeper, will eventually *term*inate at an
+object). We will inform Watson of our desire for a new category of syntactical
+object using the `syntax_category` command.
 
 syntax_category term
 
-notation prop.term
-    sentence ::= @name "(" term ")"
-end
+Next, we will need some relationship between terms. All but the most exotic
+of mathematical systems contain a notation of *equality*.
 
-syntax equals
+syntax equality
     sentence ::= term " = " term
 end
 
-axiom equals.refl [a : term] :
+We will need just two axioms to describe the behavior of equality. Once again,
+these can be thought of as introduction and elimination rules. The first axiom,
+the introduction rule, asserts that any term is equal to itself. In other words,
+equality is reflexive.
+
+axiom eq.refl [a : term] :
     |- a = a
 end
 
-axiom equals.subst [p(_:term) : sentence] [a b : term] : (a = b) (p(a))
+The second axiom, the elimination rule, says that, if two objects are equal,
+then they should have all the same properties. Precisely, we mean that if 
+$a = b$ then for any sentence which is true, if we change all the $a$s to $b$s,
+the sentence remains true. In order to describe this rule to Watson, we will
+need notation for a sentence which contains a term.
+
+notation sentence.with_term
+    sentence ::= @name "(" term ")"
+end
+
+And now we can state the axiom. The syntax `p(_:term)` disambiguates that
+this is a sentence dependent on a term rather than one dependent on a sentence,
+which we declared the notation for earlier.
+
+axiom eq.subst [p(_:term) : sentence] [a b : term] : (a = b) (p(a))
     |- p(b)
 end
+
+From these two axioms, and with judicious choice of the substitution property, 
+we can derive that equality is an equivalence relation.
+
+theorem eq.symm [a b : term] : (a = b)
+    |- b = a
+proof
+    follows a = a by eq.refl  [a];
+    thus    b = a by eq.subst [_ = a] [a] [b];
+qed
+
+theorem eq.trans [a b c : term] : (a = b) (b = c)
+    |- a = c
+proof
+    follows a = c by eq.subst [a = _] [b] [c];
+qed
+
+### Quantifiers
+
+You may have noticed that, although we now have equality as a nontrivial
+sentence, we in fact cannot use it because we have no terms! Right now, our
+formal language contains no terms whatsoever, so we could never actually write
+an equality. To fix this, we will now introduce quantifiers, statements of the
+form $\exists n, n + n = n$ or $\forall x, x + 1 > x$. The bound variables in
+the quantifiers will be our first terms.
+
+Similarly to how we only needed to define one of $\lor$ and $\land$ and then
+could define the remaining one in terms of the other, we only need to add one
+$\exists$ and $\forall$ to our formal language. (In fact, this connection 
+is no coincidence. Consider applying DeMorgan's laws to a statement with an 
+infinite number of $\lor$s or $\land$s). 
+
+For reasons that will become apparent in a moment, we will choose $\exists$ to 
+be in our formal language. The `@binding(term)` syntax tells Watson to add a new 
+variable name which holds a `term` when evaluating the `sentence`. As discussed
+in the introduction, this notion is not context free which is why it necessitates
+a special case within Watson.
 
 syntax exists
     sentence ::= "∃" @binding(term) ", " sentence
 end
+
+And we can now define $\forall$ in terms of $\exists$. The explanation of which
+variables are bound goes on the `notation` command not the `definition` command
+because Watson needs to know which variables exist in order to parse statements
+before it resolves definitions. Unlike with the `syntax` commands, bindings in
+a `notation` command can be present only for certain children. This will be
+important later for notation like $\{x \in X ~|~ p(x) \}$ where $x$ should be
+available on the right but doesn't make sense when evaluating $X$.
 
 notation forall
     sentence ::= "∀" x:@binding(term) ", " sentence(x)
@@ -664,355 +753,202 @@ definition
     ∀x, p(x) := ¬∃x, ¬p(x)
 end
 
-axiom exists.intro [p(_:term) : sentence] [t : term] : (p(t))
+To make sense of quantifiers we will need two axioms. Did you guess that they
+are once again an introduction rule and an elimination rule? The introduction
+rule for $\exists$ is simple: if we have a particular object with a property,
+then we certainly know that there exists an object with that property.
+
+axiom exists.intro [p(_:term) : sentence] [a : term] : (p(a))
     |- ∃x, p(x)
 end
 
-syntax exists_eliminator
+The elimination rule is significantly more complex. In traditional mathematics,
+$\exists$ elimination works like this: given $\exists x, p(x)$ we can obtain a
+new variable $y$ such that $p(y)$. The variable $y$ must be "fresh" in the sense
+that we haven't used it before. We call $y$ the *witness* to the existential
+statement. Watson has no way of expressing that a variable is fresh and so we 
+cannot use this system. The reason Watson doesn't support freshness is twofold: 
+On the one hand, as we will soon see, it is unnecessary. But more generally, it 
+makes the system significantly more complicated as sentences can no longer be 
+understood entirely on their own but must now carry with them the context of 
+which variables were "fresh" when they were created.
+
+How can we do without freshness? To understand the problem let's try a simple
+solution first. We can add a new term to our constant language to serve as the
+witness. If we imagine the witness is called $\varepsilon$ then we might use
+the following syntax declaration and axiom.
+
+```
+ syntax witness 
+     term ::= "ε"
+ end
+
+ axiom exists.elim [p(_:term) : sentence] : (∃x, p(x))
+     |- p(ε)
+ end
+```
+
+What would be the problem with this? The issue is that we are using the same
+witness for every existential. For example, it is the case both that 
+$\exists x, \text{even}(x)$ and $\exists x, \text{odd}(x)$. Then using our
+ axiom we would get that $\text{even}(\varepsilon)$ and $\text{odd}(\varepsilon)$
+but obviously no such $\varepsilon$ could exist. This is exactly why the
+witness is required to be fresh.
+
+Since the issue arises from using the same witness for different existentials,
+we might imagine using the following alternate idea. 
+
+```
+ syntax witness 
+     term ::= "ε" @binding(term) ", " sentence
+ end
+
+ axiom exists.elim [p(_:term) : sentence] : (∃x, p(x))
+     |- p(εx, p(x))
+ end
+```
+
+Returning to our even-odd example, this time we would get that
+$\text{even}(\varepsilon x, \text{even}(x))$ and 
+$\text{odd}(\varepsilon x, \text{odd}(x))$ which is not contradictory as
+$\varepsilon x, \text{even}(x)$ and $\varepsilon x, \text{odd}(x)$ are two
+different terms. This system does work. In fact, it is called
+[Hilbert's Epsilon Operator](https://plato.stanford.edu/entries/epsilon-calculus/)
+and has certain uses in formal logic and set theory.
+
+Why then are we not using the epsilon operator? The issue is that the epsilon
+operator actually implies the Axiom of Choice! To see why, consider a collection
+of non-empty sets $X$. Then construct the map $f : X \to \bigcup X$ defined as 
+$x \mapsto \varepsilon y, y \in x$.
+We can prove that such a $y$ exists (every $x$ is non-empty) and so this is a
+valid choice function. We do not want our logical system to imply the Axiom of
+Choice so we will have to make some changes.
+
+The trouble with the epsilon operator is that it allowed us to make an infinite
+number of parallel choices. Extracting a witness from an existential should
+behave less like a function and more like a reasoning step. To try and enforce
+this we might image using the same witness term as above but with the following
+new axiom:
+
+```
+ axiom exists.elim [p(_:term) : sentence] [q : sentence] 
+     : (∃x, p(x)) (p(εx, p(x)) → q)
+     |- p(εx, p(x))
+ end
+```
+
+The idea behind this axiom is that we don't actually get to extract a witness
+for any proposition, we just get to *imagine* we could do so for one particular
+proposition. However, this axiom is no different from the previous axiom. By
+simply setting $q$ to be $p(\varepsilon x, p(x))$ we extract the previous, bad,
+axiom.
+
+The issue is that the witness itself appears in the conclusion we are drawing.
+However we can use a trick to prevent this: we include the conclusion we want 
+*in the witness term*. This brings us to the final existential elimination axiom 
+we will actually be using.
+
+syntax witness
     term ::= "∃ᵉ" @binding(term) ", " sentence " ⊢ " sentence
 end
 
-axiom exists.elim [p(_:term) q : sentence] : 
-    (∃x, p(x)) (p(∃ᵉ x, p(x) ⊢ q) → q)
+axiom exists.elim [p(_:term) : sentence] [q : sentence] 
+    : (∃x, p(x)) (p(∃ᵉx, p(x) ⊢ q) → q)
     |- q
 end
 
-theorem forall.elim [p(_:term) : sentence] [t : term] : (∀x, p(x))
-    |- p(t)
+We may read the syntax $\exists^e x, p(x) \vdash q$ as "the witness for the 
+existential $\exists x, p(x)$ which will be used to prove $q$." The fact that
+$q$ is embedded into the witness prevents us from proving the axiom of choice.
+-- TODO: come up with a better explanation here
+The reason is that if we attempt to define a proof function in the same way
+as before, we will no longer be able to apply the existential elimination axiom
+to all the witnesses simultaneously. The goal in the existential elimination
+cannot name the witness. So we must finish the proof as the next step after 
+applying the axiom and thus won't be able to quantify over all witnesses.
+
+Using these two axioms we can prove the introduction and elimination rules for
+$\forall$ as theorems. The $\forall$ elimination rule is the dual of the
+$\exists$ introduction rule:
+
+theorem forall.elim [p(_:term) : sentence] [a : term] : (∀x, p(x))
+    |- p(a)
 proof
-    assume ¬p(t) for_contra;
-    follows ∃x, ¬p(x) by exists.intro [¬p(_)] [t];
+    -- we rewrite the forall as an existential
     have ¬∃x, ¬p(x) from ∀x, p(x);
+    
+    -- and then if ¬p(a) we have a counterexample to the above
+    assume ¬p(a) for_contra;
+    thus ∃x, ¬p(x) by exists.intro [¬p(_)] [a];
+
+    -- which leads to a contradiction
     contradiction
 qed
 
-tactic tactic.print
-    tactic ::= @kw"print" frag:@fragment(sentence) ";" next:tactic
-end
+The $\forall$ introduction rule is dual to the $\exists$ elimination rule.
+Traditionally, we would pick a fresh variable to prove the property of and then
+deduce that the property must hold for all variables. Here, our existential
+witnesses serve as the arbitrary variable.
 
-theorem forall.intro [r(_:term) : sentence] : (r(∃ᵉx, ¬r(x) ⊢ ⊥))
-    |- ∀x, r(x)
+theorem forall.intro [p(_:term) : sentence] : (p(∃ᵉx, ¬p(x) ⊢ ⊥))
+    |- ∀x, p(x)
 proof
-    suffices ¬∃x, ¬r(x);
-    assume ∃x, ¬r(x) for_contra;
-    
-    -- We make a witness for use with the elimination axiom. We specifically 
-    -- chose the hypothesis to lead to a contradiction here.
-    assume ¬r(∃ᵉx, ¬r(x) ⊢ ⊥) then ⊥ as contradiction;
+    assume ∃x, ¬p(x) for_contra;
 
-    -- Now apply the axiom.
-    thus ⊥ by exists.elim [¬r(_)] [⊥];
+    -- from the existential we extract the witness. the specific x such that
+    -- ¬p(x). we had p(x) as our hypothesis, chosen to create a contradiction
+    -- here. of course, the point is it shouldn't matter what value we had as
+    -- the witness in our hypothesis; all should be equally easy to prove.
+    assume ¬p(∃ᵉx, ¬p(x) ⊢ ⊥) then ⊥ as contradiction;
+
+    -- then we extract the conclusion from the existential
+    thus ⊥ by exists.elim [¬p(_)] [⊥];
 qed
 
+As you can see, using the witnesses can be quite cumbersome. We can abstract
+these four rules into the following tactics:
+
+The existential introduction rule becomes:
 tactic justification.using
     justification ::= kw:@kw"using" use:@fragment(term)
 end
 
+The existential elimination rule becomes:
 tactic tactic.obtain
     tactic ::= @kw"obtain" var:@name @kw"st" st:@fragment(sentence) 
                just:justification ";" next:tactic
 end
 
+This is the forall introduction rule:
 tactic tactic.arbitrary
     tactic ::= kw:@kw"arbitrary" var:@name ";" next:tactic
 end
 
+And here is the forall elimination rule:
 tactic justification.specializing
     justification ::= @kw"specializing" forall:@fragment(sentence)
 end
 
-notation prop.term_term
+We can see these all play nicely together in the following classic theorem 
+(which will be the first theorem using a predicate on two terms).
+
+notation sentence.with_term_term
     sentence ::= @name "(" term ", " term ")"
 end
 
-theorem exists_forall.swap [p(_0:term, _1:term) : sentence] : (∃x, ∀y, p(x, y))
+theorem exists_forall.swap [p(_0, _1) : sentence] : (∃x, ∀y, p(x, y))
     |- ∀y, ∃x, p(x, y)
 proof    
-    obtain x st ∀y, p(x, y);
-    arbitrary y;
-    follows p(x, y) specializing ∀y, p(x, y);
-    thus ∃x, p(x, y) using x;
-    -- test 
+    obtain x' st ∀y, p(x', y);
+    arbitrary y';
+    follows p(x', y') specializing ∀y, p(x', y);
+    thus ∃x, p(x, y') using x';
 qed
 
-notation exists_unique
-    sentence ::= "∃!" x:@binding(term) ", " sentence(x)
-end
-
-definition
-    ∃!x, p(x) := (∃x, p(x) ∧ ∀y, p(y) → x = y)
-end
-
-syntax membership
-    sentence ::= term " ∈ " term
-end
-
-notation membership.not
-    sentence ::= term " ∉ " term
-end
-
-definition
-    x ∉ y := ¬(x ∈ y)
-end
-
-syntax iota
-    term ::= "ι" @binding(term) ", " sentence
-end
-
-axiom iota_unique [p(_:term) : sentence] : (∃!x, p(x))
-    |- p(ιx, p(x))
-end
-
-notation empty_set
-    term ::= "∅"
-end
-
-definition
-    ∅ := ιx, ∀y, y ∉ x
-end
-
-axiom extensionality [a b : term] : (∀x, x ∈ a ↔ x ∈ b)
-    |- a = b
-end
-
-axiom empty_set :
-    |- ∃x, ∀y, y ∉ x
-end
-
-theorem empty_set.def :
-    |- ∀y, y ∉ ∅
-proof
-    -- using the iota axiom we just have to prove the uniqueness of the
-    -- empty set.
-    suffices ∃!x, ∀y, y ∉ x by iota_unique [∀y, y ∉ _];
-    suffices ∃x, (∀y, y ∉ x) ∧ ∀z, (∀y, y ∉ z) → x = z;
-
-    -- we know that at least one such set exists by the empty set axiom. 
-    follows ∃x, ∀y, y ∉ x by empty_set;
-    obtain e st ∀y, y ∉ e;
-
-    -- now we show that it is unique
-    follows ∀z, (∀y, y ∉ z) → e = z as
-        arbitrary z;
-        assume ∀y, y ∉ z;
-
-        -- we can deduce the equality using extensionality.
-        suffices ∀w, w ∈ e ↔ w ∈ z by extensionality [e] [z];
-        arbitrary w;
-
-        -- membership is always false so the iff follows easily
-        follows w ∉ e specializing ∀y, y ∉ e;
-        follows w ∉ z specializing ∀y, y ∉ z;
-        assume w ∈ e then w ∈ z as contradiction;
-        assume w ∈ z then w ∈ e as contradiction;
-
-        thus w ∈ e ↔ w ∈ z by iff.intro [w ∈ e] [w ∈ z];
-    ;
-
-    thus (∀y, y ∉ e) ∧ ∀z, (∀y, y ∉ z) → e = z by and.intro [∀y, y ∉ e] [∀z, (∀y, y ∉ z) → e = z];
-    thus ∃x, (∀y, y ∉ x) ∧ ∀z, (∀y, y ∉ z) → x = z using e;
-qed
-
-axiom pairing [a b : term] :
-    |- ∃x, ∀y, y ∈ x ↔ (y = a ∨ y = b)
-end
-
-notation pair
-    term ::= "{" term ", " term "}"
-end
-
-definition
-    {a, b} := ιx, ∀y, y ∈ x ↔ (y = a ∨ y = b)
-end
-
-theorem pair.def [a b : term] :
-    |- ∀y, y ∈ {a, b} ↔ (y = a ∨ y = b)
-proof
-    todo
-qed
-
-theorem pair.left_in [a b : term] :
-    |- a ∈ {a, b}
-proof
-    follows ∀y, y ∈ {a, b} ↔ (y = a ∨ y = b) by pair.def [a] [b];
-    thus a ∈ {a, b} ↔ (a = a ∨ a = b) specializing ∀y, y ∈ {a, b} ↔ (y = a ∨ y = b);
-    follows a = a by equals.refl [a];
-    thus a = a ∨ a = b by or.intro_left [a = a] [a = b];
-    thus a ∈ {a, b} by iff.mpr [a ∈ {a, b}] [a = a ∨ a = b];
-qed
-
-theorem pair.right_in [a b : term] :
-    |- b ∈ {a, b}
-proof
-    follows ∀y, y ∈ {a, b} ↔ (y = a ∨ y = b) by pair.def [a] [b];
-    thus b ∈ {a, b} ↔ (b = a ∨ b = b) specializing ∀y, y ∈ {a, b} ↔ (y = a ∨ y = b);
-    follows b = b by equals.refl [b];
-    thus b = a ∨ b = b by or.intro_right [b = a] [b = b];
-    thus b ∈ {a, b} by iff.mpr [b ∈ {a, b}] [b = a ∨ b = b];
-qed
-
-notation singleton
-    term ::= "{" term "}"
-end
-
-definition
-    {a} := {a, a}
-end
-
-theorem or.self [p : sentence] :
-    |- p ↔ (p ∨ p)
-proof
-    assume p then p ∨ p by or.intro_left [p] [p];
-    assume p ∨ p then p as
-        assume p then p;
-        thus p by or.elim [p] [p] [p];
-    ;
-    thus p ↔ (p ∨ p) by iff.intro [p] [p ∨ p];
-qed
-
-theorem singleton.def [a : term] :
-    |- ∀y, y ∈ {a} ↔ y = a
-proof
-    arbitrary y;
-
-    follows ∀z, z ∈ {a, a} ↔ (z = a ∨ z = a) by pair.def [a] [a];
-    assume y ∈ {a} then y = a as
-        have y ∈ {a, a} from y ∈ {a};
-        thus y = a ∨ y = a as
-            thus y ∈ {a, a} ↔ (y = a ∨ y = a) specializing ∀z, z ∈ {a, a} ↔ (z = a ∨ z = a);
-            thus y = a ∨ y = a by iff.mp [y ∈ {a, a}] [y = a ∨ y = a];
-        ;
-        follows y = a ↔ (y = a ∨ y = a) by or.self [y = a];
-        thus y = a by iff.mpr [y = a] [y = a ∨ y = a];
-    ;
-    assume y = a then y ∈ {a} as
-        thus y = a ∨ y = a by or.intro_left [y = a] [y = a];
-        follows y ∈ {a, a} ↔ (y = a ∨ y = a) specializing ∀z, z ∈ {a, a} ↔ (z = a ∨ z = a);
-        thus y ∈ {a, a} by iff.mpr [y ∈ {a, a}] [y = a ∨ y = a];
-    ; 
-
-    thus y ∈ {a} ↔ y = a by iff.intro [y ∈ {a}] [y = a];
-qed
-
-notation big_union
-    term ::= "⋃" term
-end
-
-definition
-    ⋃A := ιx, ∀y, y ∈ x ↔ (∃z, y ∈ z ∧ z ∈ A)
-end
-
-axiom union [A : term] :
-    |- ∃x, ∀y, y ∈ x ↔ (∃z, y ∈ z ∧ z ∈ A)
-end
-
-theorem big_union.def [A : term] :
-    |- ∀x, x ∈ ⋃A ↔ (∃y, x ∈ y ∧ y ∈ A)
-proof
-    todo
-qed
-
-notation union
-    term ::= term " ∪ " term
-end
-
-definition
-    a ∪ b := ⋃{a, b}
-end
-
-theorem union.def [a b : term] :
-    |- ∀x, x ∈ a ∪ b ↔ (x ∈ a ∨ x ∈ b)
-proof
-    arbitrary x;
-
-    assume x ∈ a ∪ b then x ∈ a ∨ x ∈ b as
-        have x ∈ ⋃{a, b} from x ∈ a ∪ b;
-        follows ∀y, y ∈ ⋃{a, b} ↔ (∃z, y ∈ z ∧ z ∈ {a, b}) by big_union.def [{a, b}];
-        thus x ∈ ⋃{a, b} ↔ (∃z, x ∈ z ∧ z ∈ {a, b}) specializing ∀y, y ∈ ⋃{a, b} ↔ (∃z, y ∈ z ∧ z ∈ {a, b});
-        thus ∃z, x ∈ z ∧ z ∈ {a, b} by iff.mp [x ∈ ⋃{a, b}] [∃z, x ∈ z ∧ z ∈ {a, b}];
-        obtain z st x ∈ z ∧ z ∈ {a, b};
-        thus x ∈ z by and.elim_left [x ∈ z] [z ∈ {a, b}];
-        thus z ∈ {a, b} by and.elim_right [x ∈ z] [z ∈ {a, b}];
-
-        follows ∀y, y ∈ {a, b} ↔ (y = a ∨ y = b) by pair.def [a] [b];
-        thus z ∈ {a, b} ↔ (z = a ∨ z = b) specializing ∀y, y ∈ {a, b} ↔ (y = a ∨ y = b);
-        thus z = a ∨ z = b by iff.mp [z ∈ {a, b}] [z = a ∨ z = b];
-
-        assume z = a then x ∈ a ∨ x ∈ b as
-            thus x ∈ a by equals.subst [x ∈ _] [z] [a];
-            thus x ∈ a ∨ x ∈ b by or.intro_left [x ∈ a] [x ∈ b];
-        ;
-        assume z = b then x ∈ a ∨ x ∈ b as
-            thus x ∈ b by equals.subst [x ∈ _] [z] [b];
-            thus x ∈ a ∨ x ∈ b by or.intro_right [x ∈ a] [x ∈ b];
-        ;
-        thus x ∈ a ∨ x ∈ b by or.elim [z = a] [z = b] [x ∈ a ∨ x ∈ b]; 
-    ;
-    assume x ∈ a ∨ x ∈ b then x ∈ a ∪ b as
-        assume x ∈ a then x ∈ a ∪ b as
-            follows ∀y, y ∈ a ∪ b ↔ (∃z, y ∈ z ∧ z ∈ {a, b}) by big_union.def [{a, b}];
-            follows x ∈ a ∪ b ↔ (∃z, x ∈ z ∧ z ∈ {a, b}) specializing ∀y, y ∈ a ∪ b ↔ (∃z, y ∈ z ∧ z ∈ {a, b});
-            suffices ∃z, x ∈ z ∧ z ∈ {a, b} by iff.mpr [x ∈ a ∪ b] [∃z, x ∈ z ∧ z ∈ {a, b}];
-            follows a ∈ {a, b} by pair.left_in [a] [b];
-            thus x ∈ a ∧ a ∈ {a, b} by and.intro [x ∈ a] [a ∈ {a, b}];
-            thus ∃z, x ∈ z ∧ z ∈ {a, b} using a;
-        ;
-        assume x ∈ b then x ∈ a ∪ b as
-            follows ∀y, y ∈ a ∪ b ↔ (∃z, y ∈ z ∧ z ∈ {a, b}) by big_union.def [{a, b}];
-            follows x ∈ a ∪ b ↔ (∃z, x ∈ z ∧ z ∈ {a, b}) specializing ∀y, y ∈ a ∪ b ↔ (∃z, y ∈ z ∧ z ∈ {a, b});
-            suffices ∃z, x ∈ z ∧ z ∈ {a, b} by iff.mpr [x ∈ a ∪ b] [∃z, x ∈ z ∧ z ∈ {a, b}];
-            follows b ∈ {a, b} by pair.right_in [a] [b];
-            thus x ∈ b ∧ b ∈ {a, b} by and.intro [x ∈ b] [b ∈ {a, b}];
-            thus ∃z, x ∈ z ∧ z ∈ {a, b} using b;
-        ;
-        thus x ∈ a ∪ b by or.elim [x ∈ a] [x ∈ b] [x ∈ a ∪ b];
-    ;
-
-    thus x ∈ a ∪ b ↔ (x ∈ a ∨ x ∈ b) by iff.intro [x ∈ a ∪ b] [x ∈ a ∨ x ∈ b];
-qed
-
-tactic tactic.recall
-    tactic ::= @kw"recall" thm:@name ";" next:tactic
-end
-
-tactic tactic.vampire
-    tactic ::= @kw"vampire"
-end
-
-theorem and_or.distrib [p q r : sentence] :
-    |- (p ∧ (q ∨ r)) ↔ ((p ∧ q) ∨ (p ∧ r))
-proof
-    vampire
-qed
-
-theorem subset_subset.eq [a b : term] : (∀x, x ∈ a → x ∈ b) (∀x, x ∈ b → x ∈ a)
-    |- a = b
-proof
-    recall extensionality;
-    vampire
-qed
-
-theorem union.pair_def [a b : term] :
-    |- a ∪ b = ⋃{a, b}
-proof
-    follows a ∪ b = ⋃{a, b} by equals.refl [a ∪ b];
-qed
-
-theorem union.def2 [a b : term] :
-    |- ∀x, x ∈ a ∪ b ↔ (x ∈ a ∨ x ∈ b)
-proof
-    arbitrary x;
-
-    assume x ∈ a ∪ b then x ∈ a ∨ x ∈ b as
-        follows x ∈ ⋃{a, b}            as recall union.pair_def; vampire;
-        thus    ∃y, x ∈ y ∧ y ∈ {a, b} as recall big_union.def; vampire;
-        thus    x ∈ a ∨ x ∈ b          as recall pair.def; vampire;
-    ;
-
-    assume x ∈ a ∨ x ∈ b then x ∈ a ∪ b as
-        thus ∃y, x ∈ y ∧ y ∈ {a, b} as recall pair.def; vampire;
-        thus x ∈ ⋃{a, b}            as recall big_union.def; vampire;
-    ;
-
-    vampire
-qed
+With our development of quantifiers we have completed the traditional
+presentation of first order logic. In fact, it is called first order logic
+because the quantifiers quantifier over just one sort of object, terms. 
+Everything we have done so far makes sense in almost any mathematical system. 
+The next step on our journey is to introduce sentences and terms specific to our
+context, in this case set theory. However, before we do this, there is one
+extension we can make to our system that will make our lives easier.
