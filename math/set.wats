@@ -53,7 +53,7 @@ have a contradiction.
 
 This leads us to the conclusion that not all properties can define sets. The
 remainder of the axioms of ZFC essentially define restricted forms of our
-idealized comprehension axioms which are believed not to lead to a contradiction.
+idealized comprehension axiom which are believed not to lead to a contradiction.
 This will leave us with various operations which we can use to define our sets.
 In the end, almost all the sets we care about will be definable with these
 operations and so we will be able to act much as if we did have unrestricted
@@ -90,7 +90,7 @@ infinite sets exist.
 
 axiom zfc.infinity :
     |- ∃x, (∃y, y ∈ x ∧ ∀z, ¬z ∈ y) 
-         ∧ (∀y, (y ∈ x → (∃z, (z ∈ x ∧ (∀w, (w ∈ z ↔ (w ∈ z ∨ w = z)))))))
+         ∧ (∀y, (y ∈ x → (∃z, (z ∈ x ∧ (∀w, (w ∈ z ↔ (w ∈ y ∨ w = y)))))))
 end
 
 Then we get the two axiom schemas. These are statements about all sentences
