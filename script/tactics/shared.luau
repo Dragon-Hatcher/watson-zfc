@@ -33,7 +33,7 @@ M.forallElimThm = Theorem:lookupByName("forall.elim")
 assert(M.forallElimThm ~= nil)
 
 -- Patterns
-local scopeTactic = "justification.specializing"
+local scopeTactic = "tactic.vampire"
 
 M.holePattern = frag.makePattern(
     "p", M.sentenceCat,
@@ -116,10 +116,10 @@ M.eqPattern = frag.makePattern(
     {{name = "a", cat = M.termCat}, {name = "b", cat = M.termCat}}
 )
 
--- M.inPattern = frag.makePattern(
---     "a ∈ b", M.sentenceCat,
---     scopeTactic,
---     {{name = "a", cat = M.termCat}, {name = "b", cat = M.termCat}}
--- )
+M.inPattern = frag.makePattern(
+    "a ∈ b", M.sentenceCat,
+    scopeTactic,
+    {{name = "a", cat = M.termCat}, {name = "b", cat = M.termCat}}
+)
 
 return M

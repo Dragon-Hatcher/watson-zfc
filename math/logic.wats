@@ -578,6 +578,29 @@ proof
     thus p by modus_ponens [q] [p];
 qed
 
+theorem iff.symm [p q : sentence] : (p ↔ q)
+    |- q ↔ p
+proof
+    follows p → q by iff.elim_fwd [p] [q];
+    follows q → p by iff.elim_rev [p] [q];
+    thus q ↔ p by iff.intro [q] [p];
+qed
+
+theorem iff.trans [p q r : sentence] : (p ↔ q) (q ↔ r)
+    |- p ↔ r
+proof
+    assume p then r as
+        thus q by iff.mp [p] [q];
+        thus r by iff.mp [q] [r];
+    ;
+    assume r then p as
+        thus q by iff.mpr [q] [r];
+        thus p by iff.mpr [p] [q];
+    ;
+    thus p ↔ r by iff.intro [p] [r];
+qed
+
+
 Sometimes if $p \leftrightarrow q$ we say that $p$ and $q$ are equivalent. We
 can make this notion rigorous in the following sense: for any property that 
 holds of $p$, that same property also holds of $q$ (and vice versa). We can 

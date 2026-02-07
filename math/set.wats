@@ -121,9 +121,10 @@ axiom zfc.regularity :
     |- ∀a, (∃x, x ∈ a) → (∃y, y ∈ a ∧ ¬∃z, (z ∈ y ∧ z ∈ a))
 end
 
-The final axiom is the famed Axiom of Choice. However it has a much longer
-first order statement and it is generally considered more polite to be clear
-when one is using it. So we will postpone adding it until it becomes necessary.
+The final axiom is the famed Axiom of Choice. It is the C in ZFC. However it has 
+a much longer first order statement and it is generally considered more polite 
+to be clear when one is using it. So we will postpone adding it until it becomes 
+necessary.
 
 
 ## Set Operations
@@ -140,3 +141,158 @@ end
 definition
     {x | p(x)} := ℩y, ∀x, x ∈ y ↔ p(x)
 end
+
+We want to prove that if the set $\{x ~|~ p(x)\}$ exist, then the notation we 
+have given for it will refer to that step. We need to invoke the iota axiom
+from the previous chapter.
+
+theorem uncomp.def [p(_:term) : sentence] : (∃x, ∀y, y ∈ x ↔ p(y))
+    |- ∀y, y ∈ {x | p(x)} ↔ p(y) 
+proof
+    -- this property is essentially the definition of {x | p(x)} so we just
+    -- need to extract it using iota.unique. to do this we need that
+    -- the set is unique.
+    suffices ∃!x, ∀y, y ∈ x ↔ p(y) by iota.unique [∀y, y ∈ _ ↔ p(y)];
+
+    -- we can unwrap the definition of ∃!. this step is by definition.
+    suffices (∃x, ∀y, y ∈ x ↔ p(y)) ∧ (∃*x, ∀y, y ∈ x ↔ p(y));
+
+    -- we already have the lhs as a hypothesis.
+    suffices ∃*x, ∀y, y ∈ x ↔ p(y) by and.intro [∃x, ∀y, y ∈ x ↔ p(y)] [∃*x, ∀y, y ∈ x ↔ p(y)];
+
+    -- now we unwrap the definition of ∃*.
+    suffices ∀a, ∀b, ((∀y, y ∈ a ↔ p(y)) ∧ (∀y, y ∈ b ↔ p(y))) → a = b;
+
+    -- let's extract all the pieces of this definition.
+    arbitrary a;
+    arbitrary b;
+    assume (∀y, y ∈ a ↔ p(y)) ∧ (∀y, y ∈ b ↔ p(y));
+    thus ∀y, y ∈ a ↔ p(y) by and.elim_left  [∀y, y ∈ a ↔ p(y)] [∀y, y ∈ b ↔ p(y)];
+    thus ∀y, y ∈ b ↔ p(y) by and.elim_right [∀y, y ∈ a ↔ p(y)] [∀y, y ∈ b ↔ p(y)];
+
+    -- now we can prove the equality using extensionality.
+    suffices ∀x, x ∈ a ↔ x ∈ b as
+        follows ∀a, ∀b, ((∀x, x ∈ a ↔ x ∈ b) → a = b) by zfc.extensionality;
+        thus ∀b, ((∀x, x ∈ a ↔ x ∈ b) → a = b) specializing ∀a, ∀b, ((∀x, x ∈ a ↔ x ∈ b) → a = b);
+        thus (∀x, x ∈ a ↔ x ∈ b) → a = b       specializing ∀b, ((∀x, x ∈ a ↔ x ∈ b) → a = b);
+        thus a = b by modus_ponens [∀x, x ∈ a ↔ x ∈ b] [a = b];
+    ;
+
+    arbitrary x;
+
+    -- We can use the transitivity of ↔ to finish the proof.
+    follows x ∈ a ↔ p(x) specializing ∀y, y ∈ a ↔ p(y);
+    follows x ∈ b ↔ p(x) specializing ∀y, y ∈ b ↔ p(y);
+    thus p(x) ↔ x ∈ b  by iff.symm [x ∈ b] [p(x)];
+    thus x ∈ a ↔ x ∈ b by iff.trans [x ∈ a] [p(x)] [x ∈ b];
+qed
+
+Sorry, was that painful to read? It was painful to write. That proof wasn't
+actually very complicated but it was 40 lines long anyway. This is not 
+sustainable. Lucky we have something to help. [Vampire](https://vprover.github.io/)
+is an _automated theorem prover_. It will find proofs of mathematical facts
+automatically. We can make a new tactic that send the current known facts and
+goal to Vampire to have it generate a proof. This proof is then translated
+for Watson to understand. This is a very complex, but also very powerful tactic
+which eliminates the need for tedious manipulations.
+
+tactic tactic.vampire
+    tactic ::= @kw"vampire"
+end
+
+We have also enhanced our pre-existing tactics with the power of Vampire. For
+example, `contradiction` will now use Vampire to search for a contradiction and
+`by` will now employ Vampire to prove the goal using the theorem. If we want to 
+inform Vampire of a theorem it would find useful we can also use the `recall`
+ tactic which will add the named theorem to our list of known facts, making it
+useable by Vampire.
+
+tactic tactic.recall
+    tactic ::= @kw"recall" thm:@name ";" next:tactic
+end
+
+Returning to mathematics, we can use the unrestricted comprehension syntax to 
+define our first concrete set, the empty set.
+
+notation empty_set
+    term ::= "∅"
+end
+
+definition
+    ∅ := {x | ⊥}
+end
+
+The empty set axiom tells us that this set actually exists.
+
+theorem empty_set.def :
+    |- ∀x, ¬x ∈ ∅
+proof
+    -- expand the definition of ∅
+    suffices ∀x, ¬x ∈ {x | ⊥};
+    -- existence from the axiom
+    follows ∃x, ∀y, ¬y ∈ x        by zfc.empty_set;
+    thus    ∃x, ∀y, (y ∈ x ↔ ⊥)   as vampire;     
+    -- and then set comprehension is always unique
+    thus    ∀y, (y ∈ {x | ⊥} ↔ ⊥) by uncomp.def [⊥];
+    thus    ∀y, ¬y ∈ {x | ⊥}      as vampire;
+qed
+
+We can develop the pair set in an essentially identical way.
+
+notation pair
+    term ::= "{" term ", " term "}"
+end
+
+definition 
+    {a, b} := {x | x = a ∨ x = b}
+end
+
+This time it is the pairing axiom that tells us that this set exists.
+
+theorem pair.def [a b : term] :
+    |- ∀x, x ∈ {a, b} ↔ (x = a ∨ x = b)
+proof
+    suffices ∀x, x ∈ {y | y = a ∨ y = b} ↔ (x = a ∨ x = b);
+    
+    follows ∃c, ∀x, x ∈ c ↔ (x = a ∨ x = b) as recall zfc.pairing; vampire;
+    thus    ∀x, x ∈ {y | y = a ∨ y = b} ↔ (x = a ∨ x = b) by uncomp.def [_ = a ∨ _ = b];
+qed
+
+We can define the singleton set as the pair of the same element twice. We could
+define it as simply $\{a\} = \{x ~|~ x = a\}$ but how would we prove this set
+exists? We would have to appeal to the pairing axiom anyway.
+
+notation singleton
+    term ::= "{" term "}"
+end
+
+definition
+    {a} := {a, a}
+end
+
+theorem singleton.def [a : term] :
+    |- ∀x, x ∈ {a} ↔ x = a
+proof
+    -- expand the definition of {a}
+    suffices ∀x, x ∈ {a, a} ↔ x = a;
+    -- and then Vampire easily finishes the job from the definition of {a, a}
+    recall pair.def; vampire
+qed
+
+We can return to defining new sets with the union of a set.
+
+notation big_union
+    term ::= "⋃" term
+end
+
+definition
+    ⋃a := {x | ∃y, x ∈ y ∧ y ∈ a}
+end
+
+Once more the existence of this set is guaranteed by the union axiom of ZFC.
+
+theorem big_union.def [a : term] :
+    |- ∀x, x ∈ a ↔ (∃y, x ∈ y ∧ y ∈ a)
+proof
+    todo
+qed
