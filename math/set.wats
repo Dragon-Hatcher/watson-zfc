@@ -369,10 +369,15 @@ definition
     {x ∈ X | p(x)} := {x | x ∈ X ∧ p(x)}
 end
 
+This proof follows from the specification axiom.
+
 theorem comp.def [p(_:term) : sentence] [X : term] :
     |- ∀y, y ∈ {x ∈ X | p(x)} ↔ (y ∈ X ∧ p(y))
 proof
-    todo
+    suffices ∀y, y ∈ {x | x ∈ X ∧ p(x)} ↔ (y ∈ X ∧ p(y));
+    hence ∀a, ∃x, ∀y, y ∈ x ↔ (y ∈ a ∧ p(y)) by zfc.specification [p(_)];
+    follows ∃x, ∀y, y ∈ x ↔ (y ∈ X ∧ p(y)) as vampire;
+    thus ∀y, y ∈ {x | x ∈ X ∧ p(x)} ↔ (y ∈ X ∧ p(y)) by uncomp.def [_ ∈ X ∧ p(_)];
 qed
 
 It easily follows form this definition that a restricted comprehension is
