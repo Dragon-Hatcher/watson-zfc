@@ -300,6 +300,30 @@ proof
     follows ∀x, x ∈ {x | ∃y, x ∈ y ∧ y ∈ a} ↔ (∃y, x ∈ y ∧ y ∈ a) by uncomp.def [∃y, _ ∈ y ∧ y ∈ a];
 qed
 
+We can define the regular union using the pair and the big union. Once again,
+although we could define this directly using unrestricted comprehension, it is
+easier to do it this way to avoid repeated proofs of existence.
+
+notation union
+    term ::= term " ∪ " term
+end
+
+definition
+    a ∪ b := ⋃{a, b}
+end
+
+The definition of the union can be easily proved from the definitions of the
+big union and the pair.
+
+theorem union.def [a b : term] :
+    |- ∀x, x ∈ a ∪ b ↔ (x ∈ a ∨ x ∈ b)
+proof
+    suffices ∀x, x ∈ ⋃{a, b} ↔ (x ∈ a ∨ x ∈ b);
+    follows  ∀x, x ∈ ⋃{a, b} ↔ ∃y, x ∈ y ∧ y ∈ {a, b} as recall big_union.def; vampire;
+    follows  ∀y, y ∈ {a, b} ↔ (y = a ∨ y = b) as recall pair.def; vampire;
+    vampire
+qed
+
 We wish next to construct the powerset. For this we will need the notation of
 subsets.
 
@@ -380,7 +404,7 @@ proof
     thus ∀y, y ∈ {x | x ∈ X ∧ p(x)} ↔ (y ∈ X ∧ p(y)) by uncomp.def [_ ∈ X ∧ p(_)];
 qed
 
-It easily follows form this definition that a restricted comprehension is
+It easily follows from this definition that a restricted comprehension is
 always a subset of the original set.
 
 theorem comp.sub [p(_:term) : sentence] [X : term] :

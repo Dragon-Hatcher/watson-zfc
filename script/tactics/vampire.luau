@@ -44,7 +44,6 @@ function termToV(term: Frag, bindings: Bindings): VTerm?
     -- Terms can contain sentences so we might encounter them in our recursion.
     -- But we don't handle them so just return nil.
     if term.cat ~= shared.termCat then
-        log("can't (not a term)", tostring(term))
         return nil
     end
 
