@@ -299,3 +299,88 @@ proof
     follows ∃x, ∀y, y ∈ x ↔ (∃z, y ∈ z ∧ z ∈ a) as vampire;
     follows ∀x, x ∈ {x | ∃y, x ∈ y ∧ y ∈ a} ↔ (∃y, x ∈ y ∧ y ∈ a) by uncomp.def [∃y, _ ∈ y ∧ y ∈ a];
 qed
+
+We wish next to construct the powerset. For this we will need the notation of
+subsets.
+
+notation subset
+    sentence ::= term " ⊆ " term
+end
+
+definition
+    a ⊆ b := ∀x, x ∈ a → x ∈ b
+end
+
+We can also have the notion of a strict subsets.
+
+notation strict_subset
+    sentence ::= term " ⊂ " term
+end
+
+definition
+    a ⊂ b := a ⊆ b ∧ ¬a = b
+end
+
+The empty set is a subset of any set.
+
+theorem empty.sub [a : term] :
+    |- ∅ ⊆ a
+proof
+    follows ∀x, ¬x ∈ ∅        by empty_set.def;
+    thus    ∀x, x ∈ ∅ → x ∈ a as vampire;
+qed
+
+We will define the powerset as the set of all subsets of a set. 
+
+notation term.with_term
+    term ::= @name "(" term ")"
+end
+
+definition
+    𝒫(a) := {x | x ⊆ a}
+end
+
+The existence of this set is provided by one of the ZFC axioms in the same
+manner as before.
+
+theorem powset.def [a : term] :
+    |- ∀x, x ∈ 𝒫(a) ↔ x ⊆ a
+proof
+    suffices ∀x, x ∈ {y | y ⊆ a} ↔ x ⊆ a;
+    follows  ∃b, ∀x, x ∈ b ↔ x ⊆ a as
+        -- TODO: vampire should be able to handle subset without this manual
+        -- expansion.
+        suffices ∃b, ∀x, x ∈ b ↔ (∀y, y ∈ x → y ∈ a);
+        recall zfc.powerset;
+        vampire
+    ;
+    thus ∀x, x ∈ {y | y ⊆ a} ↔ x ⊆ a by uncomp.def [_ ⊆ a];
+qed
+
+In contrast to unrestricted comprehensions, which are not always sets, a
+comprehension which is limited to be a subset of another set always exists. This
+is guaranteed by the specification axiom.
+
+notation restricted_comprehension
+    term ::= "{" x:@binding(term) " ∈ " term " | " sentence(x) "}"
+end
+
+definition
+    {x ∈ X | p(x)} := {x | x ∈ X ∧ p(x)}
+end
+
+theorem comp.def [p(_:term) : sentence] [X : term] :
+    |- ∀y, y ∈ {x ∈ X | p(x)} ↔ (y ∈ X ∧ p(y))
+proof
+    todo
+qed
+
+It easily follows form this definition that a restricted comprehension is
+always a subset of the original set.
+
+theorem comp.sub [p(_:term) : sentence] [X : term] :
+    |- {x ∈ X | p(x)} ⊆ X
+proof
+    follows ∀y, y ∈ {x ∈ X | p(x)} ↔ (y ∈ X ∧ p(y)) by comp.def [p(_)] [X];
+    thus    ∀y, y ∈ {x ∈ X | p(x)} → y ∈ X          as vampire;
+qed
