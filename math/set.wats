@@ -414,7 +414,7 @@ proof
     thus    ∀y, y ∈ {x ∈ X | p(x)} → y ∈ X          as vampire;
 qed
 
-
+An ordered pair (a, b) is a set composed of a singleton {a} and a pair {a, b}. We can use ordered pairs to enforce certain structure on sets.
 notation ordered_pair
     term ::= "(" term ", " term ")"
 end
@@ -422,6 +422,8 @@ end
 definition
     (a, b) := {{a}, {a, b}}
 end
+
+The proof follows from the pairing axiom and the definition of the ordered pair.
 
 theorem ordered_pair.def [a b : term] :
     |- ∀x, x ∈ (a, b) ↔ (x = {a} ∨ x = {a, b})
