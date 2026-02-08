@@ -444,11 +444,15 @@ tactic tactic.assume_contra
 end
 
 Also, and this is an entirely aesthetic concern, writing `follows` everywhere is
-boring. Let's introduce `thus` which does the same thing as `follows` but is
-easier to read when one fact follows directly from what was previously shown.
+boring. Let's introduce `thus` and 'hence' which do the same thing as `follows` but makes the
+proof easier to read when one fact follows directly from what was previously shown.
 
 tactic tactic.thus
     tactic ::= @kw"thus" goal:@fact just:justification ";" next:tactic
+end
+
+tactic tactic.hence
+    tactic ::= @kw"hence" goal:@fact just:justification ";" next:tactic
 end
 
 We are now ready to prove that or is commutative.

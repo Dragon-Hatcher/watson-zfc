@@ -26,6 +26,7 @@ dispatch.justificationTable = {
 
 dispatch.tacticTable = {
 	["tactic.follows"] = thus.handleThus,
+	["tactic.hence"] = thus.handleThus,
 	["tactic.thus"] = thus.handleThus,
 	["tactic.assume"] = assume.handleAssume,
 	["tactic.assume_then"] = assume.handleAssumeThen,
