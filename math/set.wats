@@ -413,3 +413,21 @@ proof
     follows ∀y, y ∈ {x ∈ X | p(x)} ↔ (y ∈ X ∧ p(y)) by comp.def [p(_)] [X];
     thus    ∀y, y ∈ {x ∈ X | p(x)} → y ∈ X          as vampire;
 qed
+
+
+notation ordered_pair
+    term ::= "(" term ", " term ")"
+end
+
+definition
+    (a, b) := {{a}, {a, b}}
+end
+
+theorem ordered_pair.def [a b : term] :
+    |- ∀x, x ∈ (a, b) ↔ (x = {a} ∨ x = {a, b})
+proof
+    suffices ∀x, x ∈ {{a}, {a, b}} ↔ (x = {a} ∨ x = {a, b});
+    recall zfc.pairing;
+    follows ∃c, ∀x, x ∈ c ↔ (x = {a} ∨ x = {a, b}) as vampire;
+    thus ∀x, x ∈ {{a}, {a, b}} ↔ (x = {a} ∨ x = {a, b}) by uncomp.def [_ = {a} ∨ _ = {a, b}];
+qed
