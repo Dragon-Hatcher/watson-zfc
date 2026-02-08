@@ -142,7 +142,7 @@ definition
     {x | p(x)} := ℩y, ∀x, x ∈ y ↔ p(x)
 end
 
-We want to prove that if the set $\{x ~|~ p(x)\}$ exist, then the notation we 
+We want to prove that if the set $\{x ~|~ p(x)\}$ exists, then the notation we 
 have given for it will refer to that step. We need to invoke the iota axiom
 from the previous chapter.
 
