@@ -879,7 +879,7 @@ new axiom:
 ```
  axiom exists.elim [p(_:term) : sentence] [q : sentence] 
      : (∃x, p(x)) (p(εx, p(x)) → q)
-     |- p(εx, p(x))
+     |- q
  end
 ```
 
