@@ -221,6 +221,31 @@ tactic tactic.recall
     tactic ::= @kw"recall" thm:@name ";" next:tactic
 end
 
+### The Subset Relation
+
+The other fundamental relationship between sets, besides equality, is the
+subset relation.
+
+notation subset
+    sentence ::= term " ⊆ " term
+end
+
+definition
+    a ⊆ b := ∀x, x ∈ a → x ∈ b
+end
+
+We can also have the notion of a strict subsets.
+
+notation strict_subset
+    sentence ::= term " ⊂ " term
+end
+
+definition
+    a ⊂ b := a ⊆ b ∧ ¬a = b
+end
+
+### The Empty Set
+
 Returning to mathematics, we can use the unrestricted comprehension syntax to 
 define our first concrete set, the empty set.
 
@@ -247,6 +272,17 @@ proof
     thus    ∀y, ¬y ∈ {x | ⊥}      logically;
 qed
 
+The empty set is a subset of any set.
+
+theorem empty.sub [a : term] :
+    |- ∅ ⊆ a
+proof
+    follows ∀x, ¬x ∈ ∅        by empty_set.def;
+    thus    ∀x, x ∈ ∅ → x ∈ a logically;
+qed
+
+### The Unordered Pair
+
 We can develop the pair set in an essentially identical way.
 
 notation pair
@@ -271,6 +307,8 @@ We can define the singleton set as the pair of the same element twice. We could
 define it as simply $\{a\} = \{x ~|~ x = a\}$ but how would we prove this set
 exists? We would have to appeal to the pairing axiom anyway.
 
+### The Singleton Set
+
 notation singleton
     term ::= "{" term "}"
 end
@@ -287,6 +325,43 @@ proof
     -- and then Vampire easily finishes the job from the definition of {a, a}
     thus ∀x, x ∈ {a, a} ↔ x = a by pair.def;
 qed
+
+### Restricted Comprehension
+
+In contrast to unrestricted comprehensions, which are not always sets, a
+comprehension which is limited to be a subset of another set always exists. This
+is guaranteed by the specification axiom.
+
+notation restricted_comprehension
+    term ::= "{" x:@binding(term) " ∈ " term " | " sentence(x) "}"
+end
+
+definition
+    {x ∈ X | p(x)} := {x | x ∈ X ∧ p(x)}
+end
+
+This proof follows from the specification axiom.
+
+theorem comp.def [p(_:term) : sentence] [X : term] :
+    |- ∀y, y ∈ {x ∈ X | p(x)} ↔ (y ∈ X ∧ p(y))
+proof
+    suffices ∀y, y ∈ {x | x ∈ X ∧ p(x)} ↔ (y ∈ X ∧ p(y));
+    hence ∀a, ∃x, ∀y, y ∈ x ↔ (y ∈ a ∧ p(y)) by zfc.specification [p(_)];
+    follows ∃x, ∀y, y ∈ x ↔ (y ∈ X ∧ p(y))   logically;
+    thus ∀y, y ∈ {x | x ∈ X ∧ p(x)} ↔ (y ∈ X ∧ p(y)) by uncomp.def [_ ∈ X ∧ p(_)];
+qed
+
+It easily follows from this definition that a restricted comprehension is
+always a subset of the original set.
+
+theorem comp.sub [p(_:term) : sentence] [X : term] :
+    |- {x ∈ X | p(x)} ⊆ X
+proof
+    follows ∀y, y ∈ {x ∈ X | p(x)} ↔ (y ∈ X ∧ p(y)) by comp.def [p(_)] [X];
+    thus    ∀y, y ∈ {x ∈ X | p(x)} → y ∈ X          logically;
+qed
+
+### Unions
 
 We can return to defining new sets with the union of a set.
 
@@ -332,35 +407,52 @@ proof
     done logically
 qed
 
-We wish next to construct the powerset. For this we will need the notation of
-subsets.
+### Intersections
 
-notation subset
-    sentence ::= term " ⊆ " term
+Instead of defining the big intersection with an unrestricted comprehension as
+we did for the big union, we will define it is a subset of the union. This
+makes it easier to prove existence.
+
+notation big_inter
+    term ::= "⋂" term
 end
 
 definition
-    a ⊆ b := ∀x, x ∈ a → x ∈ b
+    ⋂a := {x ∈ ⋃a | ∀y, y ∈ a → x ∈ y}
 end
 
-We can also have the notion of a strict subsets.
+This definition implies that the intersection of the empty set is the empty set.
+However, based on the defining property of the intersection, the intersection of
+the empty set should be the proper class of all sets, which isn't a set. So we
+restrict the definition theorem to only applying to non-empty sets.
 
-notation strict_subset
-    sentence ::= term " ⊂ " term
-end
-
-definition
-    a ⊂ b := a ⊆ b ∧ ¬a = b
-end
-
-The empty set is a subset of any set.
-
-theorem empty.sub [a : term] :
-    |- ∅ ⊆ a
+theorem big_inter.def [a : term] : (¬a = ∅)
+    |- ∀x, x ∈ ⋂a ↔ (∀y, y ∈ a → x ∈ y)
 proof
-    follows ∀x, ¬x ∈ ∅        by empty_set.def;
-    thus    ∀x, x ∈ ∅ → x ∈ a logically;
+    todo
 qed
+
+We do however define the small intersection the same way we defined the big
+intersection.
+
+notation inter
+    term ::= term "∩" term
+end
+
+definition
+    a ∩ b := ⋂{a, b}
+end
+
+Since the pair set is always non-empty, the small intersection is always well
+defined.
+
+theorem inter.def [a b : term] :
+    |- ∀x, x ∈ a ∩ b ↔ (x ∈ a ∧ x ∈ b)
+proof
+    todo
+qed
+
+### The Powerset
 
 We will define the powerset as the set of all subsets of a set. 
 
@@ -388,38 +480,7 @@ proof
     thus ∀x, x ∈ {y | y ⊆ a} ↔ x ⊆ a by uncomp.def [_ ⊆ a];
 qed
 
-In contrast to unrestricted comprehensions, which are not always sets, a
-comprehension which is limited to be a subset of another set always exists. This
-is guaranteed by the specification axiom.
-
-notation restricted_comprehension
-    term ::= "{" x:@binding(term) " ∈ " term " | " sentence(x) "}"
-end
-
-definition
-    {x ∈ X | p(x)} := {x | x ∈ X ∧ p(x)}
-end
-
-This proof follows from the specification axiom.
-
-theorem comp.def [p(_:term) : sentence] [X : term] :
-    |- ∀y, y ∈ {x ∈ X | p(x)} ↔ (y ∈ X ∧ p(y))
-proof
-    suffices ∀y, y ∈ {x | x ∈ X ∧ p(x)} ↔ (y ∈ X ∧ p(y));
-    hence ∀a, ∃x, ∀y, y ∈ x ↔ (y ∈ a ∧ p(y)) by zfc.specification [p(_)];
-    follows ∃x, ∀y, y ∈ x ↔ (y ∈ X ∧ p(y))   logically;
-    thus ∀y, y ∈ {x | x ∈ X ∧ p(x)} ↔ (y ∈ X ∧ p(y)) by uncomp.def [_ ∈ X ∧ p(_)];
-qed
-
-It easily follows from this definition that a restricted comprehension is
-always a subset of the original set.
-
-theorem comp.sub [p(_:term) : sentence] [X : term] :
-    |- {x ∈ X | p(x)} ⊆ X
-proof
-    follows ∀y, y ∈ {x ∈ X | p(x)} ↔ (y ∈ X ∧ p(y)) by comp.def [p(_)] [X];
-    thus    ∀y, y ∈ {x ∈ X | p(x)} → y ∈ X          logically;
-qed
+### The Ordered Pair
 
 An ordered pair (a, b) is a set composed of a singleton {a} and a pair {a, b}. We can use ordered pairs to enforce certain structure on sets.
 notation ordered_pair
