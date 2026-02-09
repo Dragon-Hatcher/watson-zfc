@@ -436,7 +436,6 @@ theorem ordered_pair.def [a b : term] :
     |- ∀x, x ∈ ⟨a, b⟩ ↔ (x = {a} ∨ x = {a, b})
 proof
     suffices ∀x, x ∈ {{a}, {a, b}} ↔ (x = {a} ∨ x = {a, b});
-    recall zfc.pairing;
-    follows ∃c, ∀x, x ∈ c ↔ (x = {a} ∨ x = {a, b}) as vampire;
+    follows ∃c, ∀x, x ∈ c ↔ (x = {a} ∨ x = {a, b})      by zfc.pairing;
     thus ∀x, x ∈ {{a}, {a, b}} ↔ (x = {a} ∨ x = {a, b}) by uncomp.def [_ = {a} ∨ _ = {a, b}];
 qed
