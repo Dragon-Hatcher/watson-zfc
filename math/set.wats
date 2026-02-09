@@ -449,7 +449,15 @@ defined.
 theorem inter.def [a b : term] :
     |- ∀x, x ∈ a ∩ b ↔ (x ∈ a ∧ x ∈ b)
 proof
-    todo
+    -- we need that the pair set isn't empty.
+    follows a ∈ {a, b} by pair.def;
+    thus ¬{a, b} = ∅   by empty_set.def; 
+
+    -- which allows us to continue the proof using big_inter.def
+    suffices ∀x, x ∈ ⋂{a, b} ↔ (x ∈ a ∧ x ∈ b);
+    follows  ∀x, x ∈ ⋂{a, b} ↔ (∀y, y ∈ {a, b} → x ∈ y) by big_inter.def;
+    follows  ∀y, y ∈ {a, b} ↔ (y = a ∨ y = b)           by pair.def;
+    thus     ∀x, x ∈ ⋂{a, b} ↔ (x ∈ a ∧ x ∈ b)          logically;
 qed
 
 ### The Powerset
