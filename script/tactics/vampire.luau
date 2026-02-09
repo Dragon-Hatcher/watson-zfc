@@ -223,10 +223,12 @@ end
 local options = VOptions:new()
 options:setTimeout(50)
 
-function M.handleVampire(
-    tactic: { _span: Span },
-    state: state.State
-): state.State
+type VampError =
+    | { err: "couldnt_convert_frag", frag: Frag }
+    | { err: "unprovable" }
+    | { err: "could_not_find_proof" }
+
+function M.handleVampire(state: state.State): (state.State, VampError?)
     local problem = VProblem:new(options)
     local fail = nil
 
@@ -248,26 +250,16 @@ function M.handleVampire(
 
     -- If any of the Vampire conversions failed report that as the error.
     if fail ~= nil then
-        Diagnostic:new("Unable to convert `" .. tostring(fail) .. "` to Vampire", tactic._span:label(""))
-            :withTacticInfo(state.info)
-            :report()
-        return state:error()
+        return state:error(), { err = "couldnt_convert_frag", frag = fail }
     end
 
     local solution = problem:solve()
 
     -- Check if Vampire was able to prove the conjecture
-    if solution ~= "proved" then
-        log(tostring(problem))
-        local msg = "Vampire was unable to prove the goal"
-        if solution == "unprovable" then
-            msg = "Vampire proved the knowns facts do not imply the goal"
-        end
-
-        Diagnostic:new(msg, tactic._span:label(""))
-            :withTacticInfo(state.info)
-            :report()
-        return state:error()
+    if solution == "unprovable" then
+        return state:error(), { err = "unprovable" }
+    elseif solution ~= "proved" then
+        return state:error(), { err = "could_not_find_proof" }
     end
 
     -- Success! We proved the goal
@@ -277,7 +269,34 @@ function M.handleVampire(
     -- TODO: convert vampire proof to formal proof
     state.formal = state.formal:applyTodo(state.goal)
 
-    return state
+    return state, nil
+end
+
+function M.vampErrToDiag(err: VampError, span: Span): Diagnostic
+    if err.err == "couldnt_convert_frag" then
+        return Diagnostic:new(`Unable to convert \`{err.frag}\` to Vampire`, span:label(""))
+    elseif err.err == "unprovable" then
+        return Diagnostic:new("Vampire proved the knowns facts do not imply the goal", span:label(""))
+    elseif err.err == "could_not_find_proof" then
+        return Diagnostic:new("Vampire was unable to prove the goal", span:label(""))
+    else
+        assert(false)
+    end
+end
+
+function M.handleVampireTactic(
+    tactic: { _span: Span },
+    state: state.State
+): state.State
+    local newState, err = M.handleVampire(state)
+
+    if err then
+        M.vampErrToDiag(err, tactic._span)
+            :withTacticInfo(state.info)
+            :report()
+    end
+
+    return newState
 end
 
 return M

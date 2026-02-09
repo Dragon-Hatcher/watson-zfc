@@ -37,18 +37,12 @@ local M = {}
 --     return formal
 -- end
 
-function M.handleRecall(
-    tactic: { _span: Span, thm: SpannedString, next: Tactic },
-    state: state.State
-): state.State
-    local thm = Theorem:lookupByName(tactic.thm.str)
-    if thm == nil then
-        Diagnostic:new("unknown theorem `" .. tactic.thm.str .. "`", tactic.thm.span:label(""))
-            :withTacticInfo(state.info)
-            :report()
-        return state:error()
-    end
+type RecallError =
+    | { err: "non_term_template" }
+    | { err: "parameterized_template" }
+    | { err: "hyp_with_assumption" }
 
+function M.handleRecall(thm: Theorem, state: state.State): (state.State, RecallError?)
     -- This is the first order statement of the theorem we are trying to
     -- recall.
     local recalledTheorem = shared.holePattern
@@ -60,18 +54,12 @@ function M.handleRecall(
 
         -- Our logic is first order so we can't quantify over non-term templates.
         if template.cat ~= shared.termCat then
-            Diagnostic:new("cannot recall theorem with non term templates", tactic.thm.span:label(""))
-                :withTacticInfo(state.info)
-                :report()
-            return state:error()
+            return state:error(), { err = "non_term_template" }
         end
     
         -- Or templates with holes in them
         if #template.holes ~= 0 then
-            Diagnostic:new("cannot recall theorem with parameterized templates", tactic.thm.span:label(""))
-                :withTacticInfo(state.info)
-                :report()
-            return state:error()
+            return state:error(), { err = "parameterized_template" }
         end
 
          -- Try to extract the name from the binding, otherwise just use an index.
@@ -94,10 +82,7 @@ function M.handleRecall(
         local hs = shared.holePattern
         for i, h in thm.hypotheses do
             if h.assumption ~= nil then
-                Diagnostic:new("cannot recall theorem with assumptions in hypotheses", tactic.thm.span:label(""))
-                    :withTacticInfo(state.info)
-                    :report()
-                return state:error()
+                return state:error(), { err = "hyp_with_assumption" }
             end
 
             local hConclusion = h.conclusion:instantiateTemplates(templateInst)
@@ -119,12 +104,45 @@ function M.handleRecall(
 
     -- Now we can prove the theorem statement using the theorem.
     state.formal = state.formal:applyTodo(recalledTheorem)
-    -- state.formal = M.formalRecall(state.formal, recalledTheorem)
-
     state.info = state.info:withDeduce(recalledTheorem:fact())
     state.knowns:set(recalledTheorem.formal:fact(), recalledTheorem:fact())
 
-    return dispatch.handleTactic(tactic.next, state)
+    return state, nil
+end
+
+function M.recallErrToDiag(err: RecallError, thmNameSpan: Span): Diagnostic
+    if err.err == "non_term_template" then
+        return Diagnostic:new("cannot recall theorem with non term templates", thmNameSpan:label(""))
+    elseif err.err == "parameterized_template" then
+        return Diagnostic:new("cannot recall theorem with parameterized templates", thmNameSpan:label(""))
+    elseif err.err == "hyp_with_assumption" then
+        return Diagnostic:new("cannot recall theorem with assumptions in hypotheses", thmNameSpan:label(""))
+    else
+        assert(false)
+    end
+end
+
+function M.handleRecallTactic(
+    tactic: { _span: Span, thm: SpannedString, next: Tactic },
+    state: state.State
+): state.State
+    local thm = Theorem:lookupByName(tactic.thm.str)
+    if thm == nil then
+        Diagnostic:new("unknown theorem `" .. tactic.thm.str .. "`", tactic.thm.span:label(""))
+            :withTacticInfo(state.info)
+            :report()
+        return state:error()
+    end
+
+    local newState, err = M.handleRecall(thm, state)
+
+    if err then
+        M.recallErrToDiag(err, tactic.thm.span)
+            :withTacticInfo(state.info)
+            :report()
+    end
+
+    return dispatch.handleTactic(tactic.next, newState)
 end
 
 return M

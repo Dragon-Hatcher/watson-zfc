@@ -200,6 +200,16 @@ tactic tactic.vampire
     tactic ::= @kw"vampire"
 end
 
+tactic justification.logically
+    justification ::= @kw"logically"
+end
+
+-- TODO: explain
+tactic tactic.done
+    tactic ::= @kw"done" just:justification
+end
+
+
 We have also enhanced our pre-existing tactics with the power of Vampire. For
 example, `contradiction` will now use Vampire to search for a contradiction and
 `by` will now employ Vampire to prove the goal using the theorem. If we want to 
@@ -231,10 +241,10 @@ proof
     suffices ∀x, ¬x ∈ {x | ⊥};
     -- existence from the axiom
     follows ∃x, ∀y, ¬y ∈ x        by zfc.empty_set;
-    thus    ∃x, ∀y, (y ∈ x ↔ ⊥)   as vampire;     
+    thus    ∃x, ∀y, (y ∈ x ↔ ⊥)   logically;     
     -- and then set comprehension is always unique
     thus    ∀y, (y ∈ {x | ⊥} ↔ ⊥) by uncomp.def [⊥];
-    thus    ∀y, ¬y ∈ {x | ⊥}      as vampire;
+    thus    ∀y, ¬y ∈ {x | ⊥}      logically;
 qed
 
 We can develop the pair set in an essentially identical way.
@@ -253,8 +263,7 @@ theorem pair.def [a b : term] :
     |- ∀x, x ∈ {a, b} ↔ (x = a ∨ x = b)
 proof
     suffices ∀x, x ∈ {y | y = a ∨ y = b} ↔ (x = a ∨ x = b);
-    
-    follows ∃c, ∀x, x ∈ c ↔ (x = a ∨ x = b) as recall zfc.pairing; vampire;
+    follows ∃c, ∀x, x ∈ c ↔ (x = a ∨ x = b)               by zfc.pairing;
     thus    ∀x, x ∈ {y | y = a ∨ y = b} ↔ (x = a ∨ x = b) by uncomp.def [_ = a ∨ _ = b];
 qed
 
@@ -276,7 +285,7 @@ proof
     -- expand the definition of {a}
     suffices ∀x, x ∈ {a, a} ↔ x = a;
     -- and then Vampire easily finishes the job from the definition of {a, a}
-    recall pair.def; vampire
+    thus ∀x, x ∈ {a, a} ↔ x = a by pair.def;
 qed
 
 We can return to defining new sets with the union of a set.
@@ -295,8 +304,7 @@ theorem big_union.def [a : term] :
     |- ∀x, x ∈ ⋃a ↔ (∃y, x ∈ y ∧ y ∈ a)
 proof
     suffices ∀x, x ∈ {x | ∃y, x ∈ y ∧ y ∈ a} ↔ (∃y, x ∈ y ∧ y ∈ a);
-    recall zfc.union;
-    follows ∃x, ∀y, y ∈ x ↔ (∃z, y ∈ z ∧ z ∈ a) as vampire;
+    follows ∃x, ∀y, y ∈ x ↔ (∃z, y ∈ z ∧ z ∈ a) by zfc.union;
     follows ∀x, x ∈ {x | ∃y, x ∈ y ∧ y ∈ a} ↔ (∃y, x ∈ y ∧ y ∈ a) by uncomp.def [∃y, _ ∈ y ∧ y ∈ a];
 qed
 
@@ -319,9 +327,9 @@ theorem union.def [a b : term] :
     |- ∀x, x ∈ a ∪ b ↔ (x ∈ a ∨ x ∈ b)
 proof
     suffices ∀x, x ∈ ⋃{a, b} ↔ (x ∈ a ∨ x ∈ b);
-    follows  ∀x, x ∈ ⋃{a, b} ↔ ∃y, x ∈ y ∧ y ∈ {a, b} as recall big_union.def; vampire;
-    follows  ∀y, y ∈ {a, b} ↔ (y = a ∨ y = b) as recall pair.def; vampire;
-    vampire
+    follows  ∀x, x ∈ ⋃{a, b} ↔ ∃y, x ∈ y ∧ y ∈ {a, b} by big_union.def;
+    follows  ∀y, y ∈ {a, b} ↔ (y = a ∨ y = b)         by pair.def;
+    done logically
 qed
 
 We wish next to construct the powerset. For this we will need the notation of
@@ -351,7 +359,7 @@ theorem empty.sub [a : term] :
     |- ∅ ⊆ a
 proof
     follows ∀x, ¬x ∈ ∅        by empty_set.def;
-    thus    ∀x, x ∈ ∅ → x ∈ a as vampire;
+    thus    ∀x, x ∈ ∅ → x ∈ a logically;
 qed
 
 We will define the powerset as the set of all subsets of a set. 
@@ -375,8 +383,7 @@ proof
         -- TODO: vampire should be able to handle subset without this manual
         -- expansion.
         suffices ∃b, ∀x, x ∈ b ↔ (∀y, y ∈ x → y ∈ a);
-        recall zfc.powerset;
-        vampire
+        done by zfc.powerset
     ;
     thus ∀x, x ∈ {y | y ⊆ a} ↔ x ⊆ a by uncomp.def [_ ⊆ a];
 qed
@@ -400,7 +407,7 @@ theorem comp.def [p(_:term) : sentence] [X : term] :
 proof
     suffices ∀y, y ∈ {x | x ∈ X ∧ p(x)} ↔ (y ∈ X ∧ p(y));
     hence ∀a, ∃x, ∀y, y ∈ x ↔ (y ∈ a ∧ p(y)) by zfc.specification [p(_)];
-    follows ∃x, ∀y, y ∈ x ↔ (y ∈ X ∧ p(y)) as vampire;
+    follows ∃x, ∀y, y ∈ x ↔ (y ∈ X ∧ p(y))   logically;
     thus ∀y, y ∈ {x | x ∈ X ∧ p(x)} ↔ (y ∈ X ∧ p(y)) by uncomp.def [_ ∈ X ∧ p(_)];
 qed
 
@@ -411,5 +418,5 @@ theorem comp.sub [p(_:term) : sentence] [X : term] :
     |- {x ∈ X | p(x)} ⊆ X
 proof
     follows ∀y, y ∈ {x ∈ X | p(x)} ↔ (y ∈ X ∧ p(y)) by comp.def [p(_)] [X];
-    thus    ∀y, y ∈ {x ∈ X | p(x)} → y ∈ X          as vampire;
+    thus    ∀y, y ∈ {x ∈ X | p(x)} → y ∈ X          logically;
 qed

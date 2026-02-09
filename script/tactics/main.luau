@@ -2,6 +2,7 @@ local assume = require("./assume")
 local by = require("./by")
 local contradiction = require("./contradiction")
 local dispatch = require("./dispatch")
+local done = require("./done")
 local empty = require("./empty")
 local have = require("./have")
 local state = require("./state")
@@ -19,9 +20,10 @@ dispatch.justificationTable = {
 	["justification.tactic"] = function(sp: { tactic: Tactic }, state: state.State)
 		return dispatch.handleTactic(sp.tactic, state)
 	end,
-	["justification.by"] = by.handleBy,
+	["justification.by"] = by.handleByTactic,
 	["justification.using"] = quant.handleUsing,
 	["justification.specializing"] = quant.handleSpecializing,
+	["justification.logically"] = vampire.handleVampireTactic,
 }
 
 dispatch.tacticTable = {
@@ -36,8 +38,9 @@ dispatch.tacticTable = {
 	["tactic.contradiction"] = contradiction.handleContradiction,
 	["tactic.obtain"] = quant.handleObtain,
 	["tactic.arbitrary"] = quant.handleArbitrary,
-	["tactic.recall"] = recall.handleRecall,
-	["tactic.vampire"] = vampire.handleVampire,
+	["tactic.recall"] = recall.handleRecallTactic,
+	["tactic.vampire"] = vampire.handleVampireTactic,
+	["tactic.done"] = done.handleDone,
 	["tactic.empty"] = empty.handleEmpty,
 	["tactic.todo"] = function(tactic: {}, state: state.State)
 		return state:todo()
