@@ -713,16 +713,14 @@ end
 The proof follows from the definition of the ordered pair and many of the intersection properties we've shown.
 
 theorem ordered_pair_first.def [a b : term] :
-    |- ∀x, x ∈ π₁(⟨a, b⟩) ↔ x ∈ a
+    |- π₁(⟨a, b⟩) = a
 proof
-    suffices ∀x, x ∈ π₁({{a}, {a, b}}) ↔ x ∈ a;
-    suffices ∀x, x ∈ ⋃⋂{{a}, {a, b}} ↔ x ∈ a;
     follows ∀x, x ∈ ⋂{{a}, {a, b}} ↔ (x ∈ {a} ∧ x ∈ {a, b}) by inter.def [{a}] [{a, b}];
     hence ∀x, x ∈ {a} ↔ x = a by singleton.def [a];
     hence ∀x, x ∈ {a, b} ↔ (x = a ∨ x = b) by pair.def [a] [b];
-    thus ∀x, x ∈ ⋂{{a}, {a, b}} ↔ (x = a ∧ (x = a ∨ x = b)) logically;
-    follows ∀x, x ∈ ⋂{{a}, {a, b}} ↔ x = a logically;
     thus ∀x, x ∈ ⋃⋂{{a}, {a, b}} ↔ x ∈ a by big_union.def;
+    follows ∀x, x ∈ π₁(⟨a, b⟩) ↔ x ∈ a;
+    thus π₁(⟨a, b⟩) = a by zfc.extensionality;
 qed
 
 ### The Cartesian Product
