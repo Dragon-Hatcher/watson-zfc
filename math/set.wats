@@ -314,6 +314,14 @@ proof
     thus    ∀x, x ∈ {y | y = a ∨ y = b} ↔ (x = a ∨ x = b) by uncomp.def [_ = a ∨ _ = b];
 qed
 
+The unordered pair is unordered. That is, it is symmetrical.
+
+theorem pair.symm [a b : term] :
+    |- {a, b} = {b, a}
+proof
+    todo
+qed
+
 ### The Singleton Set
 
 We can define the singleton set as the pair of the same element twice. We could
@@ -394,6 +402,15 @@ proof
     follows ∀x, x ∈ {x | ∃y, x ∈ y ∧ y ∈ a} ↔ (∃y, x ∈ y ∧ y ∈ a) by uncomp.def [∃y, _ ∈ y ∧ y ∈ a];
 qed
 
+Any element of a a set is a subset of the union of that set.
+
+theorem big_union.super [a b : term] : (a ∈ b)
+    |- a ⊆ ⋃b
+proof
+    follows ∀x, (∃y, x ∈ y ∧ y ∈ b) ↔ x ∈ ⋃b by big_union.def;
+    thus    ∀x,      x ∈ a          → x ∈ ⋃b logically;
+qed
+
 We can define the regular union using the pair and the big union. Once again,
 although we could define this directly using unrestricted comprehension, it is
 easier to do it this way to avoid repeated proofs of existence.
@@ -414,8 +431,46 @@ theorem union.def [a b : term] :
 proof
     suffices ∀x, x ∈ ⋃{a, b} ↔ (x ∈ a ∨ x ∈ b);
     follows  ∀x, x ∈ ⋃{a, b} ↔ ∃y, x ∈ y ∧ y ∈ {a, b} by big_union.def;
-    follows  ∀y, y ∈ {a, b} ↔ (y = a ∨ y = b)         by pair.def;
+    follows  ∀y, y ∈  {a, b} ↔ (y = a ∨ y = b)        by pair.def;
     done logically
+qed
+
+The union operator is also symmetric. This follows either from the fact that
+the unordered pair is symmetric, or just the symmetry of or itself.
+
+theorem union.symm [a b : term] :
+    |- a ∪ b = b ∪ a
+proof
+    follows ∀x, x ∈ a ∪ b ↔ (x ∈ a ∨ x ∈ b) by union.def;
+    follows ∀x, x ∈ b ∪ a ↔ (x ∈ a ∨ x ∈ b) by union.def;
+    thus a ∪ b = b ∪ a                      by zfc.extensionality;
+qed
+
+The union is also associative. This follows from the associativity of or.
+
+theorem union.assoc [a b c : term] :
+    |- a ∪ (b ∪ c) = (a ∪ b) ∪ c
+proof
+    follows ∀x, x ∈ a ∪ (b ∪ c) ↔ (x ∈ a ∨ (x ∈ b ∨ x ∈ c)) by union.def;
+    follows ∀x, x ∈ (a ∪ b) ∪ c ↔ ((x ∈ a ∨ x ∈ b) ∨ x ∈ c) by union.def;
+    thus a ∪ (b ∪ c) = (a ∪ b) ∪ c                          by zfc.extensionality;
+qed
+
+Either set in the union is a subset of the union as a whole. These facts are
+really just simplifications of the defining fact.
+
+theorem union.left_sub [a b : term] :
+    |- a ⊆ a ∪ b
+proof
+    follows ∀x, (x ∈ a ∨ x ∈ b) ↔ x ∈ a ∪ b by union.def;
+    thus    ∀x,  x ∈ a          → x ∈ a ∪ b logically;
+qed
+
+theorem union.right_sub [a b : term] :
+    |- b ⊆ a ∪ b
+proof
+    follows ∀x, (x ∈ a ∨ x ∈ b) ↔ x ∈ a ∪ b by union.def;
+    thus    ∀x,          x ∈ b  → x ∈ a ∪ b logically;
 qed
 
 ### Intersections
@@ -458,11 +513,21 @@ proof
     done logically
 qed
 
+The big intersection of a set is a subset of ever element of the set.
+
+theorem big_inter.sub [a b : term] : (a ∈ b)
+    |- ⋂b ⊆ a
+proof
+    follows ¬b = ∅                           by nonempty.has_element;
+    follows ∀x, x ∈ ⋂b ↔ (∀y, y ∈ b → x ∈ y) by big_inter.def;
+    thus    ∀x, x ∈ ⋂b →              x ∈ a  logically;
+qed
+
 We do however define the small intersection the same way we defined the big
 intersection.
 
 notation inter
-    term ::= term "∩" term
+    term ::= term " ∩ " term
 end
 
 definition
@@ -484,6 +549,41 @@ proof
     follows  ∀x, x ∈ ⋂{a, b} ↔ (∀y, y ∈ {a, b} → x ∈ y) by big_inter.def;
     follows  ∀y, y ∈  {a, b} ↔ (y = a ∨ y = b)          by pair.def;
     thus     ∀x, x ∈ ⋂{a, b} ↔ (x ∈ a ∧ x ∈ b)          logically;
+qed
+
+Like the union, the intersection is symmetric and associative. The proofs are
+identical to those for union, just replacing every $\lor$ with an $\land$.
+
+theorem inter.symm [a b : term] :
+    |- a ∩ b = b ∩ a
+proof
+    follows ∀x, x ∈ a ∩ b ↔ (x ∈ a ∧ x ∈ b) by inter.def;
+    follows ∀x, x ∈ b ∩ a ↔ (x ∈ a ∧ x ∈ b) by inter.def;
+    thus a ∩ b = b ∩ a                      by zfc.extensionality;
+qed
+
+theorem inter.assoc [a b c : term] :
+    |- a ∩ (b ∩ c) = (a ∩ b) ∩ c
+proof
+    follows ∀x, x ∈ a ∩ (b ∩ c) ↔ (x ∈ a ∧ (x ∈ b ∧ x ∈ c)) by inter.def;
+    follows ∀x, x ∈ (a ∩ b) ∩ c ↔ ((x ∈ a ∧ x ∈ b) ∧ x ∈ c) by inter.def;
+    thus a ∩ (b ∩ c) = (a ∩ b) ∩ c                          by zfc.extensionality;
+qed
+
+The intersection of two sets is a subset of both of the original sets.
+
+theorem inter.sub_left [a b : term] :
+    |- a ∩ b ⊆ a
+proof
+    follows ∀x, x ∈ a ∩ b ↔ (x ∈ a ∧ x ∈ b) by inter.def;
+    thus    ∀x, x ∈ a ∩ b →  x ∈ a          logically;
+qed
+
+theorem inter.sub_right [a b : term] :
+    |- a ∩ b ⊆ b
+proof
+    follows ∀x, x ∈ a ∩ b ↔ (x ∈ a ∧ x ∈ b) by inter.def;
+    thus    ∀x, x ∈ a ∩ b →          x ∈ b  logically;
 qed
 
 ### The Set Difference

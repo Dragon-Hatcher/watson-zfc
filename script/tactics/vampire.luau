@@ -41,6 +41,12 @@ function termToV(term: Frag, bindings: Bindings): VTerm?
     -- If there are more free variables then binding we have a problem
     assert(term.unclosedCount <= #bindings.stack)
 
+    -- TODO: we shouldn't need this
+    local match = term:match(shared.termParenPattern)
+    if match ~= nil then
+        return termToV(match[0], bindings)
+    end
+
     -- Terms can contain sentences so we might encounter them in our recursion.
     -- But we don't handle them so just return nil.
     if term.cat ~= shared.termCat then
@@ -257,6 +263,7 @@ function M.handleVampire(state: state.State): (state.State, VampError?)
 
     -- Check if Vampire was able to prove the conjecture
     if solution == "unprovable" then
+        log(tostring(problem))
         return state:error(), { err = "unprovable" }
     elseif solution ~= "proved" then
         return state:error(), { err = "could_not_find_proof" }

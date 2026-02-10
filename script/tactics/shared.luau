@@ -47,6 +47,12 @@ M.sentenceParenPattern = frag.makePattern(
     {{name = "p", cat = M.sentenceCat}}
 )
 
+M.termParenPattern = frag.makePattern(
+    "(t)", M.termCat,
+    scopeTactic,
+    {{name = "t", cat = M.termCat}}
+)
+
 M.andPattern = frag.makePattern(
     "p ∧ q", M.sentenceCat,
     scopeTactic,

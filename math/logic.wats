@@ -116,7 +116,7 @@ before we can make this definition we need one other definition: parentheses!
 Don't laugh. Parentheses are a part of mathematical notation too and they need
 a definition just like everything else. Of course, the definition is rather simple.
 
-notation parentheses
+notation sentence.parentheses
     sentence ::= "(" sentence ")"
 end
 
@@ -688,6 +688,16 @@ object). We will inform Watson of our desire for a new category of syntactical
 object using the `syntax_category` command.
 
 syntax_category term
+
+We will want parentheses for terms as well.
+
+notation term.parentheses
+    term ::= "(" term ")"
+end
+
+definition
+    (a:term) := a
+end
 
 Next, we will need some relationship between terms. All but the most exotic
 of mathematical systems contain a notation of *equality*.
