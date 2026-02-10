@@ -322,6 +322,15 @@ proof
     todo
 qed
 
+The unordered pair being a subset is equivalent to both elements of the pair
+being members of the set.
+
+theorem pair.sub [a b A : term] :
+    |- (a ∈ A ∧ b ∈ A) ↔ {a, b} ⊆ A
+proof
+    todo
+qed
+
 ### The Singleton Set
 
 We can define the singleton set as the pair of the same element twice. We could
@@ -343,6 +352,17 @@ proof
     suffices ∀x, x ∈ {a, a} ↔ x = a;
     -- and then Vampire easily finishes the job from the definition of {a, a}
     thus ∀x, x ∈ {a, a} ↔ x = a by pair.def;
+qed
+
+An element being in a set is equivalent to the singleton set being a subset.
+
+theorem singleton.sub [a A : term] :
+    |- a ∈ A ↔ {a} ⊆ A
+proof
+    follows a ∈ A → (∀x, x ∈ {a} → x ∈ A) by singleton.def;
+    follows (∀x, x ∈ {a} → x ∈ A) → a ∈ A by singleton.def;
+    -- done logically
+    todo
 qed
 
 ### Restricted Comprehension
@@ -641,6 +661,25 @@ proof
     thus    ∀x, x ∈ {y | y ⊆ a} ↔ x ⊆ a by uncomp.def [_ ⊆ a];
 qed
 
+The singletons and pairs of elements from the original set are both examples
+of sets in the powerset.
+
+theorem powset.singleton_in [a A : term] : (a ∈ A)
+    |- {a} ∈ 𝒫(A)
+proof
+    -- follows {a} ⊆ A by singleton.sub;
+    -- thus {a} ∈ 𝒫(A) by powset.def;
+    todo
+qed
+
+theorem powset.pair_in [a b A : term] : (a ∈ A) (b ∈ A)
+    |- {a, b} ∈ 𝒫(A)
+proof
+    -- follows {a, b} ⊆ A by pair.sub;
+    -- thus {a, b} ∈ 𝒫(A) by powset.def;
+    todo
+qed
+
 
 ## Functions
 
@@ -665,3 +704,56 @@ proof
     thus ∀x, x ∈ {{a}, {a, b}} ↔ (x = {a} ∨ x = {a, b}) by uncomp.def [_ = {a} ∨ _ = {a, b}];
 qed
 
+### The Cartesian Product
+
+The cartesian product of two sets is the set of all ordered pairs formed from
+the elements of those sets. A double powerset is sufficient to make a superset
+of the cartesian product from which we can then restrict to get the required
+set.
+
+notation product
+    term ::= term " × " term
+end
+
+definition
+    A × B := {x ∈ 𝒫(𝒫(A ∪ B)) | ∃a, a ∈ A ∧ (∃b, b ∈ B ∧ x = ⟨a, b⟩)}
+end
+
+The difficult task is to prove that this gives us every possible ordered pair.
+
+theorem cart_prod.def [A B : term] :
+    |- ∀x, x ∈ A × B ↔ ∃a, a ∈ A ∧ (∃b, b ∈ B ∧ x = ⟨a, b⟩)
+proof
+    arbitrary x;
+
+    follows ∀x, (x ∈ A × B ↔ (x ∈ 𝒫(𝒫(A ∪ B)) ∧ (∃a, a ∈ A ∧ (∃b, (b ∈ B ∧ x = ⟨a, b⟩)))))
+        by comp.def [∃a, a ∈ A ∧ (∃b, b ∈ B ∧ _ = ⟨a, b⟩)] [𝒫(𝒫(A ∪ B))];
+
+    -- the forward direction is pretty simple. it just comes directly from the
+    -- definition of restricted comprehension.
+    assume x ∈ A × B then ∃a, a ∈ A ∧ (∃b, b ∈ B ∧ x = ⟨a, b⟩) as
+        thus ∃a, a ∈ A ∧ (∃b, b ∈ B ∧ x = ⟨a, b⟩) logically;
+    ;
+
+    -- the other direction is harder. it follows quickly that x satisfies the
+    -- comprehension condition, but it is a little more work to show it is in
+    -- the double powerset.
+    assume ∃a, a ∈ A ∧ (∃b, b ∈ B ∧ x = ⟨a, b⟩) then x ∈ A × B as
+        obtain a st a ∈ A ∧ (∃b, b ∈ B ∧ x = ⟨a, b⟩);
+        obtain b st b ∈ B ∧ x = ⟨a, b⟩ logically;
+        follows x = ⟨a, b⟩ logically;
+        thus x = {{a}, {a, b}};
+
+        -- we already have that x is a pair so we just need to prove it is in the powerset
+        suffices x ∈ 𝒫(𝒫(A ∪ B)) ∧ (∃a', a' ∈ A ∧ (∃b', (b' ∈ B ∧ x = ⟨a', b'⟩))) logically;
+        suffices x ∈ 𝒫(𝒫(A ∪ B)) logically;
+
+        follows a ∈ A ∪ B ∧ b ∈ A ∪ B    by union.def;
+        thus {a}    ∈ 𝒫(A ∪ B)           by powset.singleton_in;
+        thus {a, b} ∈ 𝒫(A ∪ B)           by powset.pair_in;
+        thus {{a}, {a, b}} ∈ 𝒫(𝒫(A ∪ B)) by powset.pair_in;
+        thus             x ∈ 𝒫(𝒫(A ∪ B)) logically;
+    ;
+
+    done logically
+qed
