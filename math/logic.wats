@@ -4,7 +4,7 @@ it is first order logic which allows us to make statements about those sets.
 
 First order logic is itself an extension of a simpler system called propositional
 logic. Propositional logic encompasses all the logical statements that do not 
-involve the quantifiers $\exists$ and $\forall$. This include and, or, not,
+involve the quantifiers $\exists$ and $\forall$. That includes and, or, not,
 and implications.
 
 ## Propositional Logic
@@ -18,7 +18,7 @@ all be defined in terms of only implication and a constant _falsum_, which we
 will denote as $\bot$. The advantage of doing things this way is that later we 
 will need fewer axioms because we will have fewer foundational terms we need to
 define the meaning of. The disadvantage is that to define and and or in terms
-of implication we will have to assume to law of the excluded middle or 
+of implication we will have to assume the law of the excluded middle or 
 equivalently the law of double negation. This means that we will can only do
 classical logic. However, supporting intuitionist logic is not a goal of this
 development. So we will take the simpler formal language.
@@ -30,7 +30,7 @@ represents mathematical statements `sentence`. The syntax
 `non-terminal ::= replacement` for defining productions in a context free 
 grammar is actually standard and is called Backus–Naur form. The `(500)` 
 is a Watson specific extension and allows defining the precedence of different
-pieces of syntax. This is not mathematical meaningful but simply helps with
+pieces of syntax. This is not mathematically meaningful but simply helps with
 writing notation. For example, we want `¬p → q` to mean `(¬p) → q` and not
 `¬(p → q)`.
 
@@ -55,7 +55,7 @@ Although only implication and falsum are part of our formal language, we still
 need to be able to discuss and, or, and not. To do this we will use another
 Watson feature: definitions.
 
-Definitions allow as to define new notation along with a replacement rule to 
+Definitions allow us to define new notation along with a replacement rule to 
 explain what the definition means. Internally, Watson expands definitions into
 the underlying formal language before checking proofs. So definitions have no
 effect on proof checking. Instead they are simply a convenience for writing 
@@ -90,7 +90,7 @@ The definition syntax is intuitive. You simply place the expression you want
 to define on the left, and the definition on the right. Where we wrote `sentence`
 in the notation command we give a variable name `p` in the definition command. 
 We use `:=` instead of  `=` because `=` is a part of our formal language that we 
-will latter want to define. Instead we use `:=` as a metalogical symbol for 
+will later want to define. Instead we use `:=` as a metalogical symbol for 
 definitions. Note that this means it is not a good idea to make `:=` a symbol
 in your formal language.
 
@@ -228,7 +228,7 @@ axiom not_not.elim [p : sentence] : (¬¬p)
     |- p
 end
 
-The fourth and final axiom is the principal of explosion. It states that if we
+The fourth and final axiom is the principle of explosion. It states that if we
 know $\bot$ to be true, anything at all can be proven.
 
 axiom explosion [p : sentence] : (⊥)
@@ -240,8 +240,8 @@ reasoning about falsity. If we know that $q$ and $\neg q$ are both true then we
 can make the following (right now informal) argument that an arbitrary $p$ is
 true. Since $q$ is true $q \lor p$ is true. But $\neg q$ is true so since 
 $q \lor p$ is true it must be that $p$ is true. Hence $p$. As we can see the
-principal of explosion will be true once we have defined all the normal logical
-deductions anyway. So, since it turns out that the principal of explosion will
+principle of explosion will be true once we have defined all the normal logical
+deductions anyway. So, since it turns out that the principle of explosion will
 help us prove those deductions, it is reasonable to add it as an axiom.
 
 ### Tactics
@@ -249,7 +249,7 @@ help us prove those deductions, it is reasonable to add it as an axiom.
 With our definitions and axioms in hand, we are now ready to begin proving
 theorems. Theorem statements in Watson look identical to axioms except, of 
 course, that they come with a proof. What is the syntax for these proofs? 
-The syntax is entirely defined by us! Watson has no built in proof syntax.
+The syntax is entirely defined by us! Watson has no built-in proof syntax.
 Instead we use the `tactic` command to define a new type of proof syntax and 
 then write code in the scripting language Lua that transforms this proof syntax
 into a formal deduction that Watson can check. Let's define a simple proof syntax
@@ -312,7 +312,7 @@ end
 Another useful tactic will be `todo`. This can be used when we are in the middle 
 of writing our proofs. It will prove anything we want but Watson will mark our
 proof as unfinished so we know to return and finish it later. This is similar to
-`sorry` in lean.
+`sorry` in Lean.
 
 tactic tactic.todo
     tactic ::= @kw"todo"
@@ -331,7 +331,7 @@ end
 We will start by proving the basic facts about or. For or there are two 
 introduction rules. Left and right introduction. That is, if we know $p$ is true
 then we know $p \lor q$ is true. And also if we know $q$ is true then $p \lor q$
-is true. As we mentioned before, the definition of or is non-symmetrical so the
+is true. As we mentioned before, the definition of or is asymmetric so the
 proofs of these two facts are different.
 
 theorem or.intro_right [p q : sentence] : (q)
@@ -700,7 +700,7 @@ definition
 end
 
 Next, we will need some relationship between terms. All but the most exotic
-of mathematical systems contain a notation of *equality*.
+of mathematical systems contain a notion of *equality*.
 
 syntax equality
     sentence ::= term " = " term
@@ -717,9 +717,9 @@ end
 
 The second axiom, the elimination rule, says that, if two objects are equal,
 then they should have all the same properties. Precisely, we mean that if 
-$a = b$ then for any sentence which is true, if we change all the $a$s to $b$s,
-the sentence remains true. In order to describe this rule to Watson, we will
-need notation for a sentence which contains a term.
+$a = b$ then for any sentence which is true, if we replace all occurrences of 
+$a$ with $b$, the sentence remains true. In order to describe this rule to 
+Watson, we will need notation for a sentence which contains a term.
 
 notation sentence.with_term
     sentence ::= @name "(" term ")"
@@ -759,7 +759,7 @@ form $\exists n, n + n = n$ or $\forall x, x + 1 > x$. The bound variables in
 the quantifiers will be our first terms.
 
 Similarly to how we only needed to define one of $\lor$ and $\land$ and then
-could define the remaining one in terms of the other, we only need to add one
+could define the remaining one in terms of the other, we only need to add one of
 $\exists$ and $\forall$ to our formal language. (In fact, this connection 
 is no coincidence. Consider applying DeMorgan's laws to a statement with an 
 infinite number of $\lor$s or $\land$s). 
@@ -790,7 +790,7 @@ definition
     ∀x, p(x) := ¬∃x, ¬p(x)
 end
 
-We will also provide notations for the at most one and unique existential
+We will also introduce notation for the “at most one” and “unique” existential 
 quantifiers.
 
 notation exists.at_most_one
@@ -883,7 +883,7 @@ Choice so we will have to make some changes.
 The trouble with the epsilon operator is that it allowed us to make an infinite
 number of parallel choices. Extracting a witness from an existential should
 behave less like a function and more like a reasoning step. To try and enforce
-this we might image using the same witness term as above but with the following
+this we might imagine using the same witness term as above but with the following
 new axiom:
 
 ```
@@ -1045,8 +1045,8 @@ However there is a different way of thinking about term definitions we can use
 instead. A term is well defined if we know that it exists and we know that it
 is unique. We can introduce a new term into our formula language that represents
 the unique term with a given property. Following the tradition of the Principia
-Mathematica, this is called the iota operator and is denoted with an upside
-down iota.
+Mathematica, this is called the iota operator and is denoted with an inverted
+iota.
 
 syntax iota
     term ::= "℩" @binding(term) ", " sentence
@@ -1067,6 +1067,6 @@ or terms that are present. Additionally it is a
 meaning that every sentence containing an iota operator could be converted to
 one without and all sentences which correspond in this way will have the same
 truth value. This means that the iota operator is just a notation convenience
-and doesn't fundamentally change or system.
+and doesn't fundamentally change our system.
 
 With all the pieces in place, we are ready to begin set theory.
