@@ -704,6 +704,27 @@ proof
     thus ∀x, x ∈ {{a}, {a, b}} ↔ (x = {a} ∨ x = {a, b}) by uncomp.def [_ = {a} ∨ _ = {a, b}];
 qed
 
+Next, we define a function which gives us the first element of an ordered pair. We define this function somewhat broadly, but it allows for an easy proof.
+
+definition
+    π₁(a) := ⋃⋂a
+end
+
+The proof follows from the definition of the ordered pair and many of the intersection properties we've shown.
+
+theorem ordered_pair_first.def [a b : term] :
+    |- ∀x, x ∈ π₁(⟨a, b⟩) ↔ x ∈ a
+proof
+    suffices ∀x, x ∈ π₁({{a}, {a, b}}) ↔ x ∈ a;
+    suffices ∀x, x ∈ ⋃⋂{{a}, {a, b}} ↔ x ∈ a;
+    follows ∀x, x ∈ ⋂{{a}, {a, b}} ↔ (x ∈ {a} ∧ x ∈ {a, b}) by inter.def [{a}] [{a, b}];
+    hence ∀x, x ∈ {a} ↔ x = a by singleton.def [a];
+    hence ∀x, x ∈ {a, b} ↔ (x = a ∨ x = b) by pair.def [a] [b];
+    thus ∀x, x ∈ ⋂{{a}, {a, b}} ↔ (x = a ∧ (x = a ∨ x = b)) logically;
+    follows ∀x, x ∈ ⋂{{a}, {a, b}} ↔ x = a logically;
+    thus ∀x, x ∈ ⋃⋂{{a}, {a, b}} ↔ x ∈ a by big_union.def;
+qed
+
 ### The Cartesian Product
 
 The cartesian product of two sets is the set of all ordered pairs formed from
