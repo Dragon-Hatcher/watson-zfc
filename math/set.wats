@@ -71,7 +71,7 @@ axiom zfc.pairing :
     |- ∀a, ∀b, ∃x, ∀y, y ∈ x ↔ (y = a ∨ y = b)
 end
 
-For any set we can take the union of all element in the set.
+For any set we can take the union of all elements in the set.
 
 axiom zfc.union :
     |- ∀a, ∃x, ∀y, y ∈ x ↔ (∃z, y ∈ z ∧ z ∈ a)
@@ -97,7 +97,7 @@ Then we get the two axiom schemas. These are statements about all sentences
 which can't be stated using only quantifiers. The first says that for any set
 we can take the subset of all elements with a particular property. This is 
 quite similar to the rejected comprehension axiom, but this one doesn't lead to
-contradictions (as far as we know). This is sometimes also called seperation or
+contradictions (as far as we know). This is sometimes also called separation or
 restricted comprehension.
 
 axiom zfc.specification [p(_:term) : sentence] :
@@ -143,7 +143,7 @@ definition
 end
 
 We want to prove that if the set $\{x ~|~ p(x)\}$ exists, then the notation we 
-have given for it will refer to that step. We need to invoke the iota axiom
+have given for it will refer to that set. We need to invoke the iota axiom
 from the previous chapter.
 
 theorem uncomp.def [p(_:term) : sentence] : (∃x, ∀y, y ∈ x ↔ p(y))
@@ -191,9 +191,9 @@ Sorry, was that painful to read? It was painful to write. That proof wasn't
 actually very complicated but it was 40 lines long anyway. This is not 
 sustainable. Lucky we have something to help. [Vampire](https://vprover.github.io/)
 is an _automated theorem prover_. It will find proofs of mathematical facts
-automatically. We can make a new tactic that send the current known facts and
+automatically. We can make a new tactic that sends the current known facts and
 goal to Vampire to have it generate a proof. This proof is then translated
-for Watson to understand. This is a very complex, but also very powerful tactic
+for Watson to understand. This is a very complex but also very powerful tactic
 which eliminates the need for tedious manipulations.
 
 tactic tactic.vampire
@@ -213,9 +213,9 @@ end
 We have also enhanced our pre-existing tactics with the power of Vampire. For
 example, `contradiction` will now use Vampire to search for a contradiction and
 `by` will now employ Vampire to prove the goal using the theorem. If we want to 
-inform Vampire of a theorem it would find useful we can also use the `recall`
+inform Vampire of a theorem that it would find useful we can also use the `recall`
  tactic which will add the named theorem to our list of known facts, making it
-useable by Vampire.
+usable by Vampire.
 
 tactic tactic.recall
     tactic ::= @kw"recall" thm:@name ";" next:tactic
@@ -234,7 +234,7 @@ definition
     a ⊆ b := ∀x, x ∈ a → x ∈ b
 end
 
-We can also have the notion of a strict subsets.
+We can also have the notion of a strict subset.
 
 notation strict_subset
     sentence ::= term " ⊂ " term
@@ -314,7 +314,7 @@ proof
     thus    ∀x, x ∈ {y | y = a ∨ y = b} ↔ (x = a ∨ x = b) by uncomp.def [_ = a ∨ _ = b];
 qed
 
-The unordered pair is unordered. That is, it is symmetrical.
+The unordered pair is unordered. That is, it is symmetric.
 
 theorem pair.symm [a b : term] :
     |- {a, b} = {b, a}
@@ -422,7 +422,7 @@ proof
     follows ∀x, x ∈ {x | ∃y, x ∈ y ∧ y ∈ a} ↔ (∃y, x ∈ y ∧ y ∈ a) by uncomp.def [∃y, _ ∈ y ∧ y ∈ a];
 qed
 
-Any element of a a set is a subset of the union of that set.
+Any element of a set is a subset of the union of that set.
 
 theorem big_union.super [a b : term] : (a ∈ b)
     |- a ⊆ ⋃b
@@ -496,7 +496,7 @@ qed
 ### Intersections
 
 Instead of defining the big intersection with an unrestricted comprehension as
-we did for the big union, we will define it is a subset of the union. This
+we did for the big union, we will define it as a subset of the union. This
 makes it easier to prove existence.
 
 notation big_inter
@@ -533,7 +533,7 @@ proof
     done logically
 qed
 
-The big intersection of a set is a subset of ever element of the set.
+The big intersection of a set is a subset of every element of the set.
 
 theorem big_inter.sub [a b : term] : (a ∈ b)
     |- ⋂b ⊆ a
@@ -618,7 +618,7 @@ definition
     a - b := {x ∈ a | ¬x ∈ b}
 end
 
-The theorem follows easily from the definition of the set difference
+The theorem follows easily from the definition of the set difference:
 
 theorem set_diff.def [a b : term] :
     |- ∀x, x ∈ a - b ↔ (x ∈ a ∧ ¬x ∈ b)
@@ -727,9 +727,9 @@ qed
 
 ### The Cartesian Product
 
-The cartesian product of two sets is the set of all ordered pairs formed from
+The Cartesian product of two sets is the set of all ordered pairs formed from
 the elements of those sets. A double powerset is sufficient to make a superset
-of the cartesian product from which we can then restrict to get the required
+of the Cartesian product from which we can then restrict to get the required
 set.
 
 notation product
