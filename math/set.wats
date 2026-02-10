@@ -259,7 +259,7 @@ end
 
 The empty set axiom tells us that this set actually exists.
 
-theorem empty_set.def :
+theorem empty.def :
     |- ∀x, ¬x ∈ ∅
 proof
     -- expand the definition of ∅
@@ -272,12 +272,23 @@ proof
     thus    ∀y, ¬y ∈ {x | ⊥}      logically;
 qed
 
+We can also characterize a non-empty set as one containing an element.
+
+theorem nonempty.has_element [a : term] :
+    |- (¬a = ∅) ↔ (∃x, x ∈ a)
+proof
+    follows ∀x, ¬x ∈ ∅               by empty.def;
+    follows ( a = ∅) ↔ ( ∀x, ¬x ∈ a) by zfc.extensionality; 
+    thus    (¬a = ∅) ↔ (¬∀x, ¬x ∈ a) logically;
+    thus    (¬a = ∅) ↔ ( ∃x,  x ∈ a) logically;
+qed
+
 The empty set is a subset of any set.
 
 theorem empty.sub [a : term] :
     |- ∅ ⊆ a
 proof
-    follows ∀x, ¬x ∈ ∅        by empty_set.def;
+    follows ∀x, ¬x ∈ ∅        by empty.def;
     thus    ∀x, x ∈ ∅ → x ∈ a logically;
 qed
 
@@ -303,11 +314,11 @@ proof
     thus    ∀x, x ∈ {y | y = a ∨ y = b} ↔ (x = a ∨ x = b) by uncomp.def [_ = a ∨ _ = b];
 qed
 
+### The Singleton Set
+
 We can define the singleton set as the pair of the same element twice. We could
 define it as simply $\{a\} = \{x ~|~ x = a\}$ but how would we prove this set
 exists? We would have to appeal to the pairing axiom anyway.
-
-### The Singleton Set
 
 notation singleton
     term ::= "{" term "}"
@@ -432,16 +443,14 @@ proof
     arbitrary x;
 
     follows ∀x', x' ∈ ⋂a ↔ (x' ∈ ⋃a ∧ (∀y, y ∈ a → x' ∈ y)) by comp.def [∀y, y ∈ a → _ ∈ y] [⋃a];
+
     assume x ∈ ⋂a then ∀y, y ∈ a → x ∈ y logically;
+
     assume ∀y, y ∈ a → x ∈ y then x ∈ ⋂a as
         follows x ∈ ⋃a as
-            follows ∃y, y ∈ a as
-                recall zfc.extensionality;
-                done by empty_set.def
-            ;
-            obtain y st y ∈ a;
-            thus x ∈ y  logically;
-            thus x ∈ ⋃a by big_union.def;
+            obtain y st y ∈ a  by nonempty.has_element;
+            follows     x ∈ y  logically;
+            thus        x ∈ ⋃a by big_union.def;
         ;
         done logically
     ;
@@ -468,16 +477,18 @@ theorem inter.def [a b : term] :
 proof
     -- we need that the pair set isn't empty.
     follows a ∈ {a, b} by pair.def;
-    thus ¬{a, b} = ∅   by empty_set.def; 
+    thus ¬{a, b} = ∅   by empty.def; 
 
     -- which allows us to continue the proof using big_inter.def
     suffices ∀x, x ∈ ⋂{a, b} ↔ (x ∈ a ∧ x ∈ b);
     follows  ∀x, x ∈ ⋂{a, b} ↔ (∀y, y ∈ {a, b} → x ∈ y) by big_inter.def;
-    follows  ∀y, y ∈ {a, b} ↔ (y = a ∨ y = b)           by pair.def;
+    follows  ∀y, y ∈  {a, b} ↔ (y = a ∨ y = b)          by pair.def;
     thus     ∀x, x ∈ ⋂{a, b} ↔ (x ∈ a ∧ x ∈ b)          logically;
 qed
 
-We define set difference as the set of elements of the first set which are not in the second set.
+### The Set Difference
+
+We define the difference between two sets as the set of elements of the first set which are not in the second set.
 
 notation set_difference
     term ::= term " - " term
@@ -494,6 +505,16 @@ theorem set_diff.def [a b : term] :
 proof
     suffices ∀x, x ∈ {y ∈ a | ¬y ∈ b} ↔ (x ∈ a ∧ ¬x ∈ b);
     done by comp.def [¬_ ∈ b] [a]
+qed
+
+The set difference is a subset of the first set. This follows from the fact that
+all restricted comprehensions are subsets.
+
+theorem set_diff.sub [a b : term] :
+    |- a - b ⊆ a
+proof
+    suffices {x ∈ a | ¬x ∈ b} ⊆ a;
+    done by comp.sub [¬_ ∈ b] [a]
 qed
 
 ### The Powerset
