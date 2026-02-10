@@ -122,8 +122,20 @@ M.eqPattern = frag.makePattern(
     {{name = "a", cat = M.termCat}, {name = "b", cat = M.termCat}}
 )
 
+M.neqPattern = frag.makePattern(
+    "a ≠ b", M.sentenceCat,
+    scopeTactic,
+    {{name = "a", cat = M.termCat}, {name = "b", cat = M.termCat}}
+)
+
 M.inPattern = frag.makePattern(
     "a ∈ b", M.sentenceCat,
+    scopeTactic,
+    {{name = "a", cat = M.termCat}, {name = "b", cat = M.termCat}}
+)
+
+M.ninPattern = frag.makePattern(
+    "a ∉ b", M.sentenceCat,
     scopeTactic,
     {{name = "a", cat = M.termCat}, {name = "b", cat = M.termCat}}
 )

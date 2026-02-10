@@ -706,6 +706,16 @@ syntax equality
     sentence ::= term " = " term
 end
 
+We can also define notation for not equals.
+
+notation inequality
+    sentence ::= term " ≠ " term
+end
+
+definition
+    a ≠ b := ¬a = b
+end
+
 We will need just two axioms to describe the behavior of equality. Once again,
 these can be thought of as introduction and elimination rules. The first axiom,
 the introduction rule, asserts that any term is equal to itself. In other words,

@@ -1,8 +1,16 @@
 Set theory is almost the simplest possible first order logical system. It
 contains no formal terms and only a single binary predicate symbol: $\in$. 
 
-syntax membership
+syntax in
     sentence ::= term " ∈ " term
+end
+
+notation non_in
+    sentence ::= term " ∉ " term
+end
+
+definition
+    a ∉ b := ¬a ∈ b
 end
 
 The intended reading of $x \in y$ is that $y$ is a set of which $x$ is an element.
@@ -62,7 +70,7 @@ comprehension.
 The empty set axiom asserts the existence of a set with no elements.
 
 axiom zfc.empty_set :
-    |- ∃x, ∀y, ¬y ∈ x 
+    |- ∃x, ∀y, y ∉ x 
 end
 
 For any two sets we can form the set containing exactly those two sets.
@@ -89,7 +97,7 @@ set and must be infinite. Without this axiom we would have no way to prove any
 infinite sets exist.
 
 axiom zfc.infinity :
-    |- ∃x, (∃y, y ∈ x ∧ ∀z, ¬z ∈ y) 
+    |- ∃x, (∃y, y ∈ x ∧ ∀z, z ∉ y) 
          ∧ (∀y, (y ∈ x → (∃z, (z ∈ x ∧ (∀w, (w ∈ z ↔ (w ∈ y ∨ w = y)))))))
 end
 
@@ -241,7 +249,7 @@ notation strict_subset
 end
 
 definition
-    a ⊂ b := a ⊆ b ∧ ¬a = b
+    a ⊂ b := a ⊆ b ∧ a ≠ b
 end
 
 ### The Empty Set
@@ -260,27 +268,27 @@ end
 The empty set axiom tells us that this set actually exists.
 
 theorem empty.def :
-    |- ∀x, ¬x ∈ ∅
+    |- ∀x, x ∉ ∅
 proof
     -- expand the definition of ∅
-    suffices ∀x, ¬x ∈ {x | ⊥};
+    suffices ∀x, x ∉ {x | ⊥};
     -- existence from the axiom
-    follows ∃x, ∀y, ¬y ∈ x        by zfc.empty_set;
+    follows ∃x, ∀y,  y ∉ x        by zfc.empty_set;
     thus    ∃x, ∀y, (y ∈ x ↔ ⊥)   logically;     
     -- and then set comprehension is always unique
     thus    ∀y, (y ∈ {x | ⊥} ↔ ⊥) by uncomp.def [⊥];
-    thus    ∀y, ¬y ∈ {x | ⊥}      logically;
+    thus    ∀y,  y ∉ {x | ⊥}      logically;
 qed
 
 We can also characterize a non-empty set as one containing an element.
 
 theorem nonempty.has_element [a : term] :
-    |- (¬a = ∅) ↔ (∃x, x ∈ a)
+    |- a ≠ ∅ ↔ ∃x, x ∈ a
 proof
-    follows ∀x, ¬x ∈ ∅               by empty.def;
-    follows ( a = ∅) ↔ ( ∀x, ¬x ∈ a) by zfc.extensionality; 
-    thus    (¬a = ∅) ↔ (¬∀x, ¬x ∈ a) logically;
-    thus    (¬a = ∅) ↔ ( ∃x,  x ∈ a) logically;
+    follows ∀x, x ∉ ∅          by empty.def;
+    follows a = ∅ ↔  ∀x, x ∉ a by zfc.extensionality; 
+    thus    a ≠ ∅ ↔ ¬∀x, x ∉ a logically;
+    thus    a ≠ ∅ ↔  ∃x, x ∈ a logically;
 qed
 
 The empty set is a subset of any set.
@@ -288,7 +296,7 @@ The empty set is a subset of any set.
 theorem empty.sub [a : term] :
     |- ∅ ⊆ a
 proof
-    follows ∀x, ¬x ∈ ∅        by empty.def;
+    follows ∀x, x ∉ ∅        by empty.def;
     thus    ∀x, x ∈ ∅ → x ∈ a logically;
 qed
 
@@ -512,7 +520,7 @@ However, based on the defining property of the intersection, the intersection of
 the empty set should be the proper class of all sets, which isn't a set. So we
 restrict the definition theorem to only applying to non-empty sets.
 
-theorem big_inter.def [a : term] : (¬a = ∅)
+theorem big_inter.def [a : term] : (a ≠ ∅)
     |- ∀x, x ∈ ⋂a ↔ (∀y, y ∈ a → x ∈ y)
 proof
     arbitrary x;
@@ -538,7 +546,7 @@ The big intersection of a set is a subset of every element of the set.
 theorem big_inter.sub [a b : term] : (a ∈ b)
     |- ⋂b ⊆ a
 proof
-    follows ¬b = ∅                           by nonempty.has_element;
+    follows b ≠ ∅                            by nonempty.has_element;
     follows ∀x, x ∈ ⋂b ↔ (∀y, y ∈ b → x ∈ y) by big_inter.def;
     thus    ∀x, x ∈ ⋂b →              x ∈ a  logically;
 qed
@@ -562,7 +570,7 @@ theorem inter.def [a b : term] :
 proof
     -- we need that the pair set isn't empty.
     follows a ∈ {a, b} by pair.def;
-    thus ¬{a, b} = ∅   by empty.def; 
+    thus    {a, b} ≠ ∅ by empty.def; 
 
     -- which allows us to continue the proof using big_inter.def
     suffices ∀x, x ∈ ⋂{a, b} ↔ (x ∈ a ∧ x ∈ b);
@@ -615,16 +623,16 @@ notation set_difference
 end
 
 definition
-    a - b := {x ∈ a | ¬x ∈ b}
+    a - b := {x ∈ a | x ∉ b}
 end
 
 The theorem follows easily from the definition of the set difference:
 
 theorem set_diff.def [a b : term] :
-    |- ∀x, x ∈ a - b ↔ (x ∈ a ∧ ¬x ∈ b)
+    |- ∀x, x ∈ a - b ↔ (x ∈ a ∧ x ∉ b)
 proof
-    suffices ∀x, x ∈ {y ∈ a | ¬y ∈ b} ↔ (x ∈ a ∧ ¬x ∈ b);
-    done by comp.def [¬_ ∈ b] [a]
+    suffices ∀x, x ∈ {y ∈ a | y ∉ b} ↔ (x ∈ a ∧ x ∉ b);
+    done by comp.def [_ ∉ b] [a]
 qed
 
 The set difference is a subset of the first set. This follows from the fact that
@@ -633,8 +641,8 @@ all restricted comprehensions are subsets.
 theorem set_diff.sub [a b : term] :
     |- a - b ⊆ a
 proof
-    suffices {x ∈ a | ¬x ∈ b} ⊆ a;
-    done by comp.sub [¬_ ∈ b] [a]
+    suffices {x ∈ a | x ∉ b} ⊆ a;
+    done by comp.sub [_ ∉ b] [a]
 qed
 
 ### The Powerset

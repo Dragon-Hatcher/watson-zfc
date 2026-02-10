@@ -199,6 +199,15 @@ function predToV(pred: Frag, bindings: Bindings): VFormula?
         return VFormula:newEq(lhs, rhs)
     end
 
+    match = pred:match(shared.neqPattern)
+    if match ~= nil then
+        local lhs = termToV(match[0], bindings)
+        local rhs = termToV(match[1], bindings)
+        if not lhs or not rhs then return nil end
+
+        return VFormula:newNot(VFormula:newEq(lhs, rhs))
+    end
+
     match = pred:match(shared.inPattern)
     if match ~= nil then
         local lhs = termToV(match[0], bindings)
@@ -206,6 +215,15 @@ function predToV(pred: Frag, bindings: Bindings): VFormula?
         if not lhs or not rhs then return nil end
 
         return inPred:with({lhs, rhs})
+    end
+
+    match = pred:match(shared.ninPattern)
+    if match ~= nil then
+        local lhs = termToV(match[0], bindings)
+        local rhs = termToV(match[1], bindings)
+        if not lhs or not rhs then return nil end
+
+        return VFormula:newNot(inPred:with({lhs, rhs}))
     end
 
     if pred.formal.templateIdx ~= nil then
