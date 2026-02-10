@@ -636,15 +636,10 @@ theorem powset.def [a : term] :
     |- ∀x, x ∈ 𝒫(a) ↔ x ⊆ a
 proof
     suffices ∀x, x ∈ {y | y ⊆ a} ↔ x ⊆ a;
-    follows  ∃b, ∀x, x ∈ b ↔ x ⊆ a as
-        -- TODO: vampire should be able to handle subset without this manual
-        -- expansion.
-        suffices ∃b, ∀x, x ∈ b ↔ (∀y, y ∈ x → y ∈ a);
-        done by zfc.powerset
-    ;
-    thus ∀x, x ∈ {y | y ⊆ a} ↔ x ⊆ a by uncomp.def [_ ⊆ a];
+    follows ∃b, ∀x, x ∈ b ↔ (∀y, y ∈ x → y ∈ a) by zfc.powerset;
+    thus    ∃b, ∀x, x ∈ b ↔ x ⊆ a;
+    thus    ∀x, x ∈ {y | y ⊆ a} ↔ x ⊆ a by uncomp.def [_ ⊆ a];
 qed
-
 
 
 ## Functions
