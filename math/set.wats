@@ -477,6 +477,25 @@ proof
     thus     ∀x, x ∈ ⋂{a, b} ↔ (x ∈ a ∧ x ∈ b)          logically;
 qed
 
+We define set difference as the set of elements of the first set which are not in the second set.
+
+notation set_difference
+    term ::= term " - " term
+end
+
+definition
+    a - b := {x ∈ a | ¬x ∈ b}
+end
+
+The theorem follows easily from the definition of the set difference
+
+theorem set_diff.def [a b : term] :
+    |- ∀x, x ∈ a - b ↔ (x ∈ a ∧ ¬x ∈ b)
+proof
+    suffices ∀x, x ∈ {y ∈ a | ¬y ∈ b} ↔ (x ∈ a ∧ ¬x ∈ b);
+    done by comp.def [¬_ ∈ b] [a]
+qed
+
 ### The Powerset
 
 We will define the powerset as the set of all subsets of a set. 
@@ -505,6 +524,8 @@ proof
     thus ∀x, x ∈ {y | y ⊆ a} ↔ x ⊆ a by uncomp.def [_ ⊆ a];
 qed
 
+
+
 ## Functions
 
 ### The Ordered Pair
@@ -527,3 +548,4 @@ proof
     follows ∃c, ∀x, x ∈ c ↔ (x = {a} ∨ x = {a, b})      by zfc.pairing;
     thus ∀x, x ∈ {{a}, {a, b}} ↔ (x = {a} ∨ x = {a, b}) by uncomp.def [_ = {a} ∨ _ = {a, b}];
 qed
+
