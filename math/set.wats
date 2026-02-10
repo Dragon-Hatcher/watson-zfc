@@ -429,7 +429,24 @@ restrict the definition theorem to only applying to non-empty sets.
 theorem big_inter.def [a : term] : (¬a = ∅)
     |- ∀x, x ∈ ⋂a ↔ (∀y, y ∈ a → x ∈ y)
 proof
-    todo
+    arbitrary x;
+
+    follows ∀x', x' ∈ ⋂a ↔ (x' ∈ ⋃a ∧ (∀y, y ∈ a → x' ∈ y)) by comp.def [∀y, y ∈ a → _ ∈ y] [⋃a];
+    assume x ∈ ⋂a then ∀y, y ∈ a → x ∈ y logically;
+    assume ∀y, y ∈ a → x ∈ y then x ∈ ⋂a as
+        follows x ∈ ⋃a as
+            follows ∃y, y ∈ a as
+                recall zfc.extensionality;
+                done by empty_set.def
+            ;
+            obtain y st y ∈ a;
+            thus x ∈ y  logically;
+            thus x ∈ ⋃a by big_union.def;
+        ;
+        done logically
+    ;
+
+    done logically
 qed
 
 We do however define the small intersection the same way we defined the big
@@ -487,6 +504,8 @@ proof
     ;
     thus ∀x, x ∈ {y | y ⊆ a} ↔ x ⊆ a by uncomp.def [_ ⊆ a];
 qed
+
+## Functions
 
 ### The Ordered Pair
 
