@@ -5,7 +5,6 @@ local M = {}
 
 local vSymbol = 0
 local inPred = VPredicate:new("in", 2)
-local vFalse = VPredicate:new("false", 0):with({})
 local terms: FragMap<{[number]: VFunction}> = FragMap:new()
 
 function termCacheSet(term: Frag, arity: number, v: VFunction)
@@ -124,7 +123,7 @@ function predToV(pred: Frag, bindings: Bindings): VFormula?
     end
 
     if pred.formal == shared.falsum.formal then
-        return vFalse
+        return VFormula:newFalse()
     end
 
     match = pred:match(shared.forallPattern)
@@ -264,9 +263,6 @@ function M.handleVampire(state: state.State): (state.State, VampError?)
         local vPred = predToV(fact.conclusion, newBindings())
         if vPred then problem:addAxiom(vPred) else fail = fact.conclusion end
     end
-
-    -- TODO: shouldn't need this. Should be able to just create a false.
-    problem:addAxiom(VFormula:newNot(vFalse))
 
     -- And we conjecture the goal from the knowns
     local conjecture = predToV(state.goal, newBindings())
