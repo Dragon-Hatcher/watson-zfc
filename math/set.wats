@@ -731,6 +731,50 @@ proof
     thus π₁(⟨a, b⟩) = a by zfc.extensionality;
 qed
 
+Naturally, we now define the second element of an ordered pair.
+
+definition
+    π₂(a) := ⋃{x ∈ ⋃a | ⋃a ≠ ⋂a → x ∉ ⋂a}
+end
+
+theorem ordered_pair_second.def [a b : term] :
+    |- π₂(⟨a, b⟩) = b
+proof
+    -- assume a ≠ b then π₂(⟨a, b⟩) = b as
+    -- suffices π₂({{a}, {a, b}}) = b;
+    -- suffices ⋃{x ∈ ⋃{{a}, {a, b}} | ⋃{{a}, {a, b}} ≠ ⋂{{a}, {a, b}} → x ∉ ⋂{{a}, {a, b}}} = b;
+    -- thus ∀x, x ∈ ⋃{{a}, {a, b}} ↔ (x ∈ {a} ∨ x ∈ {a, b}) by union.def [{a}] [{a, b}];
+    -- follows ∀x, x ∈ ⋂{{a}, {a, b}} ↔ (x ∈ {a} ∧ x ∈ {a, b}) by inter.def [{a}] [{a, b}];
+    -- follows ∀x, (x ∈ {a} ∧ x ∈ {a, b}) ↔ (x = a ∧ x ∈ {a, b}) by singleton.def;
+    -- follows ∀x, (x = a ∧ x ∈ {a, b}) ↔ (x = a ∧ (x = a ∨ x = b)) by pair.def;
+    -- follows ∀x, (x = a ∧ (x = a ∨ x = b)) ↔ (x = a) logically;
+    -- hence ∀x, x ∈ ⋂{{a}, {a, b}} ↔ x = a logically;
+    -- thus ∀x, x = a ↔ x ∈ {a} by singleton.def;
+    -- follows ⋂{{a}, {a, b}} = {a} by zfc.extensionality;
+    -- hence ⋃{{a}, {a, b}} = {a, b} as
+    --     thus ∀x, x ∈ {a, b} ↔ (x = a ∨ x = b) by pair.def;
+    --     thus ∀x, x ∈ ⋃{{a}, {a, b}} ↔ (x = a ∨ x = b) by union.def;
+    --     hence ∀x, (x = a ∨ x = b) ↔ x ∈ {a, b} logically;
+    --     thus ∀x, x ∈ ⋃{{a}, {a, b}} ↔ x ∈ {a, b} logically;
+    --     thus ⋃{{a}, {a, b}} = {a, b} by zfc.extensionality;
+    -- ;
+    todo
+qed
+
+Finally, we show that two ordered pairs are equal iff their first and second elements are equal.
+
+theorem ordered_pair.eq [a b c d : term] :
+    |- ⟨a, b⟩ = ⟨c, d⟩ ↔ (a = c ∧ b = d)
+proof
+    hence ⟨a, b⟩ = ⟨c, d⟩ → π₁(⟨a, b⟩) = π₁(⟨c, d⟩) by zfc.extensionality;
+    follows π₁(⟨a, b⟩) = π₁(⟨c, d⟩) ↔ a = c by ordered_pair_first.def;
+    follows ⟨a, b⟩ = ⟨c, d⟩ → π₂(⟨a, b⟩) = π₂(⟨c, d⟩) by zfc.extensionality;
+    follows π₂(⟨a, b⟩) = π₂(⟨c, d⟩) ↔ b = d by ordered_pair_second.def;
+    -- suffices ⟨a, b⟩ = ⟨c, d⟩ ↔ (a = c ∧ b = d);
+    hence ⟨a, b⟩ = ⟨c, d⟩ → (a = c ∧ b = d) logically;
+    hence (a = c ∧ b = d) → ⟨a, b⟩ = ⟨c, d⟩ logically;
+    done logically
+qed
 ### The Cartesian Product
 
 The Cartesian product of two sets is the set of all ordered pairs formed from
