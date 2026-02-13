@@ -899,29 +899,138 @@ end
 
 We define a function mapping as the second element of a unique element of a functional relation.
 
-notation function_application
-    term ::= term "(" term ")"
-end
+-- notation function_application
+--     term ::= term "(" term ")"
+-- end
+
+-- definition
+--     f(a) := ℩b, ⟨a, b⟩ ∈ f
+-- end
+
+-- Now, we define a set map which contains the entire image of a function on a set.
+
+-- notation set_map
+--   term ::= "{" term(x) " | " x:@binding(term) " ∈ " term "}"
+-- end
+
+-- definition
+--     {f(x) | x ∈ A} := {y | ∃x, x ∈ A ∧ y = f(x)}
+-- end
+
+-- The proof follows from (I'll figure this out when I complete the proof)
+
+-- theorem set_map.def [f : term] [A : term] :
+--     |- ∀y, y ∈ {f(x) | x ∈ A} ↔ (∃x, x ∈ A ∧ y = f(x))
+-- proof
+--     suffices ∀y, y ∈ {f(x) | x ∈ A} ↔ (∃x, x ∈ A ∧ y = f(x));
+--     todo
+-- qed
+
+
+## The Ordinals
+
+Our first goal upon the completion of our development of set theory will be to
+define the natural numbers. In order to prove the existence of the set of
+natural numbers we will need at least one infinite set. The existence of such a
+set is guaranteed by the axiom of infinity. Specifically, we will use infinity
+to prove the existence of the first infinite ordinal $\omega$.
+
+First let's define the successor operation on ordinals.
 
 definition
-    f(a) := ℩b, ⟨a, b⟩ ∈ f
+    succ(n) := n ∪ {n}
 end
 
-Now, we define a set map which contains the entire image of a function on a set.
-
-notation set_map
-  term ::= "{" term(x) " | " x:@binding(term) " ∈ " term "}"
-end
+The defining property of $\omega$ is that it is the smallest set which contains
+$\emptyset$ and is closed under the successor operation. We will call this closure
+property inductivity.
 
 definition
-    {f(x) | x ∈ A} := {y | ∃x, x ∈ A ∧ y = f(x)}
+    inductive(α) := ∅ ∈ α ∧ ∀n, n ∈ α → succ(n) ∈ α
 end
 
-The proof follows from (I'll figure this out when I complete the proof)
+By the smallest set we mean that $\omega$ is a subset of any inductive set. Put
+another way, $\omega$ is the intersection of the proper class of all inductive sets. 
+However, our theory does not contain proper classes so we cannot use the 
+intersection operator developed previously. We can instead define $\omega$ using 
+an unrestricted comprehension.
 
-theorem set_map.def [f : term] [A : term] :
-    |- ∀y, y ∈ {f(x) | x ∈ A} ↔ (∃x, x ∈ A ∧ y = f(x))
+definition
+    ω := {x | ∀α, inductive(α) → x ∈ α}
+end
+
+The ZF axiom of infinity guarantees that at least one inductive set exists,
+which is what will let us conclude that $\omega$ is well defined.
+
+theorem inductive.exists :
+    |- ∃α, inductive(α)
 proof
-    suffices ∀y, y ∈ {f(x) | x ∈ A} ↔ (∃x, x ∈ A ∧ y = f(x));
-    todo
+    suffices ∃α, ∅ ∈ α ∧ ∀n, n ∈ α → n ∪ {n} ∈ α;
+
+    -- the object whose existence is garunteed by the axiom of infinity is the
+    -- α that we want.
+    obtain x st (∃y, y ∈ x ∧ ∀z, z ∉ y) 
+         ∧ (∀y, (y ∈ x → (∃z, (z ∈ x ∧ (∀w, (w ∈ z ↔ (w ∈ y ∨ w = y)))))))
+         by zfc.infinity;
+
+    -- we will need extensionality to convert memberships in the axiom to
+    -- equalities.
+    recall zfc.extensionality;
+
+    -- the ∃y, y ∈ x ∧ ∀z, z ∉ y tells us that x contains ∅
+    follows ∅ ∈ x by empty.def;
+
+    -- now we need to show that x is closed under the successor operation
+    follows ∀n, n ∈ x → n ∪ {n} ∈ x as
+        arbitrary n; assume n ∈ x;
+        obtain z st z ∈ x ∧ (∀w, (w ∈ z ↔ (w ∈ n ∨ w = n))) logically;
+        follows ∀w, w ∈ n ∪ {n} ↔ (w ∈ n ∨ w = n) as 
+            recall singleton.def;
+            recall union.def;
+            done logically
+        ;
+        follows z = n ∪ {n} logically;
+        thus    n ∪ {n} ∈ x logically;
+    ;
+
+    done logically
 qed
+
+From this lemma we can deduce that $\omega$ will be well defined, as it is a
+subset of that inductive set.
+
+tactic tactic.let
+    tactic ::= @kw"let" name:@name ":=" frag:@fragment(term) ";" next:tactic
+end
+
+theorem omega.def :
+    |- ∀x, x ∈ ω ↔ (∀α, inductive(α) → x ∈ α)
+proof
+    -- we have at least one inductive set. since ω is an infinite intersection
+    -- restricting the comprehension doesn't change anything. so ω' = ω.
+    obtain α st inductive(α) by inductive.exists;
+    let ω' := {x ∈ α | ∀β, inductive(β) → x ∈ β};
+
+    -- we prove that ω' has the defining property of ω
+    follows ∀y, y ∈ ω' ↔ (∀β, inductive(β) → y ∈ β) as
+        arbitrary y;
+        suffices y ∈ {x ∈ α | ∀β, inductive(β) → x ∈ β} ↔ (∀β, inductive(β) → y ∈ β);
+        assume y ∈ {x ∈ α | ∀β, inductive(β) → x ∈ β} then ∀β, inductive(β) → y ∈ β logically;
+        assume ∀β, inductive(β) → y ∈ β then y ∈ {x ∈ α | ∀β, inductive(β) → x ∈ β} as
+            suffices y ∈ α ∧ ∀β, inductive(β) → y ∈ β logically;
+            follows y ∈ α logically;
+            done logically
+        ;
+        done logically
+    ;
+
+    -- ω' proves that the infinite intersection exists, so ω is well defined
+    -- and thus has the desired property.
+    thus ∃w, ∀x, x ∈ w ↔ (∀β, inductive(β) → x ∈ β) logically;
+    thus ∀x, x ∈ ω ↔ (∀β, inductive(β) → x ∈ β) by uncomp.def [∀β, inductive(β) → _ ∈ β];
+qed
+
+At this point we could prove that induction holds on $\omega$. However, $\omega$
+is actually just one element of a larger number system called the ordinals. A
+more powerful form of induction holds on these ordinal numbers so we will 
+instead define the ordinals and prove _transfinite_ induction.

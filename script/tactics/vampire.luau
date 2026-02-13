@@ -451,7 +451,7 @@ function M.handleVampireTactic(
     tactic: { _span: Span },
     state: state.State
 ): state.State
-    local newState, err = M.handleVampire(state)
+    local newState, err = M.handleVampire(state:copy())
 
     if err then
         M.vampErrToDiag(err, tactic._span)
