@@ -5,25 +5,41 @@ local M = {}
 
 local vSymbol = 0
 local inPred = VPredicate:new("in", 2)
+
 local terms: FragMap<{[number]: VFunction}> = FragMap:new()
-
-function termCacheSet(term: Frag, arity: number, v: VFunction)
-    local arities = terms:get(term.formal) 
-    if arities == nil then
-        terms:set(term.formal, {[arity] = v})
-    else
-        arities[arity] = v
-    end
-end
-
-function termCacheGet(term: Frag, arity: number): VFunction?
+function termCacheGet(term: Frag, arity: number): VFunction
     local arities = terms:get(term.formal)
-    if arities ~= nil then
+    if arities ~= nil and arities[arity] ~= nil then
         return arities[arity]
     else
-        return nil
+        local fn = VFunction:new(`t{vSymbol}`, arity)
+        vSymbol += 1
+        if arities ~= nil then
+            arities[arity] = fn
+        else
+            terms:set(term.formal, {[arity] = fn})
+        end
+        return fn
     end
 end
+
+local predicates: FragMap<{[number]: VPredicate}> = FragMap:new()
+function predCacheGet(pred: Frag, arity: number): VPredicate
+    local arities = predicates:get(pred.formal)
+    if arities ~= nil and arities[arity] ~= nil then
+        return arities[arity]
+    else
+        local p = VPredicate:new(`p{vSymbol}`, arity)
+        vSymbol += 1
+        if arities ~= nil then
+            arities[arity] = p
+        else
+            predicates:set(pred.formal, {[arity] = p})
+        end
+        return p
+    end
+end
+
 
 type Bindings = {
     stack: {number},
@@ -73,28 +89,15 @@ function termToV(term: Frag, bindings: Bindings): VTerm?
     -- If we didn't manage to convert all the children, e.g. if some of the
     -- children are sentences, then we just convert the whole term to a constant
     -- for Vampire.
+    -- TODO: what if this term is unclosed? Then this isn't really correct.
     if children == nil then
-        local cached = termCacheGet(term, 0)
-        if cached then return cached:with({}) end
-
-        local constant = VFunction:new(`v{vSymbol}`, 0)
-        vSymbol += 1
-
-        -- Update the cache with the new constant.
-        termCacheSet(term, 0, constant)
+        local constant = termCacheGet(term, 0)
         return constant:with({})
     end
 
     -- Now we can make a new function symbol
     if term.replacement then
-        local fn = termCacheGet(term.replacement, #children)
-        if fn == nil then 
-            fn = VFunction:new(`v{vSymbol}`, #children)
-            vSymbol += 1
-            termCacheSet(term.replacement, #children, fn)
-        end
-
-        return (fn :: VFunction):with(children)
+        return termCacheGet(term.replacement, #children):with(children)
     else
         -- TODO: templates
         assert(false)
@@ -226,7 +229,7 @@ function predToV(pred: Frag, bindings: Bindings): VFormula?
     end
 
     if pred.formal.templateIdx ~= nil then
-        -- Convert all the children
+        -- Convert all the children into terms
         local children = {}
         for i, child in pred.formal.children do
             local vChild = termToV(child, bindings)
@@ -239,8 +242,27 @@ function predToV(pred: Frag, bindings: Bindings): VFormula?
         return vPred:with(children)
     end
 
-    log("can't pred (unknown)", tostring(pred), pred:match(shared.forallPattern))
-    return nil
+    -- If we didn't match any of those patterns then we can try and turn this
+    -- into a new predicate symbol for vampire.
+
+    -- Convert all the children into terms
+    local children = {}
+    for i, child in pred.children do
+        local vChild = termToV(child, bindings)
+        -- if we couldn't turn the child into a term, just give up.
+        if vChild == nil then 
+            log("It was the child", tostring(pred.children[i]))
+            return nil 
+        end
+        children[i] = vChild
+    end
+
+    if pred.replacement then
+        if pred.replacement.unclosedCount ~= 0 then assert(false) end
+        return predCacheGet(pred.replacement, #children):with(children)
+    else
+        assert(false)
+    end
 end
 
 local options = VOptions:new()

@@ -582,6 +582,15 @@ proof
     thus p by modus_ponens [q] [p];
 qed
 
+If and only if is an equivalence relation.
+
+theorem iff.refl [p : sentence] :
+    |- p ↔ p
+proof
+    assume p then p;
+    thus p ↔ p by iff.intro [p] [p];
+qed
+
 theorem iff.symm [p q : sentence] : (p ↔ q)
     |- q ↔ p
 proof
