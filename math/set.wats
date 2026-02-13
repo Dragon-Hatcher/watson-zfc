@@ -876,3 +876,52 @@ proof
 
     done logically
 qed
+
+Next we define our set of binary relations between two sets as the powerset of the Cartesian product of those two sets.
+
+notation binary_relation
+    term ::= "Rel(" term ", " term ")"
+end
+
+definition
+    Rel(A, B) := 𝒫(A × B)
+end
+
+A functional relation is a subset of all binary relations such that the first element of each ordered pair in the relation is unique.
+
+notation functional_relation
+    term ::= term " → " term
+end
+
+definition
+    A → B := {f ∈ Rel(A, B) | ∀a, a ∈ A → (∃!b, b ∈ B ∧ ⟨a, b⟩ ∈ f)}
+end
+
+We define a function mapping as the second element of a unique element of a functional relation.
+
+notation function_application
+    term ::= term "(" term ")"
+end
+
+definition
+    f(a) := ℩b, ⟨a, b⟩ ∈ f
+end
+
+Now, we define a set map which contains the entire image of a function on a set.
+
+notation set_map
+  term ::= "{" term(x) " | " x:@binding(term) " ∈ " term "}"
+end
+
+definition
+    {f(x) | x ∈ A} := {y | ∃x, x ∈ A ∧ y = f(x)}
+end
+
+The proof follows from (I'll figure this out when I complete the proof)
+
+theorem set_map.def [f : term] [A : term] :
+    |- ∀y, y ∈ {f(x) | x ∈ A} ↔ (∃x, x ∈ A ∧ y = f(x))
+proof
+    suffices ∀y, y ∈ {f(x) | x ∈ A} ↔ (∃x, x ∈ A ∧ y = f(x));
+    todo
+qed
