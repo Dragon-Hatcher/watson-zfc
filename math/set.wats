@@ -366,7 +366,8 @@ The unordered pair is unordered. That is, it is symmetric.
 theorem pair.symm [a b : term] :
     |- {a, b} = {b, a}
 proof
-    todo
+    thus ∀x, x ∈ {a, b} ↔ x ∈ {b, a} by pair.def;
+    thus {a, b} = {b, a}             by zfc.extensionality;
 qed
 
 The unordered pair being a subset is equivalent to both elements of the pair
