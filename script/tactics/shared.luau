@@ -32,8 +32,11 @@ assert(M.forallIntroThm ~= nil)
 M.forallElimThm = Theorem:lookupByName("forall.elim")
 assert(M.forallElimThm ~= nil)
 
+M.extensionalityThm = Theorem:lookupByName("zfc.extensionality")
+assert(M.extensionalityThm ~= nil)
+
 -- Patterns
-local scopeTactic = "tactic.vampire"
+local scopeTactic = "dummy"
 
 M.holePattern = frag.makePattern(
     "p", M.sentenceCat,
@@ -139,5 +142,11 @@ M.ninPattern = frag.makePattern(
     scopeTactic,
     {{name = "a", cat = M.termCat}, {name = "b", cat = M.termCat}}
 )
+
+M.boundedComprehensionPattern = frag.makePattern(
+    "{x ∈ a | p}", M.termCat,
+    scopeTactic,
+    {{name = "a", cat = M.termCat}, {name = "p", cat = M.sentenceCat}}
+):changeBinderNames({})
 
 return M

@@ -445,8 +445,19 @@ theorem comp.sub [p(_:term) : sentence] [X : term] :
     |- {x ∈ X | p(x)} ⊆ X
 proof
     follows ∀y, y ∈ {x ∈ X | p(x)} ↔ (y ∈ X ∧ p(y)) by comp.def [p(_)] [X];
-    thus    ∀y, y ∈ {x ∈ X | p(x)} → y ∈ X          logically;
+    thus    ∀y, y ∈ {x ∈ X | p(x)} →  y ∈ X         logically;
 qed
+
+Because `comp.def` is a second order theorem, that is it is schematized over
+all predicates $p$, Vampire cannot reason with it automatically. This is why we
+had to manually provide the template instantiations when we invoked it.
+Restricted comprehension comes up so frequently and invoking second order
+theorems is so tedious that we are just going to hard code this theorem so that
+it is automatically given to Vampire any time a comprehension appears in the 
+local context. 
+
+TODO: make a better API Daniel so we don't need to do this
+tactic dummy tactic ::= "ksdjnskdjcnksdjcn" end
 
 ### Unions
 
@@ -564,12 +575,11 @@ theorem big_inter.def [a : term] : (a ≠ ∅)
     |- ∀x, x ∈ ⋂a ↔ (∀y, y ∈ a → x ∈ y)
 proof
     arbitrary x;
+    suffices x ∈ {z ∈ ⋃a | ∀y, y ∈ a → z ∈ y} ↔ (∀y, y ∈ a → x ∈ y);
 
-    follows ∀x', x' ∈ ⋂a ↔ (x' ∈ ⋃a ∧ (∀y, y ∈ a → x' ∈ y)) by comp.def [∀y, y ∈ a → _ ∈ y] [⋃a];
+    assume x ∈ {z ∈ ⋃a | ∀y, y ∈ a → z ∈ y} then ∀y, y ∈ a → x ∈ y logically;
 
-    assume x ∈ ⋂a then ∀y, y ∈ a → x ∈ y logically;
-
-    assume ∀y, y ∈ a → x ∈ y then x ∈ ⋂a as
+    assume ∀y, y ∈ a → x ∈ y then x ∈ {z ∈ ⋃a | ∀y, y ∈ a → z ∈ y} as
         follows x ∈ ⋃a as
             obtain y st y ∈ a  by nonempty.has_element;
             follows     x ∈ y  logically;
@@ -672,7 +682,7 @@ theorem set_diff.def [a b : term] :
     |- ∀x, x ∈ a - b ↔ (x ∈ a ∧ x ∉ b)
 proof
     suffices ∀x, x ∈ {y ∈ a | y ∉ b} ↔ (x ∈ a ∧ x ∉ b);
-    done by comp.def [_ ∉ b] [a]
+    done logically
 qed
 
 The set difference is a subset of the first set. This follows from the fact that
@@ -813,6 +823,7 @@ proof
     hence (a = c ∧ b = d) → ⟨a, b⟩ = ⟨c, d⟩ logically;
     done logically
 qed
+
 ### The Cartesian Product
 
 The Cartesian product of two sets is the set of all ordered pairs formed from
@@ -835,15 +846,13 @@ theorem cart_prod.def [A B : term] :
 proof
     arbitrary x;
 
-    follows ∀x, (x ∈ A × B ↔ (x ∈ 𝒫(𝒫(A ∪ B)) ∧ (∃a, a ∈ A ∧ (∃b, (b ∈ B ∧ x = ⟨a, b⟩)))))
-        by comp.def [∃a, a ∈ A ∧ (∃b, b ∈ B ∧ _ = ⟨a, b⟩)] [𝒫(𝒫(A ∪ B))];
+    -- remember the definition of A × B. (specifically have Vampire remember it)
+    follows A × B = {x ∈ 𝒫(𝒫(A ∪ B)) | ∃a, a ∈ A ∧ (∃b, b ∈ B ∧ x = ⟨a, b⟩)}
+        by eq.refl [A × B];
 
     -- the forward direction is pretty simple. it just comes directly from the
     -- definition of restricted comprehension.
-
-    assume x ∈ A × B then ∃a, a ∈ A ∧ (∃b, b ∈ B ∧ x = ⟨a, b⟩) as
-        thus ∃a, a ∈ A ∧ (∃b, b ∈ B ∧ x = ⟨a, b⟩) logically;
-    ;
+    assume x ∈ A × B then ∃a, a ∈ A ∧ (∃b, b ∈ B ∧ x = ⟨a, b⟩) logically;
 
     -- the other direction is harder. it follows quickly that x satisfies the
     -- comprehension condition, but it is a little more work to show it is in

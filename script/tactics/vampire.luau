@@ -23,6 +23,20 @@ function termCacheGet(term: Frag, arity: number): VFunction
     end
 end
 
+local compTerms: FragMap<VFunction> = FragMap:new()
+function compTermCacheGet(pred: Frag, arity: number): VFunction
+    local cached = compTerms:get(pred.formal)
+    if cached ~= nil then
+        return cached
+    end
+
+    local fn = VFunction:new(`c{vSymbol}`, arity)
+    vSymbol += 1
+
+    compTerms:set(pred.formal, fn)
+    return fn
+end
+
 local predicates: FragMap<{[number]: VPredicate}> = FragMap:new()
 function predCacheGet(pred: Frag, arity: number): VPredicate
     local arities = predicates:get(pred.formal)
@@ -40,21 +54,35 @@ function predCacheGet(pred: Frag, arity: number): VPredicate
     end
 end
 
-
-type Bindings = {
-    stack: {number},
-    nextFree: number
+type CompPredInfo = {
+    fn: VFunction,
+    fnArity: number,
 }
-function newBindings(): Bindings 
+
+type ConversionCtx = {
+    termHoles: {VTerm},
+    bindingsStack: {number},
+    nextFree: number,
+    boundedCompPreds: FragMap<CompPredInfo>,
+}
+
+function newCtx(boundedCompPreds: FragMap<CompPredInfo>): ConversionCtx 
     return {
-        stack = {},
-        nextFree = 0
+        termHoles = {},
+        bindingsStack = {},
+        nextFree = 0,
+        boundedCompPreds = boundedCompPreds,
     }
 end
 
-function termToV(term: Frag, bindings: Bindings): VTerm?
+function termToV(term: Frag, bindings: ConversionCtx): VTerm?
+    term = term:changeBinderNames({})
+
     -- If there are more free variables then binding we have a problem
-    assert(term.unclosedCount <= #bindings.stack)
+    if not (term.unclosedCount <= #bindings.bindingsStack) then
+        log(tostring(term))
+    end
+    assert(term.unclosedCount <= #bindings.bindingsStack)
 
     -- TODO: we shouldn't need this
     local match = term:match(shared.termParenPattern)
@@ -68,10 +96,49 @@ function termToV(term: Frag, bindings: Bindings): VTerm?
         return nil
     end
 
+    -- Check specifically for bounded comprehension
+    match = term:match(shared.boundedComprehensionPattern)
+    if match ~= nil then
+        -- instantiate all the variables in the predicate. the first variable
+        -- will be the x in {x ∈ X | p(x)}. The remaining variables should come
+        -- from whatever is in bindings
+        local holes = {}
+        local holeCount = match[1].unclosedCount
+        for holeIdx = 0, holeCount - 1 do
+            table.insert(holes, Frag:hole(shared.termCat, holeIdx))
+        end 
+        local prop = match[1]:instantiateVars(holes)
+
+        -- count the number of external variables in the predicate
+        local externalArgCount = holeCount - 1
+        if holeCount == 0 then externalArgCount = 0 end
+        -- then add 1 for the set the comprehension is bounded over
+        externalArgCount += 1
+
+        local bound = termToV(match[0], bindings)
+        if bound == nil then return nil end
+
+        -- the first argument to the term is the bound
+        local args = {bound}
+        -- skip the first binding because it is the inner variable
+        for bindingIdx = 1, externalArgCount - 1 do
+            local varIdx = bindings.bindingsStack[#bindings.bindingsStack + 1 - bindingIdx]
+            table.insert(args, VTerm:newVar(varIdx))
+        end
+
+        local fn = compTermCacheGet(prop, externalArgCount)
+        bindings.boundedCompPreds:set(prop, { fn = fn, fnArity = externalArgCount })
+
+        return fn:with(args)
+    end
+
+
     if term.formal.varIdx ~= nil then
         -- This is a variable, so return from the bindings stack.
-        local vVar = bindings.stack[#bindings.stack - term.formal.varIdx]
+        local vVar = bindings.bindingsStack[#bindings.bindingsStack - term.formal.varIdx]
         return VTerm:newVar(vVar)
+    elseif term.formal.holeIdx ~= nil then
+        return bindings.termHoles[term.formal.holeIdx]
     elseif term.replacement and term.replacement.unclosedCount ~= 0 then
         -- This is notation that contains a variable. TODO: handle
         assert(false)
@@ -104,7 +171,7 @@ function termToV(term: Frag, bindings: Bindings): VTerm?
     end
 end
 
-function predToV(pred: Frag, bindings: Bindings): VFormula?
+function predToV(pred: Frag, bindings: ConversionCtx): VFormula?
     pred = pred:changeBinderNames({})
 
     local match = pred:match(shared.impPattern)
@@ -136,11 +203,11 @@ function predToV(pred: Frag, bindings: Bindings): VFormula?
         bindings.nextFree += 1
 
         -- push it to the stack before parsing child
-        bindings.stack[#bindings.stack + 1] = var
+        bindings.bindingsStack[#bindings.bindingsStack + 1] = var
         local p = predToV(match[0], bindings)
 
         -- now pop from the stack
-        bindings.stack[#bindings.stack] = nil
+        bindings.bindingsStack[#bindings.bindingsStack] = nil
 
         if not p then return nil end
 
@@ -151,9 +218,9 @@ function predToV(pred: Frag, bindings: Bindings): VFormula?
     if match ~= nil then
         local var = bindings.nextFree
         bindings.nextFree += 1
-        bindings.stack[#bindings.stack + 1] = var
+        bindings.bindingsStack[#bindings.bindingsStack + 1] = var
         local p = predToV(match[0], bindings)
-        bindings.stack[#bindings.stack] = nil
+        bindings.bindingsStack[#bindings.bindingsStack] = nil
 
         if not p then return nil end
 
@@ -251,7 +318,6 @@ function predToV(pred: Frag, bindings: Bindings): VFormula?
         local vChild = termToV(child, bindings)
         -- if we couldn't turn the child into a term, just give up.
         if vChild == nil then 
-            log("It was the child", tostring(pred.children[i]))
             return nil 
         end
         children[i] = vChild
@@ -263,6 +329,44 @@ function predToV(pred: Frag, bindings: Bindings): VFormula?
     else
         assert(false)
     end
+end
+
+function addCompPred(pred: Frag, info: CompPredInfo, problem: VProblem)
+    -- we need one forall variable for the bound and then one forall variable
+    -- for each external argument to the predicate. We want to encode:
+    -- ∀X ∀a₁ ... ∀aₙ ∀x, x ∈ t(X, a₁, ..., aₙ) ↔ (x ∈ X ∧ p(x, a₁, ..., aₙ))
+
+    -- we take the next index for the extensionality variable.
+    local extVarIdx = info.fnArity
+    local extVar = VTerm:newVar(extVarIdx)
+
+    local args = {}
+    for varI = 0, info.fnArity - 1 do
+        table.insert(args, VTerm:newVar(varI))
+    end
+
+    local instantiatedFn = info.fn:with(args)
+
+    -- convert the predicate to vampire. TODO: for now don't recursively
+    -- collect predicates.
+    local ctx = newCtx(FragMap:new())
+    args[0] = extVar
+    ctx.termHoles = args
+    ctx.nextFree = extVarIdx + 1
+    local vPred = predToV(pred, ctx)
+    if vPred == nil then return end
+
+    local iff = VFormula:newIff(
+        inPred:with({extVar, instantiatedFn}), 
+        VFormula:newAnd(inPred:with({extVar, VTerm:newVar(0)}), vPred)
+    )
+
+    local final = VFormula:newForall(extVarIdx, iff)
+    for varI = info.fnArity - 1, 0, -1 do
+        final = VFormula:newForall(varI, final)
+    end
+
+    problem:addAxiom(final)
 end
 
 local options = VOptions:new()
@@ -277,18 +381,34 @@ function M.handleVampire(state: state.State): (state.State, VampError?)
     local problem = VProblem:new(options)
     local fail = nil
 
+    local compPreds = FragMap:new()
+
     -- Collect all the knowns as axioms for vampire
     for _, fact in state.knowns :: {[Fact]: Fact} do
         -- Ignore assumptions for now. We could handle later but not really important.
         if fact.assumption ~= nil then continue end
 
-        local vPred = predToV(fact.conclusion, newBindings())
+        local vPred = predToV(fact.conclusion, newCtx(compPreds))
         if vPred then problem:addAxiom(vPred) else fail = fact.conclusion end
     end
 
     -- And we conjecture the goal from the knowns
-    local conjecture = predToV(state.goal, newBindings())
+    local conjecture = predToV(state.goal, newCtx(compPreds))
     if conjecture then problem:setConjecture(conjecture) else fail = state.goal end
+
+    -- Add the bounded comprehension definition for each bounded comprehension
+    -- we encountered.
+    local hasComp = false
+    for comp, info in compPreds :: {[Frag]: CompPredInfo} do
+        hasComp = true
+        addCompPred(comp, info, problem)
+    end
+
+    if hasComp then
+        local ext = predToV(shared.extensionalityThm.conclusion, newCtx(compPreds))
+        assert(ext ~= nil)
+        problem:addAxiom(ext)
+    end
 
     -- If any of the Vampire conversions failed report that as the error.
     if fail ~= nil then
