@@ -1,7 +1,20 @@
 local state = require("./state")
 local shared = require("./shared")
+local vampire = require("./vampire")
 
 local M = {}
+
+function vampErrToDiag(err: vampire.VampError, span: Span): Diagnostic
+    if err.err == "couldnt_convert_frag" then
+        return Diagnostic:new(`Unable to convert \`{err.frag}\` to Vampire`, span:label(""))
+    elseif err.err == "unprovable" then
+        return Diagnostic:new("Vampire proved there is no contradiction", span:label(""))
+    elseif err.err == "could_not_find_proof" then
+        return Diagnostic:new("Vampire was unable to find a contradiction", span:label(""))
+    else
+        assert(false)
+    end
+end
 
 function M.handleContradiction(
     tactic: { _span: Span },
@@ -27,14 +40,18 @@ function M.handleContradiction(
         end
     end
 
-    -- We failed to find the contradiction, so report an error
-    Diagnostic:new(
-        "could not find contradiction",
-        tactic._span:label("")
-    )
-        :withTacticInfo(state.info)
-        :report()
-    return state:error()
+    -- We didn't find a contradiction, so let's try having vampire find one.
+    local state2 = state:copy()
+    state2.goal = shared.falsum;
+
+    local state3, vErr = vampire.handleVampire(state2)
+    if vErr ~= nil then
+        vampErrToDiag(vErr, tactic._span)
+            :withTacticInfo(state.info)
+            :report()
+    end
+
+    return state3
 end
 
 return M

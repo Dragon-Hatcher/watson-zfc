@@ -372,7 +372,7 @@ end
 local options = VOptions:new()
 options:setTimeout(50)
 
-type VampError =
+export type VampError =
     | { err: "couldnt_convert_frag", frag: Frag }
     | { err: "unprovable" }
     | { err: "could_not_find_proof" }

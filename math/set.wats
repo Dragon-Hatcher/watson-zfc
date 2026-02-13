@@ -332,11 +332,22 @@ qed
 
 The empty set is a subset of any set.
 
-theorem empty.sub [a : term] :
+theorem empty.is_sub [a : term] :
     |- ∅ ⊆ a
 proof
-    follows ∀x, x ∉ ∅        by empty.def;
+    follows ∀x, x ∉ ∅         by empty.def;
     thus    ∀x, x ∈ ∅ → x ∈ a logically;
+qed
+
+Every subset of the empty set is the empty set.
+
+theorem empty.sub_is_empty [a : term] : (a ⊆ ∅)
+    |- a = ∅
+proof
+    follows ∀x, x ∈ a → x ∈ ∅ by sub.def;
+    follows ∀x,         x ∉ ∅ by empty.def;
+    thus   ¬∃x, x ∈ a         logically;
+    thus    a = ∅             by zfc.extensionality;
 qed
 
 ### The Unordered Pair
@@ -1034,3 +1045,132 @@ At this point we could prove that induction holds on $\omega$. However, $\omega$
 is actually just one element of a larger number system called the ordinals. A
 more powerful form of induction holds on these ordinal numbers so we will 
 instead define the ordinals and prove _transfinite_ induction.
+
+The intuitive definition of the ordinal numbers is as follows: The empty set is
+an ordinal number and any set which contains every previously defined ordinal is
+an ordinal number. The problem is that this definition is recursive and we are
+attempting to use the ordinals to define recursion. Luckily, the ordinals admit
+an alternate definition.
+
+definition
+    succ(n) := n ∪ {n}
+end
+
+definition 
+    transitive(α) := ∀x, x ∈ α → x ⊆ α
+end
+
+definition
+    is_least(α, β) := α ∈ β ∧ ∀γ, (γ ∈ β ∧ γ ≠ α) → α ∈ γ
+end
+
+definition
+    well_ordered(α) := ∀β, (β ⊆ α ∧ β ≠ ∅) → ∃γ, is_least(γ, β)
+end
+
+definition
+    ordinal.is(α) := transitive(α) ∧ well_ordered(α)
+end
+
+notation postfix_pred
+    sentence ::= term " : " @name
+end
+
+definition
+    α : Ord := ordinal.is(α)
+end
+
+theorem ordinal.empty.is :
+    |- ∅ : Ord
+proof
+    follows transitive(∅) as
+        suffices ∀x, x ∈ ∅ → x ⊆ ∅;
+        follows ∀x, x ∉ ∅ by empty.def;
+        done logically
+    ;
+
+    follows well_ordered(∅) as
+        suffices ∀β, (β ⊆ ∅ ∧ β ≠ ∅) → ∃γ, is_least(γ, β);
+        follows ∀β, ¬(β ⊆ ∅ ∧ β ≠ ∅) by empty.sub_is_empty;
+        done logically
+    ;
+
+    thus transitive(∅) ∧ well_ordered(∅) logically;
+qed
+
+theorem ordinal.succ.is [α : term] : (α : Ord)
+    |- succ(α) : Ord
+proof
+    have transitive(α) ∧ well_ordered(α) from α : Ord;
+
+    follows transitive(succ(α)) as
+        suffices ∀x, x ∈ α ∪ {α} → x ⊆ α ∪ {α};
+        arbitrary x; assume x ∈ α ∪ {α};
+        suffices ∀y, y ∈ x → y ∈ α ∪ {α};
+        arbitrary y; assume y ∈ x;
+        follows x ∈ α ∨ x ∈ {α} by union.def;
+        follows x ∈ α ∨ x =  α  by singleton.def;
+
+        assume x ∈ α then y ∈ α as
+            follows transitive(α) logically;
+            follows ∀z, z ∈ α → z ⊆ α;
+            follows x ⊆ α logically;
+            thus    y ∈ α by sub.def;
+        ;
+        assume x = α then y ∈ α logically;
+        
+        thus y ∈ α       logically;
+        thus y ∈ α ∪ {α} by union.def;
+    ;
+
+    follows well_ordered(succ(α)) as
+        suffices ∀β, (β ⊆ succ(α) ∧ β ≠ ∅) → ∃γ, is_least(γ, β);
+        arbitrary β; assume β ⊆ succ(α) ∧ β ≠ ∅;
+
+        -- if β = {α} then α is the least element.
+        assume β = {α} then is_least(α, β) as
+            suffices α ∈ β ∧ ∀γ, (γ ∈ β ∧ γ ≠ α) → α ∈ γ;
+            follows α ∈ β by singleton.def;
+            follows ∀γ, (γ ∈ β ∧ γ ≠ α) → α ∈ γ as
+                arbitrary γ; assume γ ∈ β ∧ γ ≠ α;
+                follows γ = α by singleton.def;
+                contradiction
+            ;
+            done logically
+        ;
+
+        -- otherwise we get the least element from the well ordering of α.
+        assume β ≠ {α} then ∃γ, is_least(γ, β) as
+            let β' := β - {α};
+            follows β' ≠ ∅ as todo;
+            follows β' ⊆ α as todo;
+            obtain γ st is_least(γ, β') as todo;
+            follows is_least(γ, β) as todo;
+            done logically
+        ;
+
+        done logically
+    ;
+
+    thus transitive(succ(α)) ∧ well_ordered(succ(α)) logically;
+qed
+
+theorem ordinal.member.is [α β : term] : (α : Ord) (β ∈ α)
+    |- β : Ord
+proof
+    todo
+qed
+
+theorem ordinal.union.is [A : term] : (∀α, α ∈ A → α : Ord)
+    |- ⋃A : Ord
+proof
+    todo
+qed
+
+theorem ordinal.induction [p(_:term) : sentence] : 
+    (∀α, ((α : Ord) ∧ (∀β, β ∈ α → p(β))) → p(α))
+ -- (∀α : Ord, (∀β ∈ α, p(β)) → p(α))
+    |- ∀α, α : Ord → p(α)
+proof
+    todo
+qed
