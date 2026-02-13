@@ -252,6 +252,45 @@ definition
     a ⊂ b := a ⊆ b ∧ a ≠ b
 end
 
+theorem sub.def [a b : term] :
+    |- a ⊆ b ↔ ∀x, x ∈ a → x ∈ b
+proof
+    done by iff.refl [a ⊆ b]
+qed
+
+theorem ssub.def [a b : term] :
+    |- a ⊂ b ↔ (a ⊆ b ∧ a ≠ b)
+proof
+    done by iff.refl [a ⊂ b]
+qed
+
+### Bounded Quantifiers
+
+When defining the subset relation we wrote $\forall x, x \in a \to x \in b$. The
+$x \in a \to$ component makes the quantifier only meaningful for elements of the
+set $a$. This is a very common pattern so we will define shorthand notation for
+it. 
+
+notation forall.bounded
+    sentence ::= "∀" x:@binding(term) " ∈ " term ", " sentence(x)
+end
+
+definition
+    ∀x ∈ X, p(x) := ∀x, x ∈ X → p(x)
+end
+
+Note that for the existential quantifier we use $\land$ instead of $\to$
+because we are looking for an element that is both in the set and satisfies
+the property.
+
+notation exists.bounded
+    sentence ::= "∃" x:@binding(term) " ∈ " term ", " sentence(x)
+end
+
+definition
+    ∃x ∈ X, p(x) := ∃x, x ∈ X ∧ p(x)
+end
+
 ### The Empty Set
 
 Returning to mathematics, we can use the unrestricted comprehension syntax to 
@@ -336,7 +375,8 @@ being members of the set.
 theorem pair.sub [a b A : term] :
     |- (a ∈ A ∧ b ∈ A) ↔ {a, b} ⊆ A
 proof
-    todo
+    recall sub.def;
+    done by pair.def
 qed
 
 ### The Singleton Set
@@ -369,8 +409,7 @@ theorem singleton.sub [a A : term] :
 proof
     follows a ∈ A → (∀x, x ∈ {a} → x ∈ A) by singleton.def;
     follows (∀x, x ∈ {a} → x ∈ A) → a ∈ A by singleton.def;
-    -- done logically
-    todo
+    done by sub.def
 qed
 
 ### Restricted Comprehension
@@ -675,17 +714,15 @@ of sets in the powerset.
 theorem powset.singleton_in [a A : term] : (a ∈ A)
     |- {a} ∈ 𝒫(A)
 proof
-    -- follows {a} ⊆ A by singleton.sub;
-    -- thus {a} ∈ 𝒫(A) by powset.def;
-    todo
+    follows {a} ⊆ A by singleton.sub;
+    thus {a} ∈ 𝒫(A) by powset.def;
 qed
 
 theorem powset.pair_in [a b A : term] : (a ∈ A) (b ∈ A)
     |- {a, b} ∈ 𝒫(A)
 proof
-    -- follows {a, b} ⊆ A by pair.sub;
-    -- thus {a, b} ∈ 𝒫(A) by powset.def;
-    todo
+    follows {a, b} ⊆ A by pair.sub;
+    thus {a, b} ∈ 𝒫(A) by powset.def;
 qed
 
 
@@ -758,6 +795,7 @@ proof
 
     -- the forward direction is pretty simple. it just comes directly from the
     -- definition of restricted comprehension.
+
     assume x ∈ A × B then ∃a, a ∈ A ∧ (∃b, b ∈ B ∧ x = ⟨a, b⟩) as
         thus ∃a, a ∈ A ∧ (∃b, b ∈ B ∧ x = ⟨a, b⟩) logically;
     ;
@@ -776,8 +814,8 @@ proof
         suffices x ∈ 𝒫(𝒫(A ∪ B)) logically;
 
         follows a ∈ A ∪ B ∧ b ∈ A ∪ B    by union.def;
-        thus {a}    ∈ 𝒫(A ∪ B)           by powset.singleton_in;
-        thus {a, b} ∈ 𝒫(A ∪ B)           by powset.pair_in;
+        thus  {a}          ∈   𝒫(A ∪ B)  by powset.singleton_in;
+        thus       {a, b}  ∈   𝒫(A ∪ B)  by powset.pair_in;
         thus {{a}, {a, b}} ∈ 𝒫(𝒫(A ∪ B)) by powset.pair_in;
         thus             x ∈ 𝒫(𝒫(A ∪ B)) logically;
     ;
