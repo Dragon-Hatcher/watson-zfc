@@ -260,7 +260,7 @@ justification for that step. There are multiple ways of justifying a fact so we
 will create a non-terminal symbol that represents justifications. We can do this
 with the `grammar_category` command.
 
-tactic_category justification
+grammar_category justification
 
 Then we will claim that a fact is true by using the `follows` tactic. Notice
 that we provide both the justification for the given fact and the tactic that
