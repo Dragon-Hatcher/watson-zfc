@@ -258,7 +258,7 @@ we can use to prove our first theorems.
 The simplest proof step is claiming that a fact is true and providing a
 justification for that step. There are multiple ways of justifying a fact so we
 will create a non-terminal symbol that represents justifications. We can do this
-with the `tactic_category` command.
+with the `grammar_category` command.
 
 tactic_category justification
 
@@ -276,7 +276,7 @@ One form of justification for a fact is applying a theorem. We will call this
 justification `by`. To use a theorem we need to fill in any template parameters
 the theorem has. We will create a new non-terminal for the templates.
 
-tactic_category templates
+grammar_category templates
 
 tactic justification.by
     justification ::= @kw"by" thm:@name tmps:templates
@@ -284,7 +284,7 @@ end
 
 And then we will fill in the syntax for a list of template instantiations.
 
-tactic_category template
+grammar_category template
 
 tactic templates.some
     templates ::= tmp:template rest:templates
