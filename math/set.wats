@@ -885,35 +885,35 @@ notation product
 end
 
 definition
-    A × B := {x ∈ 𝒫(𝒫(A ∪ B)) | ∃a, a ∈ A ∧ (∃b, b ∈ B ∧ x = ⟨a, b⟩)}
+    A × B := {x ∈ 𝒫(𝒫(A ∪ B)) | ∃a ∈ A, ∃b ∈ B, x = ⟨a, b⟩}
 end
 
 The difficult task is to prove that this gives us every possible ordered pair.
 
 theorem cart_prod.def [A B : term] :
-    |- ∀x, x ∈ A × B ↔ ∃a, a ∈ A ∧ (∃b, b ∈ B ∧ x = ⟨a, b⟩)
+    |- ∀x, x ∈ A × B ↔ ∃a ∈ A, ∃b ∈ B, x = ⟨a, b⟩
 proof
     arbitrary x;
 
     -- remember the definition of A × B. (specifically have Vampire remember it)
-    follows A × B = {x ∈ 𝒫(𝒫(A ∪ B)) | ∃a, a ∈ A ∧ (∃b, b ∈ B ∧ x = ⟨a, b⟩)}
+    follows A × B = {x ∈ 𝒫(𝒫(A ∪ B)) | ∃a ∈ A, ∃b ∈ B, x = ⟨a, b⟩}
         by eq.refl [A × B];
 
     -- the forward direction is pretty simple. it just comes directly from the
     -- definition of restricted comprehension.
-    assume x ∈ A × B then ∃a, a ∈ A ∧ (∃b, b ∈ B ∧ x = ⟨a, b⟩) logically;
+    assume x ∈ A × B then ∃a ∈ A, ∃b ∈ B, x = ⟨a, b⟩ logically;
 
     -- the other direction is harder. it follows quickly that x satisfies the
     -- comprehension condition, but it is a little more work to show it is in
     -- the double powerset.
-    assume ∃a, a ∈ A ∧ (∃b, b ∈ B ∧ x = ⟨a, b⟩) then x ∈ A × B as
-        obtain a st a ∈ A ∧ (∃b, b ∈ B ∧ x = ⟨a, b⟩);
+    assume ∃a ∈ A, ∃b ∈ B, x = ⟨a, b⟩ then x ∈ A × B as
+        obtain a st a ∈ A ∧ (∃b ∈ B, x = ⟨a, b⟩);
         obtain b st b ∈ B ∧ x = ⟨a, b⟩ logically;
         follows x = ⟨a, b⟩ logically;
         thus x = {{a}, {a, b}};
 
         -- we already have that x is a pair so we just need to prove it is in the powerset
-        suffices x ∈ 𝒫(𝒫(A ∪ B)) ∧ (∃a', a' ∈ A ∧ (∃b', (b' ∈ B ∧ x = ⟨a', b'⟩))) logically;
+        suffices x ∈ 𝒫(𝒫(A ∪ B)) ∧ (∃a ∈ A, ∃b ∈ B, x = ⟨a, b⟩) logically;
         suffices x ∈ 𝒫(𝒫(A ∪ B)) logically;
 
         follows a ∈ A ∪ B ∧ b ∈ A ∪ B    by union.def;
@@ -1014,7 +1014,7 @@ which is what will let us conclude that $\omega$ is well defined.
 theorem inductive.exists :
     |- ∃α, inductive(α)
 proof
-    suffices ∃α, ∅ ∈ α ∧ ∀n, n ∈ α → n ∪ {n} ∈ α;
+    suffices ∃α, ∅ ∈ α ∧ ∀n ∈ α, n ∪ {n} ∈ α;
 
     -- the object whose existence is garunteed by the axiom of infinity is the
     -- α that we want.
@@ -1089,10 +1089,6 @@ an ordinal number and any set which contains every previously defined ordinal is
 an ordinal number. The problem is that this definition is recursive and we are
 attempting to use the ordinals to define recursion. Luckily, the ordinals admit
 an alternate definition.
-
-definition
-    succ(n) := n ∪ {n}
-end
 
 definition 
     transitive(α) := ∀x, x ∈ α → x ⊆ α
@@ -1234,7 +1230,7 @@ proof
     todo
 qed
 
-theorem ordinal.union.is [A : term] : (∀α, α ∈ A → α : Ord)
+theorem ordinal.union.is [A : term] : (∀α ∈ A, α : Ord)
     |- ⋃A : Ord
 proof
     todo
@@ -1247,17 +1243,8 @@ proof
 qed
 
 theorem ordinal.induction [p(_:term) : sentence] : 
-    (∀α, ((α : Ord) ∧ (∀β, β ∈ α → p(β))) → p(α))
- -- (∀α : Ord, (∀β ∈ α, p(β)) → p(α))
+    (∀α, (α : Ord ∧ ∀β ∈ α, p(β)) → p(α))
     |- ∀α, α : Ord → p(α)
 proof
     todo
-qed
-
-theorem test [a b : term] :
-    |- a ∪ b = a
-proof
-    let c := a ∪ b;
-    follows a = c as todo;
-    done logically
 qed
