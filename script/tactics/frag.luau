@@ -2,10 +2,9 @@ local M = {}
 
 function M.makePattern(
     text: string, cat: FormalCat, 
-    tactic: string, 
     vars: {{name: string, cat: FormalCat}}
 ): Frag
-    local scope = Scope:atTactic(tactic)
+    local scope = Scope:atEnd()
     assert(scope ~= nil, "invalid tactic name")
 
     for i, var in vars do

@@ -9,8 +9,24 @@ function M.handleEmpty(
 ): state.State
     local res = tactic.frag:resolve(state.scope)
     if res ~= nil then 
-        log(`Normal: {res}`) 
-        log(`Formal: {res.formal}`) 
+        local cur = res
+        local prev = nil
+        while prev ~= cur do
+            if cur.source and cur.source.isLuaApi then
+                log(tostring(cur), "(lua)")
+            elseif cur.source and cur.source.isDefinitionCmd then
+                log(tostring(cur), `(def {cur.source.isDefinitionCmd})`)
+            elseif cur.source and cur.source.isSyntaxCmd then
+                log(tostring(cur), `(syntax {cur.source.isSyntaxCmd})`)
+            elseif cur.source == nil then
+                log(tostring(cur), `(formal)`)
+            else
+                log(tostring(cur), "(other)")
+            end
+            prev = cur
+            cur = cur:reduce()
+        end
+        log()
     else
         log("Doesn't parse")
     end

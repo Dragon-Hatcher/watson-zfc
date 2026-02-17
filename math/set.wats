@@ -5,10 +5,11 @@ syntax in
     sentence ::= term " ∈ " term
 end
 
-notation non_in
+notation not_in
     sentence ::= term " ∉ " term
 end
 
+@[reducible]
 definition
     a ∉ b := ¬a ∈ b
 end
@@ -248,6 +249,7 @@ notation strict_subset
     sentence ::= term " ⊂ " term
 end
 
+@[reducible]
 definition
     a ⊂ b := a ⊆ b ∧ a ≠ b
 end
@@ -275,6 +277,7 @@ notation forall.bounded
     sentence ::= "∀" x:@binding(term) " ∈ " term ", " sentence(x)
 end
 
+@[reducible]
 definition
     ∀x ∈ X, p(x) := ∀x, x ∈ X → p(x)
 end
@@ -287,6 +290,7 @@ notation exists.bounded
     sentence ::= "∃" x:@binding(term) " ∈ " term ", " sentence(x)
 end
 
+@[reducible]
 definition
     ∃x ∈ X, p(x) := ∃x, x ∈ X ∧ p(x)
 end
@@ -466,9 +470,6 @@ Restricted comprehension comes up so frequently and invoking second order
 theorems is so tedious that we are just going to hard code this theorem so that
 it is automatically given to Vampire any time a comprehension appears in the 
 local context. 
-
-TODO: make a better API Daniel so we don't need to do this
-tactic dummy tactic ::= "ksdjnskdjcnksdjcn" end
 
 ### Unions
 
@@ -704,6 +705,28 @@ theorem set_diff.sub [a b : term] :
 proof
     suffices {x ∈ a | x ∉ b} ⊆ a;
     done by comp.sub [_ ∉ b] [a]
+qed
+
+We can also characterize a non-empty difference.
+
+theorem set_diff.non_empty [a b : term] : (b ⊆ a)
+    |- a - b ≠ ∅ ↔ a ≠ b
+proof
+    assume a - b ≠ ∅ then a ≠ b as
+        obtain x st x ∈ a - b by nonempty.has_element;
+        thus x ∈ a ∧ x ∉ b    by set_diff.def;
+        thus a ≠ b            by zfc.extensionality;
+    ;
+
+    assume a ≠ b then a - b ≠ ∅ as
+        obtain x st (x ∈ a ∧ x ∉ b) ∨ (x ∈ b ∧ x ∉ a) by zfc.extensionality;
+        follows ¬(x ∈ b ∧ x ∉ a) by sub.def;
+        thus      x ∈ a ∧ x ∉ b  logically;
+        thus      x ∈ a - b      by set_diff.def;
+        thus      a - b ≠ ∅      by nonempty.has_element;
+    ;
+
+    done logically
 qed
 
 ### The Powerset
@@ -1113,6 +1136,10 @@ proof
     thus transitive(∅) ∧ well_ordered(∅) logically;
 qed
 
+tactic tactic.print
+    tactic ::= @kw"print" frag:@fragment(term) ";" next:tactic
+end
+
 theorem ordinal.succ.is [α : term] : (α : Ord)
     |- succ(α) : Ord
 proof
@@ -1157,10 +1184,41 @@ proof
         -- otherwise we get the least element from the well ordering of α.
         assume β ≠ {α} then ∃γ, is_least(γ, β) as
             let β' := β - {α};
-            follows β' ≠ ∅ as todo;
-            follows β' ⊆ α as todo;
-            obtain γ st is_least(γ, β') as todo;
-            follows is_least(γ, β) as todo;
+
+            follows β' ≠ ∅ as
+                todo
+            ;
+            follows β' ⊆ α as
+                suffices ∀γ, γ ∈ β - {α} → γ ∈ α;
+                arbitrary γ; assume γ ∈ β - {α};
+                follows γ ∈ β       by set_diff.def;
+                follows γ ∉ {α}     by set_diff.def;
+                thus    γ ∈ succ(α) by sub.def;
+                thus    γ ∈ α ∪ {α};
+                thus    γ ∈ α       by union.def;
+            ;
+            obtain γ st is_least(γ, β') as
+                follows well_ordered(α) logically;
+                thus    ∀δ, (δ ⊆ α ∧ δ ≠ ∅) → ∃γ, is_least(γ, δ);
+                thus                          ∃γ, is_least(γ, β') logically;
+            ;
+            follows is_least(γ, β) as
+                have     γ ∈ β' ∧ ∀δ, (δ ∈ β' ∧ δ ≠ γ) → γ ∈ δ from is_least(γ, β');
+                suffices γ ∈ β  ∧ ∀δ, (δ ∈ β  ∧ δ ≠ γ) → γ ∈ δ;
+                
+                follows γ ∈ β'      logically;
+                have    γ ∈ β - {α} from γ ∈ β';
+                thus    γ ∈ β       by set_diff.def;
+
+                follows ∀δ, (δ ∈ β  ∧ δ ≠ γ) → γ ∈ δ as
+                    arbitrary δ; assume δ ∈ β ∧ δ ≠ γ;
+                    follows (δ ∈ β' ∧ δ ≠ γ) → γ ∈ δ logically;
+                    suffices δ ∈ β' logically;
+                    todo
+                ;
+
+                done logically
+            ;
             done logically
         ;
 
@@ -1182,10 +1240,24 @@ proof
     todo
 qed
 
+theorem ordinal.trichotomy [α β : term] : (α : Ord) (β : Ord)
+    |- α ∈ β ∨ (β ∈ α ∨ α = β)
+proof
+    todo
+qed
+
 theorem ordinal.induction [p(_:term) : sentence] : 
     (∀α, ((α : Ord) ∧ (∀β, β ∈ α → p(β))) → p(α))
  -- (∀α : Ord, (∀β ∈ α, p(β)) → p(α))
     |- ∀α, α : Ord → p(α)
 proof
     todo
+qed
+
+theorem test [a b : term] :
+    |- a ∪ b = a
+proof
+    let c := a ∪ b;
+    follows a = c as todo;
+    done logically
 qed

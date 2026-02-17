@@ -75,19 +75,33 @@ function newCtx(boundedCompPreds: FragMap<CompPredInfo>): ConversionCtx
     }
 end
 
+function shouldReduce(frag: Frag, watch: boolean?): boolean
+    local source = frag.source
+
+    if source == nil then return false end
+    if source.isLuaApi then return true end
+
+    if source.isDefinitionCmd ~= nil then
+        local attrs = shared.attributes:getAttributes(source.isDefinitionCmd)
+        for _, attr in attrs do
+            if attr._rule == "reducible" then 
+                return true 
+            end
+        end
+        return false
+    end
+
+    return false
+end
+
 function termToV(term: Frag, bindings: ConversionCtx): VTerm?
     term = term:changeBinderNames({})
 
     -- If there are more free variables then binding we have a problem
     if not (term.unclosedCount <= #bindings.bindingsStack) then
-        log(tostring(term))
-    end
-    assert(term.unclosedCount <= #bindings.bindingsStack)
-
-    -- TODO: we shouldn't need this
-    local match = term:match(shared.termParenPattern)
-    if match ~= nil then
-        return termToV(match[0], bindings)
+        -- log(tostring(term), term.unclosedCount, #bindings.bindingsStack, term.cat.name)
+        -- assert(false)
+        return nil
     end
 
     -- Terms can contain sentences so we might encounter them in our recursion.
@@ -97,7 +111,7 @@ function termToV(term: Frag, bindings: ConversionCtx): VTerm?
     end
 
     -- Check specifically for bounded comprehension
-    match = term:match(shared.boundedComprehensionPattern)
+    local match = term:match(shared.boundedComprehensionPattern)
     if match ~= nil then
         -- instantiate all the variables in the predicate. the first variable
         -- will be the x in {x ∈ X | p(x)}. The remaining variables should come
@@ -132,6 +146,10 @@ function termToV(term: Frag, bindings: ConversionCtx): VTerm?
         return fn:with(args)
     end
 
+    -- We didn't match any of the known options. Maybe we should reduce?
+    if shouldReduce(term) then
+        return termToV(term:reduce(), bindings)
+    end
 
     if term.formal.varIdx ~= nil then
         -- This is a variable, so return from the bindings stack.
@@ -253,12 +271,6 @@ function predToV(pred: Frag, bindings: ConversionCtx): VFormula?
         return VFormula:newNot(p)
     end
 
-    -- TODO: we shouldn't need this
-    match = pred:match(shared.sentenceParenPattern)
-    if match ~= nil then
-        return predToV(match[0], bindings)
-    end
-
     match = pred:match(shared.eqPattern)
     if match ~= nil then
         local lhs = termToV(match[0], bindings)
@@ -268,15 +280,6 @@ function predToV(pred: Frag, bindings: ConversionCtx): VFormula?
         return VFormula:newEq(lhs, rhs)
     end
 
-    match = pred:match(shared.neqPattern)
-    if match ~= nil then
-        local lhs = termToV(match[0], bindings)
-        local rhs = termToV(match[1], bindings)
-        if not lhs or not rhs then return nil end
-
-        return VFormula:newNot(VFormula:newEq(lhs, rhs))
-    end
-
     match = pred:match(shared.inPattern)
     if match ~= nil then
         local lhs = termToV(match[0], bindings)
@@ -284,15 +287,6 @@ function predToV(pred: Frag, bindings: ConversionCtx): VFormula?
         if not lhs or not rhs then return nil end
 
         return inPred:with({lhs, rhs})
-    end
-
-    match = pred:match(shared.ninPattern)
-    if match ~= nil then
-        local lhs = termToV(match[0], bindings)
-        local rhs = termToV(match[1], bindings)
-        if not lhs or not rhs then return nil end
-
-        return VFormula:newNot(inPred:with({lhs, rhs}))
     end
 
     if pred.formal.templateIdx ~= nil then
@@ -307,6 +301,11 @@ function predToV(pred: Frag, bindings: ConversionCtx): VFormula?
         local idx = pred.formal.templateIdx
         local vPred = VPredicate:new(`temp{idx}`, #children)
         return vPred:with(children)
+    end
+
+    -- We didn't match any of the known options. Maybe we should reduce?
+    if shouldReduce(pred) then
+        return predToV(pred:reduce(), bindings)
     end
 
     -- If we didn't match any of those patterns then we can try and turn this

@@ -114,15 +114,29 @@ We can define and in terms of or using the standard DeMorgan's Law relationship.
 That is we define $p \land q$ to mean $\neg(\neg p \lor \neg q)$. However,
 before we can make this definition we need one other definition: parentheses!
 Don't laugh. Parentheses are a part of mathematical notation too and they need
-a definition just like everything else. Of course, the definition is rather simple.
+a definition just like everything else.
 
 notation sentence.parentheses
     sentence ::= "(" sentence ")"
 end
 
+Parenthesis are somewhat unique though in that inserting parentheses shouldn't
+effect the meaning of the sentence beyond disambiguation. To track this fact,
+we are going to use another Watson feature: attributes. We can declare a new
+ attribute like so:
+
+attribute reducible
+    attribute ::= @kw"reducible"
+end
+
+Then when we make our definition we attach the annotation.
+
+@[reducible]
 definition
     (p) := p
 end
+
+How, exactly, this reducible annotation will be used will be explained later.
 
 With this we are able to define and.
 
@@ -704,6 +718,7 @@ notation term.parentheses
     term ::= "(" term ")"
 end
 
+@[reducible]
 definition
     (a:term) := a
 end
@@ -721,6 +736,7 @@ notation inequality
     sentence ::= term " ≠ " term
 end
 
+@[reducible]
 definition
     a ≠ b := ¬a = b
 end
