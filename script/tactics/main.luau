@@ -22,6 +22,7 @@ dispatch.justificationTable = {
 		return dispatch.handleTactic(sp.tactic, state)
 	end,
 	["justification.by"] = by.handleByTactic,
+	["justification.by.vampire"] = by.handleVampireByTactic,
 	["justification.using"] = quant.handleUsing,
 	["justification.specializing"] = quant.handleSpecializing,
 	["justification.logically"] = vampire.handleVampireTactic,

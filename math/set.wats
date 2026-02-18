@@ -218,6 +218,16 @@ tactic tactic.done
     tactic ::= @kw"done" just:justification
 end
 
+grammar_category theorem_list
+
+tactic theorem_list.one theorem_list ::= thm:@name end
+tactic theorem_list.many theorem_list ::= thm:@name "," rest:theorem_list end
+
+tactic justification.by.vampire
+    -- bind weaker than the original by so we don't override it.
+    justification (600) ::= @kw"by" thms:theorem_list
+end
+
 
 We have also enhanced our pre-existing tactics with the power of Vampire. For
 example, `contradiction` will now use Vampire to search for a contradiction and
@@ -391,8 +401,7 @@ being members of the set.
 theorem pair.sub [a b A : term] :
     |- (a ∈ A ∧ b ∈ A) ↔ {a, b} ⊆ A
 proof
-    recall sub.def;
-    done by pair.def
+    done by sub.def, pair.def
 qed
 
 ### The Singleton Set
@@ -1033,11 +1042,7 @@ proof
     follows ∀n, n ∈ x → n ∪ {n} ∈ x as
         arbitrary n; assume n ∈ x;
         obtain z st z ∈ x ∧ (∀w, (w ∈ z ↔ (w ∈ n ∨ w = n))) logically;
-        follows ∀w, w ∈ n ∪ {n} ↔ (w ∈ n ∨ w = n) as 
-            recall singleton.def;
-            recall union.def;
-            done logically
-        ;
+        follows ∀w, w ∈ n ∪ {n} ↔ (w ∈ n ∨ w = n) by singleton.def, union.def;
         follows z = n ∪ {n} logically;
         thus    n ∪ {n} ∈ x logically;
     ;

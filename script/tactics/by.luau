@@ -123,27 +123,30 @@ function tryManual(
 end
 
 function tryVampire(
-    just: { _span: Span, thm: SpannedString, tmps: Templates },
-    thm: Theorem,
+    globalSpan: Span,
+    thms: {{thm: Theorem, span: Span}},
     state: state.State
 ): state.State
     -- First, recall the provided theorem
-    local state1, rErr = recall.handleRecall(thm, state)
-    if rErr ~= nil then 
-        recall.recallErrToDiag(rErr, just.thm.span)
+    for _, thm in thms do
+        local newState, err = recall.handleRecall(thm.thm, state)
+        if err ~= nil then 
+            recall.recallErrToDiag(err, thm.span)
+                :withTacticInfo(state.info)
+                :report()
+            return newState
+        end
+        state = newState
+    end
+
+    local newState, vErr = vampire.handleVampire(state)
+    if vErr ~= nil then
+        vampire.vampErrToDiag(vErr, globalSpan)
             :withTacticInfo(state.info)
             :report()
-        return state1
     end
 
-    local state2, vErr = vampire.handleVampire(state)
-    if vErr ~= nil then
-        vampire.vampErrToDiag(vErr, just.thm.span)
-            :withTacticInfo(state1.info)
-            :report()
-    end
-
-    return state2
+    return newState
 end
 
 function M.handleByTactic(
@@ -167,7 +170,7 @@ function M.handleByTactic(
 
     if #instantiations == 0 and #diags > 0 then
         -- try vampire instead
-        return tryVampire(just, thm, state)
+        return tryVampire(just._span, {{thm = thm, span = just.thm.span}}, state)
     else
         -- otherwise report the errors and move on
         for _, diag in diags do
@@ -176,6 +179,48 @@ function M.handleByTactic(
 
         return newState
     end
+end
+
+function getTheoremList(thms: TheoremList): ({{thm: Theorem, span: Span}}, {Diagnostic})
+    local list = {}
+    local diags = {}
+
+    while true do
+        local thm = Theorem:lookupByName(thms.thm.str)
+        if thm ~= nil then
+            table.insert(list, {thm = thm, span = thms.thm.span})
+        else
+            local diag = Diagnostic:new(
+                "unknown theorem `" .. thms.thm.str .. "`",
+                thms.thm.span:label("")
+            )
+            table.insert(diags, diag)
+    end
+
+        if thms._rule == "theorem_list.many" then
+            thms = thms.rest
+        else
+            break
+        end
+    end
+
+    return list, diags
+end
+
+function M.handleVampireByTactic(
+    just: { _span: Span, thms: TheoremList },
+    state: state.State
+): state.State
+    local thms, diags = getTheoremList(just.thms)
+
+    if #diags > 0 then
+        for _, diag in diags do
+            diag:withTacticInfo(state.info):report()
+        end
+        return state:error()
+    end
+
+    return tryVampire(just.thms._span, thms, state)
 end
 
 return M
