@@ -109,14 +109,14 @@ quite similar to the rejected comprehension axiom, but this one doesn't lead to
 contradictions (as far as we know). This is sometimes also called separation or
 restricted comprehension.
 
-axiom zfc.specification [p(_:term) : sentence] :
+axiom zfc.specification [p(_) : sentence(term)] :
     |- ∀a, ∃x, ∀y, y ∈ x ↔ (y ∈ a ∧ p(y))
 end
 
 This axiom asserts that the image of any set under a function (implicitly 
 defined by $p$) exists. This is surprisingly rarely required.
 
-axiom zfc.replacement [p(_0:term, _1:term) : sentence] :
+axiom zfc.replacement [p(_0, _1) : sentence(term, term)] :
     |- ∀a, ((∀x, x ∈ a → ∃!y, p(x, y)) → (∃x, ∀y, y ∈ x ↔ (∃z, z ∈ a ∧ p(z, y))))
 end
 
@@ -155,7 +155,7 @@ We want to prove that if the set $\{x ~|~ p(x)\}$ exists, then the notation we
 have given for it will refer to that set. We need to invoke the iota axiom
 from the previous chapter.
 
-theorem uncomp.def [p(_:term) : sentence] : (∃x, ∀y, y ∈ x ↔ p(y))
+theorem uncomp.def [p(_) : sentence(term)] : (∃x, ∀y, y ∈ x ↔ p(y))
     |- ∀y, y ∈ {x | p(x)} ↔ p(y) 
 proof
     -- this property is essentially the definition of {x | p(x)} so we just
@@ -444,7 +444,7 @@ end
 
 This proof follows from the specification axiom.
 
-theorem comp.def [p(_:term) : sentence] [X : term] :
+theorem comp.def [p(_) : sentence(term)] [X : term] :
     |- ∀y, y ∈ {x ∈ X | p(x)} ↔ (y ∈ X ∧ p(y))
 proof
     suffices ∀y, y ∈ {x | x ∈ X ∧ p(x)} ↔ (y ∈ X ∧ p(y));
@@ -456,7 +456,7 @@ qed
 It easily follows from this definition that a restricted comprehension is
 always a subset of the original set.
 
-theorem comp.sub [p(_:term) : sentence] [X : term] :
+theorem comp.sub [p(_) : sentence(term)] [X : term] :
     |- {x ∈ X | p(x)} ⊆ X
 proof
     follows ∀y, y ∈ {x ∈ X | p(x)} ↔ (y ∈ X ∧ p(y)) by comp.def [p(_)] [X];
@@ -1242,7 +1242,7 @@ proof
     todo
 qed
 
-theorem ordinal.induction [p(_:term) : sentence] : 
+theorem ordinal.induction [p(_) : sentence(term)] : 
     (∀α, (α : Ord ∧ ∀β ∈ α, p(β)) → p(α))
     |- ∀α, α : Ord → p(α)
 proof

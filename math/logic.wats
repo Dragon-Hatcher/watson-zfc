@@ -676,7 +676,7 @@ end
 Then we can state the axiom, which we will call `iff.rw` for if and only if
 rewrite.
 
-axiom iff.rw [p q m(_) : sentence] : (p ↔ q) (m(p))
+axiom iff.rw [p q : sentence] [m(_) : sentence(sentence)] : (p ↔ q) (m(p))
     |- m(q)
 end
 
@@ -760,11 +760,9 @@ notation sentence.with_term
     sentence ::= @name "(" term ")"
 end
 
-And now we can state the axiom. The syntax `p(_:term)` disambiguates that
-this is a sentence dependent on a term rather than one dependent on a sentence,
-which we declared the notation for earlier.
+And now we can state the axiom.
 
-axiom eq.subst [p(_:term) : sentence] [a b : term] : (a = b) (p(a))
+axiom eq.subst [p(_) : sentence(term)] [a b : term] : (a = b) (p(a))
     |- p(b)
 end
 
@@ -849,7 +847,7 @@ are once again an introduction rule and an elimination rule? The introduction
 rule for $\exists$ is simple: if we have a particular object with a property,
 then we certainly know that there exists an object with that property.
 
-axiom exists.intro [p(_:term) : sentence] [a : term] : (p(a))
+axiom exists.intro [p(_) : sentence(term)] [a : term] : (p(a))
     |- ∃x, p(x)
 end
 
@@ -874,7 +872,7 @@ the following syntax declaration and axiom.
      term ::= "ε"
  end
 
- axiom exists.elim [p(_:term) : sentence] : (∃x, p(x))
+ axiom exists.elim [p(_) : sentence(term)] : (∃x, p(x))
      |- p(ε)
  end
 ```
@@ -894,7 +892,7 @@ we might imagine using the following alternate idea.
      term ::= "ε" @binding(term) ", " sentence
  end
 
- axiom exists.elim [p(_:term) : sentence] : (∃x, p(x))
+ axiom exists.elim [p(_) : sentence(term)] : (∃x, p(x))
      |- p(εx, p(x))
  end
 ```
@@ -922,7 +920,7 @@ this we might imagine using the same witness term as above but with the followin
 new axiom:
 
 ```
- axiom exists.elim [p(_:term) : sentence] [q : sentence] 
+ axiom exists.elim [p(_) : sentence(term)] [q : sentence] 
      : (∃x, p(x)) (p(εx, p(x)) → q)
      |- q
  end
@@ -943,7 +941,7 @@ syntax witness
     term ::= "∃ᵉ" @binding(term) ", " sentence " ⊢ " sentence
 end
 
-axiom exists.elim [p(_:term) : sentence] [q : sentence] 
+axiom exists.elim [p(_) : sentence(term)] [q : sentence] 
     : (∃x, p(x)) (p(∃ᵉx, p(x) ⊢ q) → q)
     |- q
 end
@@ -962,7 +960,7 @@ Using these two axioms we can prove the introduction and elimination rules for
 $\forall$ as theorems. The $\forall$ elimination rule is the dual of the
 $\exists$ introduction rule:
 
-theorem forall.elim [p(_:term) : sentence] [a : term] : (∀x, p(x))
+theorem forall.elim [p(_) : sentence(term)] [a : term] : (∀x, p(x))
     |- p(a)
 proof
     -- we rewrite the forall as an existential
@@ -981,7 +979,7 @@ Traditionally, we would pick a fresh variable to prove the property of and then
 deduce that the property must hold for all variables. Here, our existential
 witnesses serve as the arbitrary variable.
 
-theorem forall.intro [p(_:term) : sentence] : (p(∃ᵉx, ¬p(x) ⊢ ⊥))
+theorem forall.intro [p(_) : sentence(term)] : (p(∃ᵉx, ¬p(x) ⊢ ⊥))
     |- ∀x, p(x)
 proof
     assume ∃x, ¬p(x) for_contra;
@@ -1027,7 +1025,7 @@ notation sentence.with_term_term
     sentence ::= @name "(" term ", " term ")"
 end
 
-theorem exists_forall.swap [p(_0, _1) : sentence] : (∃x, ∀y, p(x, y))
+theorem exists_forall.swap [p(_0, _1) : sentence(term, term)] : (∃x, ∀y, p(x, y))
     |- ∀y, ∃x, p(x, y)
 proof    
     obtain x' st ∀y, p(x', y);
@@ -1090,7 +1088,7 @@ end
 This term only has meaning if there is actually a unique object with the given
 property. Otherwise, it can be thought of as an arbitrary term.
 
-axiom iota.unique [p(_:term) : sentence] : (∃!x, p(x))
+axiom iota.unique [p(_) : sentence(term)] : (∃!x, p(x))
     |- p(℩x, p(x))
 end
 
