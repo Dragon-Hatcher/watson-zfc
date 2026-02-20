@@ -511,6 +511,18 @@ proof
     thus    ∀x,      x ∈ a          → x ∈ ⋃b logically;
 qed
 
+Next we show that the Union of a singleton is the element of the singleton.
+
+theorem big_union.singleton [a : term] :
+    |- ⋃{a} = a
+proof
+    follows ∀x, x ∈ {a} ↔ x = a by singleton.def;
+    hence ∀x, x ∈ ⋃{a} ↔ (∃y, x ∈ y ∧ y ∈ {a}) by big_union.def [{a}];
+    thus ∀x, x ∈ ⋃{a} ↔ (∃y, x ∈ y ∧ y = a) logically;
+    follows ∀x, x ∈ ⋃{a} ↔ (∃y, x ∈ a) logically;
+    follows ∀x, x ∈ ⋃{a} ↔ x ∈ a logically;
+    done by zfc.extensionality
+qed
 We can define the regular union using the pair and the big union. Once again,
 although we could define this directly using unrestricted comprehension, it is
 easier to do it this way to avoid repeated proofs of existence.
@@ -803,6 +815,31 @@ proof
     thus ∀x, x ∈ {{a}, {a, b}} ↔ (x = {a} ∨ x = {a, b}) by uncomp.def [_ = {a} ∨ _ = {a, b}];
 qed
 
+Lets prove some basic properties of ordered pairs
+
+theorem ordered_pair.union [a b : term] :
+    |- ⋃⟨a, b⟩ = {a, b}
+proof
+    suffices ⋃{{a}, {a, b}} = {a, b};
+    thus ∀x, x ∈ {a, b} ↔ (x = a ∨ x = b) by pair.def;
+    thus ∀x, x ∈ ⋃{{a}, {a, b}} ↔ (x ∈ {a} ∨ x ∈ {a, b}) by union.def [{a}] [{a, b}];
+    hence ∀x, (x = a ∨ (x = a ∨ x = b)) ↔ (x = a ∨ x = b) logically;
+    follows ∀x, (x ∈ {a} ∨ x ∈ {a, b}) ↔ (x = a ∨ (x = a ∨ x = b)) by singleton.def, pair.def;
+    done by zfc.extensionality
+qed
+
+theorem ordered_pair.inter [a b : term] :
+    |- ⋂⟨a, b⟩ = {a}
+proof
+    suffices ⋂{{a}, {a, b}} = {a};
+    thus ∀x, x ∈ {a} ↔ x = a by singleton.def;
+    thus ∀x, x ∈ {a, b} ↔ (x = a ∨ x = b) by pair.def;
+    thus ∀x, x ∈ ⋂{{a}, {a, b}} ↔ (x ∈ {a} ∧ x ∈ {a, b}) by inter.def [{a}] [{a, b}];
+    hence ∀x, (x = a ∧ (x = a ∨ x = b)) ↔ x = a logically;
+    thus ∀x, x ∈ ⋂{{a}, {a, b}} ↔ x ∈ {a} by singleton.def;
+    follows ⋂{{a}, {a, b}} = {a} by zfc.extensionality;
+qed
+
 Next, we define a function which gives us the first element of an ordered pair. We define this function somewhat broadly, but it allows for an easy proof.
 
 definition
@@ -814,12 +851,9 @@ The proof follows from the definition of the ordered pair and many of the inters
 theorem ordered_pair_first.def [a b : term] :
     |- π₁(⟨a, b⟩) = a
 proof
-    follows ∀x, x ∈ ⋂{{a}, {a, b}} ↔ (x ∈ {a} ∧ x ∈ {a, b}) by inter.def [{a}] [{a, b}];
-    hence ∀x, x ∈ {a} ↔ x = a by singleton.def [a];
-    hence ∀x, x ∈ {a, b} ↔ (x = a ∨ x = b) by pair.def [a] [b];
-    thus ∀x, x ∈ ⋃⋂{{a}, {a, b}} ↔ x ∈ a by big_union.def;
-    follows ∀x, x ∈ π₁(⟨a, b⟩) ↔ x ∈ a;
-    thus π₁(⟨a, b⟩) = a by zfc.extensionality;
+    hence ⋂⟨a, b⟩ = {a} by ordered_pair.inter;
+    thus ⋃{a} = a by big_union.singleton;
+    hence ⋃⋂⟨a, b⟩ = a logically;
 qed
 
 Naturally, we now define the second element of an ordered pair.
@@ -838,17 +872,10 @@ proof
     follows ∀x, x ∈ ⋂{{a}, {a, b}} ↔ (x ∈ {a} ∧ x ∈ {a, b}) by inter.def [{a}] [{a, b}];
     follows ∀x, (x ∈ {a} ∧ x ∈ {a, b}) ↔ (x = a ∧ x ∈ {a, b}) by singleton.def;
     follows ∀x, (x = a ∧ x ∈ {a, b}) ↔ (x = a ∧ (x = a ∨ x = b)) by pair.def;
-    follows ∀x, (x = a ∧ (x = a ∨ x = b)) ↔ (x = a) logically;
-    hence ∀x, x ∈ ⋂{{a}, {a, b}} ↔ x = a logically;
+    hence ∀x, x ∈ ⋂{{a}, {a, b}} ↔ x = a by ordered_pair.inter;
     thus ∀x, x = a ↔ x ∈ {a} by singleton.def;
     follows ⋂{{a}, {a, b}} = {a} by zfc.extensionality;
-    hence ⋃{{a}, {a, b}} = {a, b} as
-        thus ∀x, x ∈ {a, b} ↔ (x = a ∨ x = b) by pair.def;
-        thus ∀x, x ∈ ⋃{{a}, {a, b}} ↔ (x = a ∨ x = b) by union.def;
-        hence ∀x, (x = a ∨ x = b) ↔ x ∈ {a, b} logically;
-        thus ∀x, x ∈ ⋃{{a}, {a, b}} ↔ x ∈ {a, b} logically;
-        thus ⋃{{a}, {a, b}} = {a, b} by zfc.extensionality;
-    ;
+    hence ⋃⟨a, b⟩ = {a, b} by ordered_pair.union;
     hence ⋃{x ∈ {a, b} | {a, b} ≠ {a} → x ∉ {a}} = ⋃{x ∈ ⋃{{a}, {a, b}} | ⋃{{a}, {a, b}} ≠ ⋂{{a}, {a, b}} → x ∉ ⋂{{a}, {a, b}}} logically;
     thus ∀x, x ∈ {a, b} ↔ (x = a ∨ x = b) by pair.def;
     hence ∀x, x ∈ {a} ↔ x = a by singleton.def;
