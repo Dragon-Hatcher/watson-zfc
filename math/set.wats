@@ -511,6 +511,18 @@ proof
     thus    ∀x,      x ∈ a          → x ∈ ⋃b logically;
 qed
 
+Next we show that the Union of a singleton is the element of the singleton.
+
+theorem big_union.singleton [a : term] :
+    |- ⋃{a} = a
+proof
+    follows ∀x, x ∈ {a} ↔ x = a by singleton.def;
+    hence ∀x, x ∈ ⋃{a} ↔ (∃y, x ∈ y ∧ y ∈ {a}) by big_union.def [{a}];
+    thus ∀x, x ∈ ⋃{a} ↔ (∃y, x ∈ y ∧ y = a) logically;
+    follows ∀x, x ∈ ⋃{a} ↔ (∃y, x ∈ a) logically;
+    follows ∀x, x ∈ ⋃{a} ↔ x ∈ a logically;
+    done by zfc.extensionality
+qed
 We can define the regular union using the pair and the big union. Once again,
 although we could define this directly using unrestricted comprehension, it is
 easier to do it this way to avoid repeated proofs of existence.
@@ -839,12 +851,9 @@ The proof follows from the definition of the ordered pair and many of the inters
 theorem ordered_pair_first.def [a b : term] :
     |- π₁(⟨a, b⟩) = a
 proof
-    follows ∀x, x ∈ ⋂{{a}, {a, b}} ↔ (x ∈ {a} ∧ x ∈ {a, b}) by inter.def [{a}] [{a, b}];
-    hence ∀x, x ∈ {a} ↔ x = a by singleton.def [a];
-    hence ∀x, x ∈ {a, b} ↔ (x = a ∨ x = b) by pair.def [a] [b];
-    thus ∀x, x ∈ ⋃⋂{{a}, {a, b}} ↔ x ∈ a by big_union.def;
-    follows ∀x, x ∈ π₁(⟨a, b⟩) ↔ x ∈ a;
-    thus π₁(⟨a, b⟩) = a by zfc.extensionality;
+    hence ⋂⟨a, b⟩ = {a} by ordered_pair.inter;
+    thus ⋃{a} = a by big_union.singleton;
+    hence ⋃⋂⟨a, b⟩ = a logically;
 qed
 
 Naturally, we now define the second element of an ordered pair.
