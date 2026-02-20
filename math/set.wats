@@ -2,11 +2,11 @@ Set theory is almost the simplest possible first order logical system. It
 contains no formal terms and only a single binary predicate symbol: $\in$. 
 
 syntax in
-    sentence ::= term " ∈ " term
+    sentence (500) ::= term " ∈ " term
 end
 
 notation not_in
-    sentence ::= term " ∉ " term
+    sentence (500) ::= term " ∉ " term
 end
 
 @[reducible]
@@ -77,7 +77,7 @@ end
 For any two sets we can form the set containing exactly those two sets.
 
 axiom zfc.pairing :
-    |- ∀a, ∀b, ∃x, ∀y, y ∈ x ↔ (y = a ∨ y = b)
+    |- ∀a, ∀b, ∃x, ∀y, y ∈ x ↔ y = a ∨ y = b
 end
 
 For any set we can take the union of all elements in the set.
@@ -99,7 +99,7 @@ infinite sets exist.
 
 axiom zfc.infinity :
     |- ∃x, (∃y, y ∈ x ∧ ∀z, z ∉ y) 
-         ∧ (∀y, (y ∈ x → (∃z, (z ∈ x ∧ (∀w, (w ∈ z ↔ (w ∈ y ∨ w = y)))))))
+         ∧ (∀y, y ∈ x → ∃z, z ∈ x ∧ (∀w, w ∈ z ↔ w ∈ y ∨ w = y))
 end
 
 Then we get the two axiom schemas. These are statements about all sentences
@@ -110,14 +110,14 @@ contradictions (as far as we know). This is sometimes also called separation or
 restricted comprehension.
 
 axiom zfc.specification [p(_) : sentence(term)] :
-    |- ∀a, ∃x, ∀y, y ∈ x ↔ (y ∈ a ∧ p(y))
+    |- ∀a, ∃x, ∀y, y ∈ x ↔ y ∈ a ∧ p(y)
 end
 
 This axiom asserts that the image of any set under a function (implicitly 
 defined by $p$) exists. This is surprisingly rarely required.
 
 axiom zfc.replacement [p(_0, _1) : sentence(term, term)] :
-    |- ∀a, ((∀x, x ∈ a → ∃!y, p(x, y)) → (∃x, ∀y, y ∈ x ↔ (∃z, z ∈ a ∧ p(z, y))))
+    |- ∀a, (∀x, x ∈ a → ∃!y, p(x, y)) → (∃x, ∀y, y ∈ x ↔ (∃z, z ∈ a ∧ p(z, y)))
 end
 
 The final axiom has a formal statement that is somewhat difficult to parse. But
@@ -170,7 +170,7 @@ proof
     suffices ∃*x, ∀y, y ∈ x ↔ p(y) by and.intro [∃x, ∀y, y ∈ x ↔ p(y)] [∃*x, ∀y, y ∈ x ↔ p(y)];
 
     -- now we unwrap the definition of ∃*.
-    suffices ∀a, ∀b, ((∀y, y ∈ a ↔ p(y)) ∧ (∀y, y ∈ b ↔ p(y))) → a = b;
+    suffices ∀a, ∀b, (∀y, y ∈ a ↔ p(y)) ∧ (∀y, y ∈ b ↔ p(y)) → a = b;
 
     -- let's extract all the pieces of this definition.
     arbitrary a;
@@ -181,9 +181,9 @@ proof
 
     -- now we can prove the equality using extensionality.
     suffices ∀x, x ∈ a ↔ x ∈ b as
-        follows ∀a, ∀b, ((∀x, x ∈ a ↔ x ∈ b) → a = b) by zfc.extensionality;
-        thus ∀b, ((∀x, x ∈ a ↔ x ∈ b) → a = b) specializing ∀a, ∀b, ((∀x, x ∈ a ↔ x ∈ b) → a = b);
-        thus (∀x, x ∈ a ↔ x ∈ b) → a = b       specializing ∀b, ((∀x, x ∈ a ↔ x ∈ b) → a = b);
+        follows ∀a, ∀b, (∀x, x ∈ a ↔ x ∈ b) → a = b by zfc.extensionality;
+        thus ∀b, (∀x, x ∈ a ↔ x ∈ b) → a = b specializing ∀a, ∀b, (∀x, x ∈ a ↔ x ∈ b) → a = b;
+        thus (∀x, x ∈ a ↔ x ∈ b) → a = b     specializing ∀b, (∀x, x ∈ a ↔ x ∈ b) → a = b;
         thus a = b by modus_ponens [∀x, x ∈ a ↔ x ∈ b] [a = b];
     ;
 
@@ -246,7 +246,7 @@ The other fundamental relationship between sets, besides equality, is the
 subset relation.
 
 notation subset
-    sentence ::= term " ⊆ " term
+    sentence (500) ::= term " ⊆ " term
 end
 
 definition
@@ -256,7 +256,7 @@ end
 We can also have the notion of a strict subset.
 
 notation strict_subset
-    sentence ::= term " ⊂ " term
+    sentence (500) ::= term " ⊂ " term
 end
 
 @[reducible]
@@ -284,7 +284,7 @@ set $a$. This is a very common pattern so we will define shorthand notation for
 it. 
 
 notation forall.bounded
-    sentence ::= "∀" x:@binding(term) " ∈ " term ", " sentence(x)
+    sentence (000) ::= "∀" x:@binding(term) " ∈ " term ", " sentence(x)
 end
 
 @[reducible]
@@ -297,7 +297,7 @@ because we are looking for an element that is both in the set and satisfies
 the property.
 
 notation exists.bounded
-    sentence ::= "∃" x:@binding(term) " ∈ " term ", " sentence(x)
+    sentence (000) ::= "∃" x:@binding(term) " ∈ " term ", " sentence(x)
 end
 
 @[reducible]
@@ -485,7 +485,7 @@ local context.
 We can return to defining new sets with the union of a set.
 
 notation big_union
-    term ::= "⋃" term
+    term (000) ::= "⋃" term
 end
 
 definition
@@ -516,7 +516,7 @@ although we could define this directly using unrestricted comprehension, it is
 easier to do it this way to avoid repeated proofs of existence.
 
 notation union
-    term ::= term " ∪ " term
+    term (650) ::= term " ∪ " term
 end
 
 definition
@@ -580,7 +580,7 @@ we did for the big union, we will define it as a subset of the union. This
 makes it easier to prove existence.
 
 notation big_inter
-    term ::= "⋂" term
+    term (000) ::= "⋂" term
 end
 
 definition
@@ -626,7 +626,7 @@ We do however define the small intersection the same way we defined the big
 intersection.
 
 notation inter
-    term ::= term " ∩ " term
+    term (700) ::= term " ∩ " term
 end
 
 definition
@@ -690,7 +690,7 @@ qed
 We define the difference between two sets as the set of elements of the first set which are not in the second set.
 
 notation set_difference
-    term ::= term " - " term
+    term (700) ::= term " - " term
 end
 
 definition
@@ -890,7 +890,7 @@ of the Cartesian product from which we can then restrict to get the required
 set.
 
 notation product
-    term ::= term " × " term
+    term (350) ::= term " × " term
 end
 
 definition
@@ -1004,7 +1004,7 @@ $\emptyset$ and is closed under the successor operation. We will call this closu
 property inductivity.
 
 definition
-    inductive(α) := ∅ ∈ α ∧ ∀n, n ∈ α → succ(n) ∈ α
+    inductive(α) := ∅ ∈ α ∧ (∀n, n ∈ α → succ(n) ∈ α)
 end
 
 By the smallest set we mean that $\omega$ is a subset of any inductive set. Put
@@ -1031,19 +1031,15 @@ proof
          ∧ (∀y, (y ∈ x → (∃z, (z ∈ x ∧ (∀w, (w ∈ z ↔ (w ∈ y ∨ w = y)))))))
          by zfc.infinity;
 
-    -- we will need extensionality to convert memberships in the axiom to
-    -- equalities.
-    recall zfc.extensionality;
-
     -- the ∃y, y ∈ x ∧ ∀z, z ∉ y tells us that x contains ∅
-    follows ∅ ∈ x by empty.def;
+    follows ∅ ∈ x by empty.def, zfc.extensionality;
 
     -- now we need to show that x is closed under the successor operation
     follows ∀n, n ∈ x → n ∪ {n} ∈ x as
         arbitrary n; assume n ∈ x;
-        obtain z st z ∈ x ∧ (∀w, (w ∈ z ↔ (w ∈ n ∨ w = n))) logically;
+        obtain z st z ∈ x ∧ (∀w, w ∈ z ↔ (w ∈ n ∨ w = n)) logically;
         follows ∀w, w ∈ n ∪ {n} ↔ (w ∈ n ∨ w = n) by singleton.def, union.def;
-        follows z = n ∪ {n} logically;
+        follows z = n ∪ {n} by zfc.extensionality;
         thus    n ∪ {n} ∈ x logically;
     ;
 
@@ -1071,7 +1067,7 @@ proof
         suffices y ∈ {x ∈ α | ∀β, inductive(β) → x ∈ β} ↔ (∀β, inductive(β) → y ∈ β);
         assume y ∈ {x ∈ α | ∀β, inductive(β) → x ∈ β} then ∀β, inductive(β) → y ∈ β logically;
         assume ∀β, inductive(β) → y ∈ β then y ∈ {x ∈ α | ∀β, inductive(β) → x ∈ β} as
-            suffices y ∈ α ∧ ∀β, inductive(β) → y ∈ β logically;
+            suffices y ∈ α ∧ (∀β, inductive(β) → y ∈ β) logically;
             follows y ∈ α logically;
             done logically
         ;
@@ -1100,11 +1096,11 @@ definition
 end
 
 definition
-    is_least(α, β) := α ∈ β ∧ ∀γ, (γ ∈ β ∧ γ ≠ α) → α ∈ γ
+    is_least(α, β) := α ∈ β ∧ (∀γ, γ ∈ β ∧ γ ≠ α → α ∈ γ)
 end
 
 definition
-    well_ordered(α) := ∀β, (β ⊆ α ∧ β ≠ ∅) → ∃γ, is_least(γ, β)
+    well_ordered(α) := ∀β, (β ⊆ α ∧ β ≠ ∅ → ∃γ, is_least(γ, β))
 end
 
 definition
@@ -1172,7 +1168,7 @@ proof
 
         -- if β = {α} then α is the least element.
         assume β = {α} then is_least(α, β) as
-            suffices α ∈ β ∧ ∀γ, (γ ∈ β ∧ γ ≠ α) → α ∈ γ;
+            suffices α ∈ β ∧ (∀γ, γ ∈ β ∧ γ ≠ α → α ∈ γ);
             follows α ∈ β by singleton.def;
             follows ∀γ, (γ ∈ β ∧ γ ≠ α) → α ∈ γ as
                 arbitrary γ; assume γ ∈ β ∧ γ ≠ α;
@@ -1204,8 +1200,8 @@ proof
                 thus                          ∃γ, is_least(γ, β') logically;
             ;
             follows is_least(γ, β) as
-                have     γ ∈ β' ∧ ∀δ, (δ ∈ β' ∧ δ ≠ γ) → γ ∈ δ from is_least(γ, β');
-                suffices γ ∈ β  ∧ ∀δ, (δ ∈ β  ∧ δ ≠ γ) → γ ∈ δ;
+                have     γ ∈ β' ∧ (∀δ, δ ∈ β' ∧ δ ≠ γ → γ ∈ δ) from is_least(γ, β');
+                suffices γ ∈ β  ∧ (∀δ, δ ∈ β  ∧ δ ≠ γ → γ ∈ δ);
                 
                 follows γ ∈ β'      logically;
                 have    γ ∈ β - {α} from γ ∈ β';

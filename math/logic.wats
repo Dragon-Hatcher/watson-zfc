@@ -35,7 +35,7 @@ writing notation. For example, we want `¬p → q` to mean `(¬p) → q` and not
 `¬(p → q)`.
 
 syntax implication
-    sentence (500) ::= sentence " → " sentence
+    sentence (250) ::= sentence " → " sentence
 end
 
 The next piece of syntax we will define is the constant symbol _falsum_. This
@@ -72,7 +72,7 @@ In order to explain this definition to Watson there are two steps. First we
 must define the actual syntax of the notation we want to use.
 
 notation not
-    sentence (600) ::= "¬" sentence
+    sentence (400) ::= "¬" sentence
 end
 
 This allows Watson to correctly parse the notation when we later write it. But
@@ -100,7 +100,7 @@ and $p$ is not true, then $q$ is true. In fact, we can use this as our definitio
 defining $p \lor q$ as $\neg p \to q$.
 
 notation or
-    sentence ::= sentence " ∨ " sentence
+    sentence (300) ::= sentence " ∨ " sentence
 end
 
 definition
@@ -141,7 +141,7 @@ How, exactly, this reducible annotation will be used will be explained later.
 With this we are able to define and.
 
 notation and
-    sentence ::= sentence " ∧ " sentence
+    sentence (350) ::= sentence " ∧ " sentence
 end
 
 definition
@@ -158,7 +158,7 @@ language sentences in a form where the size is linear with respect to the notati
 used. 
 
 notation iff
-    sentence ::= sentence " ↔ " sentence
+    sentence (200) ::= sentence " ↔ " sentence
 end
 
 definition
@@ -727,13 +727,13 @@ Next, we will need some relationship between terms. All but the most exotic
 of mathematical systems contain a notion of *equality*.
 
 syntax equality
-    sentence ::= term " = " term
+    sentence (500) ::= term " = " term
 end
 
 We can also define notation for not equals.
 
 notation inequality
-    sentence ::= term " ≠ " term
+    sentence (500) ::= term " ≠ " term
 end
 
 @[reducible]
@@ -804,7 +804,7 @@ in the introduction, this notion is not context free which is why it necessitate
 a special case within Watson.
 
 syntax exists
-    sentence ::= "∃" @binding(term) ", " sentence
+    sentence (000) ::= "∃" @binding(term) ", " sentence
 end
 
 And we can now define $\forall$ in terms of $\exists$. The explanation of which
@@ -816,7 +816,7 @@ important later for notation like $\{x \in X ~|~ p(x) \}$ where $x$ should be
 available on the right but doesn't make sense when evaluating $X$.
 
 notation forall
-    sentence ::= "∀" x:@binding(term) ", " sentence(x)
+    sentence (000) ::= "∀" x:@binding(term) ", " sentence(x)
 end
 
 definition
@@ -827,19 +827,19 @@ We will also introduce notation for the “at most one” and “unique” exist
 quantifiers.
 
 notation exists.at_most_one
-    sentence ::= "∃*" x:@binding(term) ", " sentence(x) 
+    sentence (000) ::= "∃*" x:@binding(term) ", " sentence(x) 
 end
 
 definition
-    ∃*x, p(x) := ∀y, ∀z, (p(y) ∧ p(z)) → y = z
+    ∃*x, p(x) := ∀y, ∀z, p(y) ∧ p(z) → y = z
 end
 
 notation exists.unique
-    sentence ::= "∃!" x:@binding(term) ", " sentence(x) 
+    sentence (000) ::= "∃!" x:@binding(term) ", " sentence(x) 
 end
 
 definition
-    ∃!x, p(x) := (∃x, p(x)) ∧ (∃*x, p(x)) 
+    ∃!x, p(x) := (∃x, p(x)) ∧ (∃*x, p(x))
 end
 
 To make sense of quantifiers we will need two axioms. Did you guess that they
@@ -938,7 +938,7 @@ However we can use a trick to prevent this: we include the conclusion we want
 we will actually be using.
 
 syntax witness
-    term ::= "∃ᵉ" @binding(term) ", " sentence " ⊢ " sentence
+    term (000) ::= "∃ᵉ" @binding(term) ", " sentence " ⊢ " sentence
 end
 
 axiom exists.elim [p(_) : sentence(term)] [q : sentence] 
@@ -1082,7 +1082,7 @@ Mathematica, this is called the iota operator and is denoted with an inverted
 iota.
 
 syntax iota
-    term ::= "℩" @binding(term) ", " sentence
+    term (000) ::= "℩" @binding(term) ", " sentence
 end
 
 This term only has meaning if there is actually a unique object with the given
