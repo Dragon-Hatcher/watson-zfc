@@ -44,7 +44,7 @@ function M.handleContradiction(
     local state2 = state:copy()
     state2.goal = shared.falsum;
 
-    local state3, vErr = vampire.handleVampire(state2)
+    local state3, _vInfo, vErr = vampire.handleVampire(state2)
     if vErr ~= nil then
         vampErrToDiag(vErr, tactic._span)
             :withTacticInfo(state.info)

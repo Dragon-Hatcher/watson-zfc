@@ -128,20 +128,27 @@ function tryVampire(
     state: state.State
 ): state.State
     -- First, recall the provided theorem
+    local thmState = state:copy()
     for _, thm in thms do
-        local newState, err = recall.handleRecall(thm.thm, state)
+        local newState, err = recall.handleRecall(thm.thm, thmState)
         if err ~= nil then 
             recall.recallErrToDiag(err, thm.span)
                 :withTacticInfo(state.info)
                 :report()
             return newState
         end
-        state = newState
+        thmState = newState
     end
 
-    local newState, vErr = vampire.handleVampire(state)
+    local newState, vInfo, vErr = vampire.handleVampire(thmState:copy())
     if vErr ~= nil then
         vampire.vampErrToDiag(vErr, globalSpan)
+            :withTacticInfo(state.info)
+            :report()
+    end
+
+    if vInfo and not vInfo.usesGoal then
+        Diagnostic:newWarning("Vampire proved a contradiction, not the goal", globalSpan:labelWarning(""))
             :withTacticInfo(state.info)
             :report()
     end

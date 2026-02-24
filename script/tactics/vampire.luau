@@ -376,11 +376,24 @@ export type VampError =
     | { err: "unprovable" }
     | { err: "could_not_find_proof" }
 
-function M.handleVampire(state: state.State): (state.State, VampError?)
+export type VampInfo = {
+    usesGoal: boolean
+}
+
+function M.handleVampire(state: state.State): (state.State, VampInfo?, VampError?)
     local problem = VProblem:new(options)
     local fail = nil
 
     local compPreds = FragMap:new()
+
+    -- Conjecture the goal from the knowns
+    local conjecture = predToV(state.goal, newCtx(compPreds))
+    if conjecture then 
+        local negConjecture = VFormula:newNot(conjecture :: VFormula)
+        problem:addAxiom(negConjecture) 
+    else 
+        fail = state.goal 
+    end
 
     -- Collect all the knowns as axioms for vampire
     for _, fact in state.knowns :: {[Fact]: Fact} do
@@ -390,10 +403,6 @@ function M.handleVampire(state: state.State): (state.State, VampError?)
         local vPred = predToV(fact.conclusion, newCtx(compPreds))
         if vPred then problem:addAxiom(vPred) else fail = fact.conclusion end
     end
-
-    -- And we conjecture the goal from the knowns
-    local conjecture = predToV(state.goal, newCtx(compPreds))
-    if conjecture then problem:setConjecture(conjecture) else fail = state.goal end
 
     -- Add the bounded comprehension definition for each bounded comprehension
     -- we encountered.
@@ -411,17 +420,31 @@ function M.handleVampire(state: state.State): (state.State, VampError?)
 
     -- If any of the Vampire conversions failed report that as the error.
     if fail ~= nil then
-        return state:error(), { err = "couldnt_convert_frag", frag = fail }
+        return state:error(), nil, { err = "couldnt_convert_frag", frag = fail }
     end
 
-    local solution = problem:solve()
+    local proof, reason = problem:solve()
 
     -- Check if Vampire was able to prove the conjecture
-    if solution == "unprovable" then
-        log(tostring(problem))
-        return state:error(), { err = "unprovable" }
-    elseif solution ~= "proved" then
-        return state:error(), { err = "could_not_find_proof" }
+    if proof == nil then
+        if reason == "unprovable" then
+            return state:error(), nil, { err = "unprovable" }
+        else
+            return state:error(), nil, { err = "could_not_find_proof" }
+        end
+    end
+
+    local usesGoal = false
+    if state.goal.formal == shared.falsum.formal then
+        usesGoal = true
+    else
+        local negConjecture = VFormula:newNot(conjecture :: VFormula)
+        for i = 0, proof.stepCount-1 do
+            if proof:getStep(i).conclusion == negConjecture then
+                usesGoal = true
+                break
+            end
+        end
     end
 
     -- Success! We proved the goal
@@ -431,7 +454,7 @@ function M.handleVampire(state: state.State): (state.State, VampError?)
     -- TODO: convert vampire proof to formal proof
     state.formal = state.formal:applyTodo(state.goal)
 
-    return state, nil
+    return state, {usesGoal = usesGoal}, nil
 end
 
 function M.vampErrToDiag(err: VampError, span: Span): Diagnostic
@@ -450,10 +473,16 @@ function M.handleVampireTactic(
     tactic: { _span: Span },
     state: state.State
 ): state.State
-    local newState, err = M.handleVampire(state:copy())
+    local newState, info, err = M.handleVampire(state:copy())
 
     if err then
         M.vampErrToDiag(err, tactic._span)
+            :withTacticInfo(state.info)
+            :report()
+    end
+
+    if info and not info.usesGoal then
+        Diagnostic:newWarning("Vampire proved a contradiction, not the goal", tactic._span:labelWarning(""))
             :withTacticInfo(state.info)
             :report()
     end
