@@ -1047,7 +1047,7 @@ end
 The ZF axiom of infinity guarantees that at least one inductive set exists,
 which is what will let us conclude that $\omega$ is well defined.
 
-theorem inductive.exists :
+lemma inductive.exists :
     |- ∃α, inductive(α)
 proof
     suffices ∃α, ∅ ∈ α ∧ ∀n ∈ α, n ∪ {n} ∈ α;
