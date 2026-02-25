@@ -125,6 +125,7 @@ end
 function tryVampire(
     globalSpan: Span,
     thms: {{thm: Theorem, span: Span}},
+    givens: {{frag: Frag, span: Span}},
     state: state.State
 ): state.State
     -- First, recall the provided theorem
@@ -140,7 +141,7 @@ function tryVampire(
         thmState = newState
     end
 
-    local newState, vInfo, vErr = vampire.handleVampire(thmState:copy())
+    local newState, vInfo, vErr = vampire.handleVampire(thmState:copy(), givens)
     if vErr ~= nil then
         vampire.vampErrToDiag(vErr, globalSpan)
             :withTacticInfo(state.info)
@@ -151,6 +152,14 @@ function tryVampire(
         Diagnostic:newWarning("Vampire proved a contradiction, not the goal", globalSpan:labelWarning(""))
             :withTacticInfo(state.info)
             :report()
+    end
+
+    if vInfo and #vInfo.unusedGivens > 0 then
+        for _, given in vInfo.unusedGivens do
+            Diagnostic:newWarning(`unused given \`{given.frag}\``, given.span:labelWarning(""))
+                :withTacticInfo(state.info)
+                :report()
+        end
     end
 
     return newState
@@ -177,7 +186,7 @@ function M.handleByTactic(
 
     if #instantiations == 0 and #diags > 0 then
         -- try vampire instead
-        return tryVampire(just._span, {{thm = thm, span = just.thm.span}}, state)
+        return tryVampire(just._span, {{thm = thm, span = just.thm.span}}, {}, state)
     else
         -- otherwise report the errors and move on
         for _, diag in diags do
@@ -202,7 +211,7 @@ function getTheoremList(thms: TheoremList): ({{thm: Theorem, span: Span}}, {Diag
                 thms.thm.span:label("")
             )
             table.insert(diags, diag)
-    end
+        end
 
         if thms._rule == "theorem_list.many" then
             thms = thms.rest
@@ -214,10 +223,61 @@ function getTheoremList(thms: TheoremList): ({{thm: Theorem, span: Span}}, {Diag
     return list, diags
 end
 
+function getGivensList(givens: Givens): {UnResFrag}
+    if givens._rule == "givens.none" then return {} end
+    local sentences = givens.sentences
+
+    local list = {}
+
+    while true do
+        local s = sentences.sentence
+        table.insert(list, s)
+
+        if sentences._rule == "sentence_list.many" then
+            sentences = sentences.rest
+        else
+            break
+        end
+    end
+
+    return list
+end
+
 function M.handleVampireByTactic(
-    just: { _span: Span, thms: TheoremList },
+    just: { _span: Span, thms: TheoremList, givens: Givens },
     state: state.State
 ): state.State
+    local unGivens = getGivensList(just.givens)
+    local givens = {}
+
+    for _, given in unGivens do
+        local g, d = given:resolve(state.scope)
+        if d ~= nil then d:withTacticInfo(state.info):report() end
+        if g == nil then return state:error() end
+
+        -- if we already have the given directly we can move on
+        if state.knowns:get(g.formal:fact()) ~= nil then
+            continue
+        end
+
+        -- otherwise try to get vampire to prove it
+        local subState = state:copy()
+        subState.goal = g
+        subState.info = subState.info:withGoal(g)
+        local vState, _, err = vampire.handleVampire(subState)
+
+        if err ~= nil then
+            Diagnostic:new("given fact is not known", given.span:label(""))
+                :withTacticInfo(state.info)
+                :report()
+            return state:error()
+        end
+
+        state.knowns:set(g.formal:fact(), g:fact())
+        state.formal = vState.formal
+        table.insert(givens, {frag = g, span = given.span})
+    end
+
     local thms, diags = getTheoremList(just.thms)
 
     if #diags > 0 then
@@ -227,7 +287,7 @@ function M.handleVampireByTactic(
         return state:error()
     end
 
-    return tryVampire(just.thms._span, thms, state)
+    return tryVampire(just.thms._span, thms, givens, state)
 end
 
 return M

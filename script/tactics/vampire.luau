@@ -370,10 +370,16 @@ export type VampError =
     | { err: "could_not_find_proof" }
 
 export type VampInfo = {
-    usesGoal: boolean
+    usesGoal: boolean,
+    unusedGivens: {Given},
 }
 
-function M.handleVampire(state: state.State): (state.State, VampInfo?, VampError?)
+export type Given = {
+    frag: Frag,
+    span: Span
+}
+
+function M.handleVampire(state: state.State, givens: {Given}?): (state.State, VampInfo?, VampError?)
     local problem = VProblem:new(options)
     local fail = nil
 
@@ -381,11 +387,11 @@ function M.handleVampire(state: state.State): (state.State, VampInfo?, VampError
 
     -- Conjecture the goal from the knowns
     local conjecture = predToV(state.goal, newCtx(compPreds))
-    if conjecture then 
+    if conjecture then
         local negConjecture = VFormula:newNot(conjecture :: VFormula)
-        problem:addAxiom(negConjecture) 
-    else 
-        fail = state.goal 
+        problem:addAxiom(negConjecture)
+    else
+        fail = state.goal
     end
 
     -- Collect all the knowns as axioms for vampire
@@ -428,14 +434,38 @@ function M.handleVampire(state: state.State): (state.State, VampInfo?, VampError
     end
 
     local usesGoal = false
+    local proofConclusions: {VFormula} = {}
+    for i = 0, proof.stepCount-1 do
+        table.insert(proofConclusions, proof:getStep(i).conclusion)
+    end
+
     if state.goal.formal == shared.falsum.formal then
         usesGoal = true
     else
         local negConjecture = VFormula:newNot(conjecture :: VFormula)
-        for i = 0, proof.stepCount-1 do
-            if proof:getStep(i).conclusion == negConjecture then
+        for _, conclusion in proofConclusions do
+            if conclusion == negConjecture then
                 usesGoal = true
                 break
+            end
+        end
+    end
+
+    -- Determine which givens were unused in the proof
+    local unusedGivens: {Given} = {}
+    if givens then
+        for i, given in givens do
+            local vf = predToV(given.frag, newCtx(compPreds))
+            assert(vf ~= nil)
+            local used = false
+            for _, conclusion in proofConclusions do
+                if conclusion == vf then
+                    used = true
+                    break
+                end
+            end
+            if not used then
+                table.insert(unusedGivens, given)
             end
         end
     end
@@ -447,7 +477,7 @@ function M.handleVampire(state: state.State): (state.State, VampInfo?, VampError
     -- TODO: convert vampire proof to formal proof
     state.formal = state.formal:applyTodo(state.goal)
 
-    return state, {usesGoal = usesGoal}, nil
+    return state, {usesGoal = usesGoal, unusedGivens = unusedGivens}, nil
 end
 
 function M.vampErrToDiag(err: VampError, span: Span): Diagnostic

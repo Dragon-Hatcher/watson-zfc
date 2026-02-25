@@ -205,12 +205,22 @@ goal to Vampire to have it generate a proof. This proof is then translated
 for Watson to understand. This is a very complex but also very powerful tactic
 which eliminates the need for tedious manipulations.
 
-tactic tactic.vampire
-    tactic ::= @kw"vampire"
-end
+grammar_category sentence_list
+
+tactic sentence_list.one sentence_list ::= sentence:@fragment(sentence) end
+tactic sentence_list.many sentence_list ::= sentence:@fragment(sentence) @kw"and" rest:sentence_list end
+
+grammar_category givens
+
+tactic givens.none givens ::= end
+tactic givens.some givens ::= @kw"given" sentences:sentence_list end
 
 tactic justification.logically
     justification ::= @kw"logically"
+end
+
+tactic justification.given
+    justification ::= @kw"given" sentences:sentence_list
 end
 
 -- TODO: explain
@@ -225,7 +235,7 @@ tactic theorem_list.many theorem_list ::= thm:@name "," rest:theorem_list end
 
 tactic justification.by.vampire
     -- bind weaker than the original by so we don't override it.
-    justification (600) ::= @kw"by" thms:theorem_list
+    justification (600) ::= @kw"by" thms:theorem_list givens:givens
 end
 
 
@@ -952,11 +962,11 @@ proof
         suffices x ∈ 𝒫(𝒫(A ∪ B)) ∧ (∃a ∈ A, ∃b ∈ B, x = ⟨a, b⟩) logically;
         suffices x ∈ 𝒫(𝒫(A ∪ B)) logically;
 
-        follows a ∈ A ∪ B ∧ b ∈ A ∪ B    by union.def;
+        follows a ∈ A ∪ B ∧ b ∈ A ∪ B    by union.def given a ∈ A and b ∈ B;
         thus  {a}          ∈   𝒫(A ∪ B)  by powset.singleton_in;
         thus       {a, b}  ∈   𝒫(A ∪ B)  by powset.pair_in;
         thus {{a}, {a, b}} ∈ 𝒫(𝒫(A ∪ B)) by powset.pair_in;
-        thus             x ∈ 𝒫(𝒫(A ∪ B)) logically;
+        thus             x ∈ 𝒫(𝒫(A ∪ B)) logically; -- TODO: given
     ;
 
     done logically
