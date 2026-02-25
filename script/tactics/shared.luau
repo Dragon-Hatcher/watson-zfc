@@ -1,5 +1,3 @@
-local frag = require("./frag")
-
 local M = {}
 
 -- Categories
@@ -38,43 +36,64 @@ assert(M.forallElimThm ~= nil)
 M.extensionalityThm = Theorem:lookupByName("zfc.extensionality")
 assert(M.extensionalityThm ~= nil)
 
+function M.makePattern(
+    text: string, cat: FormalCat, 
+    vars: {{name: string, cat: FormalCat}}
+): Frag
+    local scope = Scope:atEnd()
+    assert(scope ~= nil, "invalid tactic name")
+
+    for i, var in vars do
+        local binding = Binding:name(var.name, var.cat)
+        scope = scope:bindHole(binding, i - 1)
+    end
+
+    local unresolved = UnResFrag:parse(text, cat)
+    assert(unresolved ~= nil, "invalid fragment parse")
+
+    local resolved = unresolved:resolve(scope)
+    assert(resolved ~= nil, "can't resolve fragment")
+
+    return resolved
+end
+
 -- Patterns
-M.holePattern = frag.makePattern(
+M.holePattern = M.makePattern(
     "p", M.sentenceCat,
     {{name = "p", cat = M.sentenceCat}}
 )
 
-M.andPattern = frag.makePattern(
+M.andPattern = M.makePattern(
     "p ∧ q", M.sentenceCat,
     {{name = "p", cat = M.sentenceCat}, {name = "q", cat = M.sentenceCat}}
 )
 
-M.orPattern = frag.makePattern(
+M.orPattern = M.makePattern(
     "p ∨ q", M.sentenceCat,
     {{name = "p", cat = M.sentenceCat}, {name = "q", cat = M.sentenceCat}}
 )
 
-M.impPattern = frag.makePattern(
+M.impPattern = M.makePattern(
     "p → q", M.sentenceCat,
     {{name = "p", cat = M.sentenceCat}, {name = "q", cat = M.sentenceCat}}
 )
 
-M.iffPattern = frag.makePattern(
+M.iffPattern = M.makePattern(
     "p ↔ q", M.sentenceCat,
     {{name = "p", cat = M.sentenceCat}, {name = "q", cat = M.sentenceCat}}
 )
 
-M.forallPattern = frag.makePattern(
+M.forallPattern = M.makePattern(
     "∀x, p", M.sentenceCat,
     {{name = "p", cat = M.sentenceCat}}
 ):changeBinderNames({})
 
-M.existsPattern = frag.makePattern(
+M.existsPattern = M.makePattern(
     "∃x, p", M.sentenceCat,
     {{name = "p", cat = M.sentenceCat}}
 ):changeBinderNames({})
 
-M.witnessPattern = frag.makePattern(
+M.witnessPattern = M.makePattern(
     "∃ᵉ x, p ⊢ q", M.termCat,
     {
         {name = "p", cat = M.sentenceCat},
@@ -82,32 +101,32 @@ M.witnessPattern = frag.makePattern(
     }
 )
 
-M.arbitraryPattern = frag.makePattern(
+M.arbitraryPattern = M.makePattern(
     "∃ᵉx, ¬p ⊢ ⊥", M.termCat,
     {{name = "p", cat = M.sentenceCat}}
 )
 
-M.falsum = frag.makePattern(
+M.falsum = M.makePattern(
     "⊥", M.sentenceCat,
     {}
 )
 
-M.notPattern = frag.makePattern(
+M.notPattern = M.makePattern(
     "¬p", M.sentenceCat,
     {{name = "p", cat = M.sentenceCat}}
 )
 
-M.eqPattern = frag.makePattern(
+M.eqPattern = M.makePattern(
     "a = b", M.sentenceCat,
     {{name = "a", cat = M.termCat}, {name = "b", cat = M.termCat}}
 )
 
-M.inPattern = frag.makePattern(
+M.inPattern = M.makePattern(
     "a ∈ b", M.sentenceCat,
     {{name = "a", cat = M.termCat}, {name = "b", cat = M.termCat}}
 )
 
-M.boundedComprehensionPattern = frag.makePattern(
+M.boundedComprehensionPattern = M.makePattern(
     "{x ∈ a | p}", M.termCat,
     {{name = "a", cat = M.termCat}, {name = "p", cat = M.sentenceCat}}
 ):changeBinderNames({})

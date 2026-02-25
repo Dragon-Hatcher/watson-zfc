@@ -1,3 +1,4 @@
+local frag = require("./frag")
 local state = require("./state")
 local shared = require("./shared")
 
@@ -95,8 +96,6 @@ function shouldReduce(frag: Frag, watch: boolean?): boolean
 end
 
 function termToV(term: Frag, bindings: ConversionCtx): VTerm?
-    term = term:changeBinderNames({})
-
     -- If there are more free variables then binding we have a problem
     if not (term.unclosedCount <= #bindings.bindingsStack) then
         -- log(tostring(term), term.unclosedCount, #bindings.bindingsStack, term.cat.name)
@@ -109,6 +108,9 @@ function termToV(term: Frag, bindings: ConversionCtx): VTerm?
     if term.cat ~= shared.termCat then
         return nil
     end
+
+    term = frag.reduceTop(term)
+    term = term:changeBinderNames({})
 
     -- Check specifically for bounded comprehension
     local match = term:match(shared.boundedComprehensionPattern)
@@ -144,11 +146,6 @@ function termToV(term: Frag, bindings: ConversionCtx): VTerm?
         bindings.boundedCompPreds:set(prop, { fn = fn, fnArity = externalArgCount })
 
         return fn:with(args)
-    end
-
-    -- We didn't match any of the known options. Maybe we should reduce?
-    if shouldReduce(term) then
-        return termToV(term:reduce(), bindings)
     end
 
     if term.formal.varIdx ~= nil then
@@ -190,6 +187,7 @@ function termToV(term: Frag, bindings: ConversionCtx): VTerm?
 end
 
 function predToV(pred: Frag, bindings: ConversionCtx): VFormula?
+    pred = frag.reduceTop(pred)
     pred = pred:changeBinderNames({})
 
     local match = pred:match(shared.impPattern)
@@ -301,11 +299,6 @@ function predToV(pred: Frag, bindings: ConversionCtx): VFormula?
         local idx = pred.formal.templateIdx
         local vPred = VPredicate:new(`temp{idx}`, #children)
         return vPred:with(children)
-    end
-
-    -- We didn't match any of the known options. Maybe we should reduce?
-    if shouldReduce(pred) then
-        return predToV(pred:reduce(), bindings)
     end
 
     -- If we didn't match any of those patterns then we can try and turn this

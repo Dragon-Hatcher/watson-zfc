@@ -1,24 +1,30 @@
+local shared = require("./shared")
 local M = {}
 
-function M.makePattern(
-    text: string, cat: FormalCat, 
-    vars: {{name: string, cat: FormalCat}}
-): Frag
-    local scope = Scope:atEnd()
-    assert(scope ~= nil, "invalid tactic name")
+function shouldReduce(frag: Frag, watch: boolean?): boolean
+    local source = frag.source
 
-    for i, var in vars do
-        local binding = Binding:name(var.name, var.cat)
-        scope = scope:bindHole(binding, i - 1)
+    if source == nil then return false end
+    if source.isLuaApi then return true end
+
+    if source.isDefinitionCmd ~= nil then
+        local attrs = shared.attributes:getAttributes(source.isDefinitionCmd)
+        for _, attr in attrs do
+            if attr._rule == "reducible" then 
+                return true 
+            end
+        end
+        return false
     end
 
-    local unresolved = UnResFrag:parse(text, cat)
-    assert(unresolved ~= nil, "invalid fragment parse")
+    return false
+end
 
-    local resolved = unresolved:resolve(scope)
-    assert(resolved ~= nil, "can't resolve fragment")
-
-    return resolved
+function M.reduceTop(frag: Frag): Frag
+    while shouldReduce(frag) do
+        frag = frag:reduce()
+    end
+    return frag
 end
 
 return M

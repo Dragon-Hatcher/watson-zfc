@@ -1,4 +1,5 @@
 local dispatch = require("./dispatch")
+local frag = require("./frag")
 local state = require("./state")
 local shared = require("./shared")
 
@@ -75,7 +76,8 @@ function M.handleArbitrary(
     state: state.State
 ): state.State
     -- extract the property we are trying to prove from the goal
-    local matches = state.goal:changeBinderNames({}):match(shared.forallPattern:changeBinderNames({}))
+    local stateGoal = frag.reduceTop(state.goal):changeBinderNames({})
+    local matches = stateGoal:match(shared.forallPattern:changeBinderNames({}))
     if matches == nil then
         Diagnostic:new("goal must be a forall statement", tactic.kw.span:label(""))
             :withTacticInfo(state.info)
