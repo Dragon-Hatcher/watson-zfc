@@ -220,7 +220,7 @@ tactic justification.logically
 end
 
 tactic justification.given
-    justification ::= @kw"given" sentences:sentence_list
+    justification ::= @kw"given" givens:sentence_list
 end
 
 -- TODO: explain
@@ -966,7 +966,7 @@ proof
         thus  {a}          ∈   𝒫(A ∪ B)  by powset.singleton_in;
         thus       {a, b}  ∈   𝒫(A ∪ B)  by powset.pair_in;
         thus {{a}, {a, b}} ∈ 𝒫(𝒫(A ∪ B)) by powset.pair_in;
-        thus             x ∈ 𝒫(𝒫(A ∪ B)) logically; -- TODO: given
+        thus             x ∈ 𝒫(𝒫(A ∪ B)) given x = {{a}, {a, b}};
     ;
 
     done logically

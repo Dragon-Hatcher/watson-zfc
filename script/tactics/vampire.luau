@@ -492,10 +492,63 @@ function M.vampErrToDiag(err: VampError, span: Span): Diagnostic
     end
 end
 
+function M.unusedGivenToDiag(given: Given): Diagnostic
+    return Diagnostic:newWarning(`unused given \`{given.frag}\``, given.span:labelWarning(""))     
+end
+
+function M.readSentenceList(sentences: SentenceList?): {UnResFrag}
+    local list = {}
+    if sentences == nil then return list end
+
+    while true do
+        local s = sentences.sentence
+        table.insert(list, s)
+
+        if sentences._rule == "sentence_list.many" then
+            sentences = sentences.rest
+        else
+            break
+        end
+    end
+
+    return list
+end
+
 function M.handleVampireTactic(
-    tactic: { _span: Span },
+    tactic: { _span: Span, sentences: SentenceList? },
     state: state.State
 ): state.State
+    local unGivens = M.readSentenceList(tactic.sentences)
+    local givens = {}
+
+    for _, given in unGivens do
+        local g, d = given:resolve(state.scope)
+        if d ~= nil then d:withTacticInfo(state.info):report() end
+        if g == nil then return state:error() end
+
+        -- if we already have the given directly we can move on
+        if state.knowns:get(g.formal:fact()) ~= nil then
+            continue
+        end
+
+        -- otherwise try to get vampire to prove it
+        local subState = state:copy()
+        subState.goal = g
+        subState.info = subState.info:withGoal(g)
+        local vState, _, err = M.handleVampire(subState)
+
+        if err ~= nil then
+            Diagnostic:new("given fact is not known", given.span:label(""))
+                :withTacticInfo(state.info)
+                :report()
+            return state:error()
+        end
+
+        state.knowns:set(g.formal:fact(), g:fact())
+        state.formal = vState.formal
+        table.insert(givens, {frag = g, span = given.span})
+    end
+    
     local newState, info, err = M.handleVampire(state:copy())
 
     if err then
@@ -508,6 +561,14 @@ function M.handleVampireTactic(
         Diagnostic:newWarning("Vampire proved a contradiction, not the goal", tactic._span:labelWarning(""))
             :withTacticInfo(state.info)
             :report()
+    end
+
+    if info and #info.unusedGivens > 0 then
+        for _, given in info.unusedGivens do
+            M.unusedGivenToDiag(given)
+                :withTacticInfo(state.info)
+                :report()
+        end
     end
 
     return newState

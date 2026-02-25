@@ -156,7 +156,7 @@ function tryVampire(
 
     if vInfo and #vInfo.unusedGivens > 0 then
         for _, given in vInfo.unusedGivens do
-            Diagnostic:newWarning(`unused given \`{given.frag}\``, given.span:labelWarning(""))
+            vampire.unusedGivenToDiag(given)
                 :withTacticInfo(state.info)
                 :report()
         end

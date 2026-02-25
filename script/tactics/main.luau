@@ -26,6 +26,7 @@ dispatch.justificationTable = {
 	["justification.using"] = quant.handleUsing,
 	["justification.specializing"] = quant.handleSpecializing,
 	["justification.logically"] = vampire.handleVampireTactic,
+	["justification.given"] = vampire.handleVampireTactic,
 }
 
 dispatch.tacticTable = {
