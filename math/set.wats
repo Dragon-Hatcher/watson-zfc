@@ -1385,7 +1385,7 @@ proof
         -- T = ω
         thus inductive(T) by inductive.def;
         thus ω ⊆ T by omega.sub_inductive;
-        thus ω = T by sub.sub_eq;
+        thus ω = T by sub.sub_eq given T ⊆ ω and ω ⊆ T;
 
         -- T is transitive
         thus ∀x ∈ ω, x ⊆ ω given ω = T;
@@ -1393,4 +1393,74 @@ proof
     ;
 
     todo
+qed
+
+Returning to our characterization of ordinals as sets containing every previous
+ordinal, we can prove that every element of an ordinal is an ordinal.
+
+lemma well_ordered.trichotomy [a b c : term] : (well_ordered(c)) (a ∈ c) (b ∈ c)
+    |- a ∈ b ∨ a = b ∨ b ∈ a
+proof
+    todo
+qed
+
+lemma well_ordered.trans [a b c d : term] : (well_ordered(d)) (a ∈ d) (b ∈ d)
+    (c ∈ d) (a ∈ b) (b ∈ c)
+    |- a ∈ c
+proof
+    todo
+qed
+
+lemma well_ordered.irrefl [a b : term] : (well_ordered(b)) (a ∈ b)
+    |- a ∉ a
+proof
+    todo
+qed
+
+theorem ordinal.el_of_ordinal.is [α β : term] : (α ∈ β) (β : Ord)
+    |- α : Ord
+proof
+    follows transitive(β) ∧ well_ordered(β) by ordinal.def;
+
+    follows transitive(α) as
+        suffices ∀x ∈ α, x ⊆ α by transitive.def;
+        arbitrary x; assume x ∈ α;
+        suffices ∀y ∈ x, y ∈ α by sub.def;
+        arbitrary y; assume y ∈ x;
+
+        follows α ⊆ β by transitive.def given transitive(β) and α ∈ β;
+        thus    x ∈ β by sub.def given x ∈ α;
+        thus    x ⊆ β by transitive.def;
+        thus    y ∈ β by sub.def;
+
+        follows y ∈ α ∨ y = α ∨ α ∈ y by well_ordered.trichotomy;
+        
+        assume y = α then ⊥ as
+            -- we have y ∈ x ∈ α so we get α ∈ x ∈ α.
+            follows α ∈ x given y ∈ x;
+            thus α ∈ α by well_ordered.trans given α ∈ x and x ∈ α;
+            thus ⊥     by well_ordered.irrefl;
+        ;
+        assume α ∈ y then ⊥ as
+            -- basically the same as above. α ∈ y ∈ x ∈ α
+            follows α ∈ x by well_ordered.trans given α ∈ y and y ∈ x;
+            thus    α ∈ α by well_ordered.trans given α ∈ x and x ∈ α;
+            thus    ⊥     by well_ordered.irrefl;
+        ;
+
+        thus y ∈ α logically;
+    ;
+
+    follows well_ordered(α) as
+        suffices ∀δ, δ ⊆ α ∧ δ ≠ ∅ → ∃γ, is_least(γ, δ) by well_ordered.def;
+        arbitrary δ; assume δ ⊆ α ∧ δ ≠ ∅;
+
+        -- by the transitivity of β, α ⊆ β, so δ ⊆ β as well. and then we use
+        -- the well ordering of β. 
+        follows α ⊆ β by transitive.def given α ∈ β and transitive(β);
+        thus    δ ⊆ β by sub.trans given δ ⊆ α;
+        thus ∃γ, is_least(γ, δ) by well_ordered.def given well_ordered(β) and δ ⊆ α ∧ δ ≠ ∅;
+    ;
+
+    done by ordinal.def
 qed

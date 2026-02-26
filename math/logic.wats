@@ -100,7 +100,7 @@ and $p$ is not true, then $q$ is true. In fact, we can use this as our definitio
 defining $p \lor q$ as $\neg p \to q$.
 
 notation or
-    sentence (300) ::= sentence " ∨ " sentence
+    sentence (300>) ::= sentence " ∨ " sentence
 end
 
 definition

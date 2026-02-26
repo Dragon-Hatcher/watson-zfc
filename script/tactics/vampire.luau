@@ -76,25 +76,6 @@ function newCtx(boundedCompPreds: FragMap<CompPredInfo>): ConversionCtx
     }
 end
 
-function shouldReduce(frag: Frag, watch: boolean?): boolean
-    local source = frag.source
-
-    if source == nil then return false end
-    if source.isLuaApi then return true end
-
-    if source.isDefinitionCmd ~= nil then
-        local attrs = shared.attributes:getAttributes(source.isDefinitionCmd)
-        for _, attr in attrs do
-            if attr._rule == "reducible" then 
-                return true 
-            end
-        end
-        return false
-    end
-
-    return false
-end
-
 function termToV(term: Frag, bindings: ConversionCtx): VTerm?
     -- If there are more free variables then binding we have a problem
     if not (term.unclosedCount <= #bindings.bindingsStack) then
