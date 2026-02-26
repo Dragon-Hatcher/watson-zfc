@@ -1378,7 +1378,7 @@ proof
                 follows x = n ∨ x ∈ n by union.def, singleton.def;
                 thus x ∈ ω by sub.def given n ⊆ ω and n ∈ ω;
             ;
-            thus    succ(n) ⊆ ω by ordinal.succ.def;
+            thus succ(n) ⊆ ω by ordinal.succ.def;
             thus succ(n) ∈ T given succ(n) ∈ ω and succ(n) ⊆ ω;
         ;
 
