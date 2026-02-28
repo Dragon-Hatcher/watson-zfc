@@ -945,9 +945,9 @@ end
 
 This proof follows simply from the definition of the ordered pair and the properties of unions and intersections.
 
--- theorem ordered_pair_second.def [a b : term] :
---     |- π₂(⟨a, b⟩) = b
--- proof
+theorem ordered_pair_second.def [a b : term] :
+    |- π₂(⟨a, b⟩) = b
+proof
     -- suffices ⋃{x ∈ ⋃{{a}, {a, b}} | ⋃{{a}, {a, b}} ≠ ⋂{{a}, {a, b}} → x ∉ ⋂{{a}, {a, b}}} = b;
     -- thus ∀x, x ∈ ⋃{{a}, {a, b}} ↔ (x ∈ {a} ∨ x ∈ {a, b}) by union.def [{a}] [{a, b}];
     -- follows ∀x, x ∈ ⋂{{a}, {a, b}} ↔ (x ∈ {a} ∧ x ∈ {a, b}) by inter.def [{a}] [{a, b}];
@@ -973,23 +973,23 @@ This proof follows simply from the definition of the ordered pair and the proper
     -- follows ∀x, x ∈ ⋃{b} ↔ x ∈ b logically;
     -- thus ⋃{b} = b by zfc.extensionality;
     -- done logically
-    -- todo
--- qed
+    todo
+qed
 
 Finally, we show that two ordered pairs are equal iff their first and second elements are equal.
 
--- theorem ordered_pair.eq [a b c d : term] :
---     |- ⟨a, b⟩ = ⟨c, d⟩ ↔ (a = c ∧ b = d)
--- proof
---     hence ⟨a, b⟩ = ⟨c, d⟩ → π₁(⟨a, b⟩) = π₁(⟨c, d⟩) by zfc.extensionality;
---     follows π₁(⟨a, b⟩) = π₁(⟨c, d⟩) ↔ a = c by ordered_pair_first.def;
---     follows ⟨a, b⟩ = ⟨c, d⟩ → π₂(⟨a, b⟩) = π₂(⟨c, d⟩) by zfc.extensionality;
---     follows π₂(⟨a, b⟩) = π₂(⟨c, d⟩) ↔ b = d by ordered_pair_second.def;
---     -- suffices ⟨a, b⟩ = ⟨c, d⟩ ↔ (a = c ∧ b = d);
---     hence ⟨a, b⟩ = ⟨c, d⟩ → (a = c ∧ b = d) logically;
---     hence (a = c ∧ b = d) → ⟨a, b⟩ = ⟨c, d⟩ logically;
---     done logically
--- qed
+theorem ordered_pair.eq [a b c d : term] :
+    |- ⟨a, b⟩ = ⟨c, d⟩ ↔ (a = c ∧ b = d)
+proof
+    hence ⟨a, b⟩ = ⟨c, d⟩ → π₁(⟨a, b⟩) = π₁(⟨c, d⟩) by zfc.extensionality;
+    follows π₁(⟨a, b⟩) = π₁(⟨c, d⟩) ↔ a = c by ordered_pair_first.def;
+    follows ⟨a, b⟩ = ⟨c, d⟩ → π₂(⟨a, b⟩) = π₂(⟨c, d⟩) by zfc.extensionality;
+    follows π₂(⟨a, b⟩) = π₂(⟨c, d⟩) ↔ b = d by ordered_pair_second.def;
+    -- suffices ⟨a, b⟩ = ⟨c, d⟩ ↔ (a = c ∧ b = d);
+    hence ⟨a, b⟩ = ⟨c, d⟩ → (a = c ∧ b = d) logically;
+    hence (a = c ∧ b = d) → ⟨a, b⟩ = ⟨c, d⟩ logically;
+    done logically
+qed
 
 ### The Cartesian Product
 

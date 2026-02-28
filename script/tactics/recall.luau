@@ -103,7 +103,7 @@ function M.handleRecall(thm: Theorem, state: state.State): (state.State, RecallE
     end
 
     -- Now we can prove the theorem statement using the theorem.
-    state.formal = state.formal:applyTodo(recalledTheorem)
+    state.formal = state.formal:applyTodo(recalledTheorem, "recall")
     state.info = state.info:withDeduce(recalledTheorem:fact())
     state.knowns:set(recalledTheorem.formal:fact(), recalledTheorem:fact())
 

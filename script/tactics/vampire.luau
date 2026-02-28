@@ -456,7 +456,7 @@ function M.handleVampire(state: state.State, givens: {Given}?): (state.State, Va
     state.info = state.info:withDeduce(state.goal:fact())
 
     -- TODO: convert vampire proof to formal proof
-    state.formal = state.formal:applyTodo(state.goal)
+    state.formal = state.formal:applyTodo(state.goal, "vampire")
 
     return state, {usesGoal = usesGoal, unusedGivens = unusedGivens}, nil
 end
