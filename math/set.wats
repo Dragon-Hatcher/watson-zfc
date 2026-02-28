@@ -1460,7 +1460,24 @@ proof
         -- we want to claim γ is also least in β.
         suffices is_least(γ, β) logically;
 
-        todo
+        follows γ ∈ β' by is_least.def given is_least(γ, β');
+        follows γ ∈ β  by inter.def;
+        suffices ∀η ∈ β, η ≠ γ → γ ∈ η by is_least.def;
+
+        -- assume there was some smaller element η ∈ β.
+        arbitrary η; assume η ∈ β; assume η ≠ γ;
+        assume γ ∉ η for_contra;
+        follows η ∈ γ as todo;
+
+        -- that η would also have to be in β' since succ(δ) is transitive.
+        follows γ ∈ succ(δ) by inter.def given γ ∈ β';
+        follows γ ⊆ succ(δ) by ordinal.def, transitive.def given succ(δ) : Ord;
+        thus    η ∈ succ(δ) by sub.def given η ∈ γ;
+        thus    η ∈ β' by inter.def given η ∈ β and η ∈ succ(δ);
+
+        -- but then we have both η ∈ γ and γ ∈ η.
+        thus γ ∈ η by is_least.def given is_least(γ, β');
+        thus ⊥ by mem.no_loop given η ∈ γ and γ ∈ η;
     ;
 
     done by ordinal.def
