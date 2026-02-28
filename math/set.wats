@@ -577,7 +577,7 @@ although we could define this directly using unrestricted comprehension, it is
 easier to do it this way to avoid repeated proofs of existence.
 
 notation union
-    term (650) ::= term " ∪ " term
+    term (650>) ::= term " ∪ " term
 end
 
 definition
@@ -1431,10 +1431,66 @@ proof
     done logically
 qed
 
+I think we actually need regularity for this proof. Suppose we don't have
+regularity and there is some set x = {x}. The set is transitive because if
+z ∈ y ∈ x then y = x and z = x so z ∈ x. It is well ordered because the only
+non-empty subset is {x} which has the "least" element x. We have to say x is
+least because ∀y ∈ x, y ≠ x → x ∈ y holds (both because y = x and because x ∈ x).
+
+α ∉ α
+
+lemma ordinal.no_loop [α β γ : term] : (α : Ord) (β ∈ α) (γ ∈ α) (β ∈ γ)
+    |- ¬(β ∈ γ ∧ γ ∈ β)
+proof
+    assume β ∈ γ ∧ γ ∈ β for_contra;
+
+    follows {β, γ} ⊆ α by pair.def, sub.def;
+    follows {β, γ} ≠ ∅ by pair.non_empty;
+
+    follows well_ordered(α) by ordinal.def;
+    obtain δ st is_least(δ, {β, γ}) by well_ordered.def;
+    
+    -- this feels like it should be a contradiction but I don't think it
+    -- actually is.
+    todo
+qed
+
+lemma ordinal.internal_trans [α β γ δ : term] : (α : Ord) (β ∈ α) (γ ∈ α) (δ ∈ α)
+    (β ∈ γ) (γ ∈ δ)
+    |- β ∈ δ
+proof
+    -- the idea here is to use the well ordering of α to find a minimal element
+    -- in {β, γ, δ}. If it is β we are happy. If it is γ we have a contradiction
+    -- from β ∈ γ and γ ∈ β. If it is δ then we have one from γ ∈ δ and δ ∈ γ.
+    let S := {β} ∪ {γ} ∪ {δ};
+    follows ∀x, x ∈ S ↔ x = β ∨ x = γ ∨ x = δ by singleton.def, union.def;
+
+    -- obtain the least element of S
+    thus S ⊆ α by sub.def;
+    thus S ≠ ∅ by empty.def;
+    follows well_ordered(α) by ordinal.def;
+    obtain η st is_least(η, S) by well_ordered.def;
+    
+    -- neither of γ and δ can be the least element because they cause ∈ loops.
+    assume η = γ then ⊥ as
+        thus γ ∈ β by is_least.def;
+        done by ordinal.no_loop given β ∈ γ
+    ;
+    assume η = δ then ⊥ as
+        thus δ ∈ γ by is_least.def;
+        done by ordinal.no_loop given γ ∈ δ
+    ;
+
+    -- thus η must be β and since δ ∈ S this is good enough.
+    follows η ∈ S by is_least.def;
+    thus    η = β logically;
+    thus    β ∈ δ by is_least.def;
+qed
+
 theorem ordinal.el.is [α β : term] : (α ∈ β) (β : Ord)
     |- α : Ord
 proof
-    follows transitive(β) ∧ well_ordered(β) by ordinal.def;
+    follows well_ordered(β) ∧ transitive(β) by ordinal.def;
 
     follows transitive(α) as
         suffices ∀x ∈ α, x ⊆ α by transitive.def;
@@ -1447,26 +1503,20 @@ proof
         thus    x ⊆ β by transitive.def;
         thus    y ∈ β by sub.def;
 
-        -- follows y ∈ α ∨ y = α ∨ α ∈ y by well_ordered.trichotomy;
+        follows y ∈ α ∨ y = α ∨ α ∈ y by ordinal.internal_trichotomy;
         
-        -- assume y = α then ⊥ as
-        --     -- we have y ∈ x ∈ α so we get α ∈ x ∈ α.
-        --     follows α ∈ x given y ∈ x;
+        assume y = α then ⊥ as
+            -- we have y ∈ x ∈ α so we get α ∈ x ∈ α.
+            follows α ∈ x given y ∈ x;
+            done by ordinal.no_loop given x ∈ α
+        ;
+        assume α ∈ y then ⊥ as
+            -- basically the same as above. α ∈ y ∈ x ∈ α
+            follows α ∈ x by ordinal.internal_trans [β] [α] [y] [x];
+            done by ordinal.no_loop given x ∈ α
+        ;
 
-
-
-        --     -- thus α ∈ α by well_ordered.trans given α ∈ x and x ∈ α;
-        --     -- thus ⊥     by well_ordered.irrefl;
-        -- ;
-        -- assume α ∈ y then ⊥ as
-        --     -- basically the same as above. α ∈ y ∈ x ∈ α
-        --     follows α ∈ x by well_ordered.trans given α ∈ y and y ∈ x;
-        --     thus    α ∈ α by well_ordered.trans given α ∈ x and x ∈ α;
-        --     thus    ⊥     by well_ordered.irrefl;
-        -- ;
-
-        -- thus y ∈ α logically;
-        todo
+        thus y ∈ α logically;
     ;
 
     follows well_ordered(α) as
