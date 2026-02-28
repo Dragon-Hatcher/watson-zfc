@@ -444,6 +444,15 @@ proof
     done by sub.def, pair.def
 qed
 
+It is also non-empty.
+
+theorem pair.non_empty [a b : term] :
+    |- {a, b} ≠ ∅
+proof
+    follows a ∈ {a, b} by pair.def;
+    thus {a, b} ≠ ∅    by empty.def;
+qed
+
 ### The Singleton Set
 
 We can define the singleton set as the pair of the same element twice. We could
@@ -1398,26 +1407,31 @@ qed
 Returning to our characterization of ordinals as sets containing every previous
 ordinal, we can prove that every element of an ordinal is an ordinal.
 
-lemma well_ordered.trichotomy [a b c : term] : (well_ordered(c)) (a ∈ c) (b ∈ c)
-    |- a ∈ b ∨ a = b ∨ b ∈ a
+lemma ordinal.internal_trichotomy [α β γ : term] : (α : Ord) (β ∈ α) (γ ∈ α)
+    |- γ ∈ β ∨ γ = β ∨ β ∈ γ
 proof
-    todo
+    follows transitive(α) ∧ well_ordered(α) by ordinal.def;
+
+    -- The idea here is that {β, γ} ⊆ α so it must have a least element.
+    follows {β, γ} ⊆ α by pair.def, sub.def given β ∈ α and γ ∈ α;
+    follows {β, γ} ≠ ∅ by pair.non_empty;
+
+    -- the least element δ must be either β or γ
+    obtain  δ st is_least(δ, {β, γ}) by well_ordered.def given well_ordered(α);
+    follows δ ∈ {β, γ}    by is_least.def given is_least(δ, {β, γ});
+    follows δ = β ∨ δ = γ by pair.def;
+
+    -- whichever one δ is it must be either equal to or in the other
+    follows ∀η ∈ {β, γ}, η ≠ δ → δ ∈ η by is_least.def given is_least(δ, {β, γ});
+    follows ∀η ∈ {β, γ}, η = δ ∨ δ ∈ η logically;
+    follows β = δ ∨ δ ∈ β by pair.def;
+    follows γ = δ ∨ δ ∈ γ by pair.def;
+
+    -- which suffices. you can check the cases on δ = β ∨ δ = γ
+    done logically
 qed
 
-lemma well_ordered.trans [a b c d : term] : (well_ordered(d)) (a ∈ d) (b ∈ d)
-    (c ∈ d) (a ∈ b) (b ∈ c)
-    |- a ∈ c
-proof
-    todo
-qed
-
-lemma well_ordered.irrefl [a b : term] : (well_ordered(b)) (a ∈ b)
-    |- a ∉ a
-proof
-    todo
-qed
-
-theorem ordinal.el_of_ordinal.is [α β : term] : (α ∈ β) (β : Ord)
+theorem ordinal.el.is [α β : term] : (α ∈ β) (β : Ord)
     |- α : Ord
 proof
     follows transitive(β) ∧ well_ordered(β) by ordinal.def;
@@ -1433,22 +1447,26 @@ proof
         thus    x ⊆ β by transitive.def;
         thus    y ∈ β by sub.def;
 
-        follows y ∈ α ∨ y = α ∨ α ∈ y by well_ordered.trichotomy;
+        -- follows y ∈ α ∨ y = α ∨ α ∈ y by well_ordered.trichotomy;
         
-        assume y = α then ⊥ as
-            -- we have y ∈ x ∈ α so we get α ∈ x ∈ α.
-            follows α ∈ x given y ∈ x;
-            thus α ∈ α by well_ordered.trans given α ∈ x and x ∈ α;
-            thus ⊥     by well_ordered.irrefl;
-        ;
-        assume α ∈ y then ⊥ as
-            -- basically the same as above. α ∈ y ∈ x ∈ α
-            follows α ∈ x by well_ordered.trans given α ∈ y and y ∈ x;
-            thus    α ∈ α by well_ordered.trans given α ∈ x and x ∈ α;
-            thus    ⊥     by well_ordered.irrefl;
-        ;
+        -- assume y = α then ⊥ as
+        --     -- we have y ∈ x ∈ α so we get α ∈ x ∈ α.
+        --     follows α ∈ x given y ∈ x;
 
-        thus y ∈ α logically;
+
+
+        --     -- thus α ∈ α by well_ordered.trans given α ∈ x and x ∈ α;
+        --     -- thus ⊥     by well_ordered.irrefl;
+        -- ;
+        -- assume α ∈ y then ⊥ as
+        --     -- basically the same as above. α ∈ y ∈ x ∈ α
+        --     follows α ∈ x by well_ordered.trans given α ∈ y and y ∈ x;
+        --     thus    α ∈ α by well_ordered.trans given α ∈ x and x ∈ α;
+        --     thus    ⊥     by well_ordered.irrefl;
+        -- ;
+
+        -- thus y ∈ α logically;
+        todo
     ;
 
     follows well_ordered(α) as

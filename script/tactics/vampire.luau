@@ -530,7 +530,7 @@ function M.handleVampireTactic(
         table.insert(givens, {frag = g, span = given.span})
     end
     
-    local newState, info, err = M.handleVampire(state:copy())
+    local newState, info, err = M.handleVampire(state:copy(), givens)
 
     if err then
         M.vampErrToDiag(err, tactic._span)
