@@ -1431,28 +1431,22 @@ proof
     done logically
 qed
 
-I think we actually need regularity for this proof. Suppose we don't have
-regularity and there is some set x = {x}. The set is transitive because if
-z ∈ y ∈ x then y = x and z = x so z ∈ x. It is well ordered because the only
-non-empty subset is {x} which has the "least" element x. We have to say x is
-least because ∀y ∈ x, y ≠ x → x ∈ y holds (both because y = x and because x ∈ x).
-
-α ∉ α
-
-lemma ordinal.no_loop [α β γ : term] : (α : Ord) (β ∈ α) (γ ∈ α) (β ∈ γ)
-    |- ¬(β ∈ γ ∧ γ ∈ β)
+lemma mem.irrefl [a : term] : 
+    |- a ∉ a
 proof
-    assume β ∈ γ ∧ γ ∈ β for_contra;
+    follows ∃x, x ∈ {a} by singleton.def;
+    obtain y st y ∈ {a} ∧ ¬∃z, (z ∈ y ∧ z ∈ {a}) by zfc.regularity;
+    done by singleton.def
+qed
 
-    follows {β, γ} ⊆ α by pair.def, sub.def;
-    follows {β, γ} ≠ ∅ by pair.non_empty;
-
-    follows well_ordered(α) by ordinal.def;
-    obtain δ st is_least(δ, {β, γ}) by well_ordered.def;
-    
-    -- this feels like it should be a contradiction but I don't think it
-    -- actually is.
-    todo
+lemma mem.no_loop [a b : term] :
+    |- ¬(a ∈ b ∧ b ∈ a)
+proof
+    follows ∃x, x ∈ {a, b} by pair.def;
+    obtain y st y ∈ {a, b} ∧ ¬∃z, (z ∈ y ∧ z ∈ {a, b}) by zfc.regularity;
+    -- if y = a then b ∈ a ∧ b ∈ {a, b} would lead to a contradiction and 
+    -- vice versa. just let vampire work it out.
+    done by pair.def
 qed
 
 lemma ordinal.internal_trans [α β γ δ : term] : (α : Ord) (β ∈ α) (γ ∈ α) (δ ∈ α)
@@ -1474,11 +1468,11 @@ proof
     -- neither of γ and δ can be the least element because they cause ∈ loops.
     assume η = γ then ⊥ as
         thus γ ∈ β by is_least.def;
-        done by ordinal.no_loop given β ∈ γ
+        done by mem.no_loop given β ∈ γ
     ;
     assume η = δ then ⊥ as
         thus δ ∈ γ by is_least.def;
-        done by ordinal.no_loop given γ ∈ δ
+        done by mem.no_loop given γ ∈ δ
     ;
 
     -- thus η must be β and since δ ∈ S this is good enough.
@@ -1508,12 +1502,12 @@ proof
         assume y = α then ⊥ as
             -- we have y ∈ x ∈ α so we get α ∈ x ∈ α.
             follows α ∈ x given y ∈ x;
-            done by ordinal.no_loop given x ∈ α
+            done by mem.no_loop given x ∈ α
         ;
         assume α ∈ y then ⊥ as
             -- basically the same as above. α ∈ y ∈ x ∈ α
             follows α ∈ x by ordinal.internal_trans [β] [α] [y] [x];
-            done by ordinal.no_loop given x ∈ α
+            done by mem.no_loop given x ∈ α
         ;
 
         thus y ∈ α logically;
