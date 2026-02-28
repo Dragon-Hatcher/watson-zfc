@@ -746,6 +746,38 @@ proof
     thus    ∀x, x ∈ a ∩ b →          x ∈ b  logically;
 qed
 
+theorem inter.left_sub [a b c : term] : (c ⊆ a ∩ b)
+    |- c ⊆ a
+proof
+    follows ∀x, x ∈ c → x ∈ a ∧ x ∈ b by inter.def, sub.def given c ⊆ a ∩ b;
+    follows ∀x, x ∈ c → x ∈ a         logically;
+qed
+
+theorem inter.right_sub [a b c : term] : (c ⊆ a ∩ b)
+    |- c ⊆ b
+proof
+    follows ∀x, x ∈ c → x ∈ a ∧ x ∈ b by inter.def, sub.def given c ⊆ a ∩ b;
+    follows ∀x, x ∈ c →         x ∈ b logically;
+qed
+
+theorem inter.both_sub [a b c : term] : (a ⊆ c) (b ⊆ c)
+    |- a ∩ b ⊆ c
+proof
+    suffices ∀x, x ∈ a ∧ x ∈ b → x ∈ c by inter.def, sub.def;
+    follows  ∀x, x ∈ a         → x ∈ c by sub.def given a ⊆ c;
+    follows  ∀x,         x ∈ b → x ∈ c by sub.def given b ⊆ c;
+    done logically
+qed
+
+theorem inter.sub_both [a b c : term] : (c ⊆ a) (c ⊆ b)
+    |- c ⊆ a ∩ b
+proof
+    suffices ∀x, x ∈ c → x ∈ a ∧ x ∈ b by inter.def, sub.def;
+    follows  ∀x, x ∈ c → x ∈ a         by sub.def given c ⊆ a;
+    follows  ∀x, x ∈ c →         x ∈ b by sub.def given c ⊆ b;
+    done logically
+qed
+
 ### The Set Difference
 
 We define the difference between two sets as the set of elements of the first set which are not in the second set.
@@ -1082,115 +1114,6 @@ proof
     done by eq.refl [succ(n)]
 qed
 
-
-The defining property of $\omega$ is that it is the smallest set which contains
-$\emptyset$ and is closed under the successor operation. We will call this closure
-property inductivity.
-
-definition
-    inductive(α) := ∅ ∈ α ∧ (∀n ∈ α, succ(n) ∈ α)
-end
-
-theorem inductive.def [α : term] :
-    |- inductive(α) ↔ ∅ ∈ α ∧ (∀n ∈ α, succ(n) ∈ α)
-proof
-    done by iff.refl [inductive(α)]
-qed
-
-By the smallest set we mean that $\omega$ is a subset of any inductive set. Put
-another way, $\omega$ is the intersection of the proper class of all inductive sets. 
-However, our theory does not contain proper classes so we cannot use the 
-intersection operator developed previously. We can instead define $\omega$ using 
-an unrestricted comprehension.
-
-definition
-    ω := {x | ∀α, inductive(α) → x ∈ α}
-end
-
-The ZF axiom of infinity guarantees that at least one inductive set exists,
-which is what will let us conclude that $\omega$ is well defined.
-
-lemma inductive.exists :
-    |- ∃α, inductive(α)
-proof
-    suffices ∃α, ∅ ∈ α ∧ ∀n ∈ α, n ∪ {n} ∈ α;
-
-    -- the object whose existence is guaranteed by the axiom of infinity is the
-    -- α that we want.
-    obtain x st (∃y, y ∈ x ∧ ∀z, z ∉ y) ∧ (∀y ∈ x, ∃z ∈ x, ∀w, w ∈ z ↔ w ∈ y ∨ w = y)
-        by zfc.infinity;
-
-    -- the ∃y, y ∈ x ∧ ∀z, z ∉ y tells us that x contains ∅
-    follows ∅ ∈ x by empty.def, zfc.extensionality;
-
-    -- now we need to show that x is closed under the successor operation
-    follows ∀n ∈ x, n ∪ {n} ∈ x as
-        arbitrary n; assume n ∈ x;
-        obtain z st z ∈ x ∧ (∀w, w ∈ z ↔ w ∈ n ∨ w = n) logically;
-        follows ∀w, w ∈ n ∪ {n} ↔ (w ∈ n ∨ w = n) by singleton.def, union.def;
-        follows z = n ∪ {n} by zfc.extensionality;
-        thus    n ∪ {n} ∈ x logically;
-    ;
-
-    done logically
-qed
-
-From this lemma we can deduce that $\omega$ will be well defined, as it is a
-subset of that inductive set.
-
-tactic tactic.let
-    tactic ::= @kw"let" name:@name ":=" frag:@fragment(term) ";" next:tactic
-end
-
-theorem omega.def :
-    |- ∀x, x ∈ ω ↔ (∀α, inductive(α) → x ∈ α)
-proof
-    -- we have at least one inductive set. since ω is an infinite intersection
-    -- restricting the comprehension doesn't change anything. so ω' = ω.
-    obtain α st inductive(α) by inductive.exists;
-    let ω' := {x ∈ α | ∀β, inductive(β) → x ∈ β};
-
-    -- we prove that ω' has the defining property of ω
-    follows ∀y, y ∈ ω' ↔ (∀β, inductive(β) → y ∈ β) as
-        arbitrary y;
-        suffices y ∈ {x ∈ α | ∀β, inductive(β) → x ∈ β} ↔ (∀β, inductive(β) → y ∈ β);
-        assume y ∈ {x ∈ α | ∀β, inductive(β) → x ∈ β} then ∀β, inductive(β) → y ∈ β logically;
-        assume ∀β, inductive(β) → y ∈ β then y ∈ {x ∈ α | ∀β, inductive(β) → x ∈ β} as
-            follows y ∈ α given inductive(α);
-            follows y ∈ α ∧ (∀β, inductive(β) → y ∈ β) logically;
-            done logically
-        ;
-        done logically
-    ;
-
-    -- ω' proves that the infinite intersection exists, so ω is well defined
-    -- and thus has the desired property.
-    thus ∃w, ∀x, x ∈ w ↔ (∀β, inductive(β) → x ∈ β) logically;
-    thus ∀x, x ∈ ω ↔ (∀β, inductive(β) → x ∈ β) by uncomp.def [∀β, inductive(β) → _ ∈ β];
-qed
-
-corollary omega.sub_inductive [a : term] : (inductive(a))
-    |- ω ⊆ a
-proof
-    done by omega.def, sub.def
-qed
-
-corollary omega.inductive :
-    |- inductive(ω)
-proof
-    follows ∀α, inductive(α) → ∅ ∈ α by inductive.def;
-    thus                       ∅ ∈ ω by omega.def;
-
-    follows ∀n ∈ ω, succ(n) ∈ ω as
-        arbitrary n; assume n ∈ ω;
-        follows ∀α, inductive(α) → n ∈ α by omega.def;
-        follows ∀α, inductive(α) → succ(n) ∈ α by inductive.def;
-        thus succ(n) ∈ ω by omega.def;
-    ;
-
-    done by inductive.def
-qed
-
 At this point we could prove that induction holds on $\omega$. However, $\omega$
 is actually just one element of a larger number system called the ordinals. A
 more powerful form of induction holds on these ordinal numbers so we will 
@@ -1253,6 +1176,24 @@ proof
     done by iff.refl [α : Ord]
 qed
 
+lemma mem.irrefl [a : term] : 
+    |- a ∉ a
+proof
+    follows ∃x, x ∈ {a} by singleton.def;
+    obtain y st y ∈ {a} ∧ ¬∃z, (z ∈ y ∧ z ∈ {a}) by zfc.regularity;
+    done by singleton.def
+qed
+
+lemma mem.no_loop [a b : term] :
+    |- ¬(a ∈ b ∧ b ∈ a)
+proof
+    follows ∃x, x ∈ {a, b} by pair.def;
+    obtain y st y ∈ {a, b} ∧ ¬∃z, (z ∈ y ∧ z ∈ {a, b}) by zfc.regularity;
+    -- if y = a then b ∈ a ∧ b ∈ {a, b} would lead to a contradiction and 
+    -- vice versa. just let vampire work it out.
+    done by pair.def
+qed
+
 The ordinals are ordered by $\in$ so $\alpha < \beta$ can be thought of as
 $\alpha \in \beta$. Any ordinal is the set of every previous ordinal. Thus, it
 stands to reason that the first ordinal is $\empty$. The two properties are
@@ -1278,6 +1219,10 @@ qed
 
 The empty set is the zero of the ordinal numbers. We can get the next ordinal
 from any previous ordinal number by applying the successor operation.
+
+tactic tactic.let
+    tactic ::= @kw"let" name:@name ":=" frag:@fragment(term) ";" next:tactic
+end
 
 theorem ordinal.succ.is [α : term] : (α : Ord)
     |- succ(α) : Ord
@@ -1356,133 +1301,6 @@ proof
     thus succ(α) : Ord by ordinal.def given transitive(succ(α)) and well_ordered(succ(α));
 qed
 
-With zero and a successor operation we can essentially form each natural number.
-We can continue iterating the successor operation indefinitely. However there
-are more ordinal numbers than these. In particular, $\omega$ is the set of all
-ordinals formed by iterating the successor operation on ordinals, and it is also
-an ordinal. 
-
-theorem ordinal.omega.is :
-    |- ω : Ord
-proof
-    follows transitive(ω) as 
-        -- define the set of elements of ω that are subsets of ω. We will show
-        -- that T is inductive, thus T ⊆ ω, thus T = ω, thus ω is transitive.
-        let T := {n ∈ ω | n ⊆ ω};
-        follows T ⊆ ω by comp.sub [_ ⊆ ω] [ω];
-
-        -- T is inductive
-        follows ∅ ∈ T as
-            follows ∅ ∈ ω by omega.inductive, inductive.def;
-            follows ∅ ⊆ ω by empty.is_sub;
-            thus ∅ ∈ T logically;
-        ;
-        follows ∀n ∈ T, succ(n) ∈ T as
-            arbitrary n; assume n ∈ T;
-            thus n ∈ ω ∧ n ⊆ ω logically;
-            thus succ(n) ∈ ω by omega.inductive, inductive.def;
-            follows n ∪ {n} ⊆ ω as
-                suffices ∀x, x ∈ n ∪ {n} → x ∈ ω;
-                arbitrary x; assume x ∈ n ∪ {n};
-                follows x = n ∨ x ∈ n by union.def, singleton.def;
-                thus x ∈ ω by sub.def given n ⊆ ω and n ∈ ω;
-            ;
-            thus succ(n) ⊆ ω by ordinal.succ.def;
-            thus succ(n) ∈ T given succ(n) ∈ ω and succ(n) ⊆ ω;
-        ;
-
-        -- T = ω
-        thus inductive(T) by inductive.def;
-        thus ω ⊆ T by omega.sub_inductive;
-        thus ω = T by sub.sub_eq given T ⊆ ω and ω ⊆ T;
-
-        -- T is transitive
-        thus ∀x ∈ ω, x ⊆ ω given ω = T;
-        thus transitive(ω) by transitive.def;
-    ;
-
-    follows ∀n ∈ ω, n : Ord as
-        -- the idea is to show the set of ordinals in ω is inductive.
-        let T := {n ∈ ω | n : Ord};
-        follows T ⊆ ω by comp.sub [_ : Ord] [ω];
-
-        follows ∅ : Ord by ordinal.empty.is;
-        follows ∅ ∈ ω   by omega.inductive, inductive.def;
-        thus    ∅ ∈ T   logically;
-
-        follows ∀n ∈ T, succ(n) ∈ T as
-            arbitrary n; assume n ∈ T;
-
-            follows n : Ord logically;
-            thus succ(n) : Ord by ordinal.succ.is;
-
-            follows n ∈ ω logically;
-            follows succ(n) ∈ ω by omega.inductive, inductive.def;
-
-            thus succ(n) ∈ T logically;
-        ;
-
-        -- thus T is inductive so ω = T and every element of T is an ordinal,
-        -- by definition, so we are done.
-        thus inductive(T) by inductive.def;
-        thus ω ⊆ T by omega.sub_inductive;
-        thus ω = T by sub.sub_eq;
-        done logically
-    ;
-
-    follows well_ordered(ω) as
-        suffices ∀β, β ⊆ ω ∧ β ≠ ∅ → ∃γ, is_least(γ, β) by well_ordered.def;
-        arbitrary β; 
-        assume β ⊆ ω ∧ β ≠ ∅;
-
-        -- idea: we restrict β to a subset of one of it's elements. we know δ+
-        -- is an ordinal so β ∩ δ+ ⊆ δ+. So we get a least element in β ∩ δ+ 
-        -- which will also be least in β.
-        obtain δ st δ ∈ β by nonempty.has_element;
-        let β' := β ∩ succ(δ);
-
-        -- β' is a non-empty subset of succ(δ)
-        follows β' ⊆ succ(δ) by inter.sub_right;
-        follows δ ∈ succ(δ)  by ordinal.succ.def, union.def, singleton.def;
-        thus    δ ∈ β'       by inter.def;
-        thus    β' ≠ ∅       by nonempty.has_element;
-
-        -- it follows that succ(δ) is an ordinal
-        follows β ⊆ ω given transitive(ω);
-        thus δ ∈ ω by sub.def given δ ∈ β;
-        thus δ : Ord given ∀n ∈ ω, n : Ord;
-        thus succ(δ) : Ord by ordinal.succ.is;
-
-        -- therefore can obtain a least element in β'
-        thus well_ordered(succ(δ)) by ordinal.def;
-        obtain γ st is_least(γ, β') by well_ordered.def;
-        
-        -- we want to claim γ is also least in β.
-        suffices is_least(γ, β) logically;
-
-        follows γ ∈ β' by is_least.def given is_least(γ, β');
-        follows γ ∈ β  by inter.def;
-        suffices ∀η ∈ β, η ≠ γ → γ ∈ η by is_least.def;
-
-        -- assume there was some smaller element η ∈ β.
-        arbitrary η; assume η ∈ β; assume η ≠ γ;
-        assume γ ∉ η for_contra;
-        follows η ∈ γ as todo;
-
-        -- that η would also have to be in β' since succ(δ) is transitive.
-        follows γ ∈ succ(δ) by inter.def given γ ∈ β';
-        follows γ ⊆ succ(δ) by ordinal.def, transitive.def given succ(δ) : Ord;
-        thus    η ∈ succ(δ) by sub.def given η ∈ γ;
-        thus    η ∈ β' by inter.def given η ∈ β and η ∈ succ(δ);
-
-        -- but then we have both η ∈ γ and γ ∈ η.
-        thus γ ∈ η by is_least.def given is_least(γ, β');
-        thus ⊥ by mem.no_loop given η ∈ γ and γ ∈ η;
-    ;
-
-    done by ordinal.def
-qed
-
 Returning to our characterization of ordinals as sets containing every previous
 ordinal, we can prove that every element of an ordinal is an ordinal.
 
@@ -1508,24 +1326,6 @@ proof
 
     -- which suffices. you can check the cases on δ = β ∨ δ = γ
     done logically
-qed
-
-lemma mem.irrefl [a : term] : 
-    |- a ∉ a
-proof
-    follows ∃x, x ∈ {a} by singleton.def;
-    obtain y st y ∈ {a} ∧ ¬∃z, (z ∈ y ∧ z ∈ {a}) by zfc.regularity;
-    done by singleton.def
-qed
-
-lemma mem.no_loop [a b : term] :
-    |- ¬(a ∈ b ∧ b ∈ a)
-proof
-    follows ∃x, x ∈ {a, b} by pair.def;
-    obtain y st y ∈ {a, b} ∧ ¬∃z, (z ∈ y ∧ z ∈ {a, b}) by zfc.regularity;
-    -- if y = a then b ∈ a ∧ b ∈ {a, b} would lead to a contradiction and 
-    -- vice versa. just let vampire work it out.
-    done by pair.def
 qed
 
 lemma ordinal.internal_trans [α β γ δ : term] : (α : Ord) (β ∈ α) (γ ∈ α) (δ ∈ α)
@@ -1649,4 +1449,354 @@ proof
     thus     p(μ) logically;
     follows ¬p(μ) given μ ∈ s;
     contradiction
+qed
+
+theorem ordinal.inter.is [α β : term] : (α : Ord) (β : Ord)
+    |- α ∩ β : Ord
+proof
+    follows transitive(α ∩ β) as
+        suffices ∀γ ∈ α ∩ β, γ ⊆ α ∩ β by transitive.def;
+        arbitrary γ; assume γ ∈ α ∩ β;
+        follows γ ∈ α ∧ γ ∈ β by inter.def;
+
+        follows γ ⊆ α by ordinal.def, transitive.def given α : Ord;
+        follows γ ⊆ β by ordinal.def, transitive.def given β : Ord;
+        thus γ ⊆ α ∩ β by inter.sub_both;
+    ;
+
+    follows well_ordered(α ∩ β) as
+        suffices ∀δ, δ ⊆ α ∩ β ∧ δ ≠ ∅ → ∃γ, is_least(γ, δ);
+        arbitrary δ; assume δ ⊆ α ∩ β ∧ δ ≠ ∅;
+        follows δ ⊆ α by inter.left_sub;
+        obtain γ st is_least(γ, δ) by ordinal.def, well_ordered.def;
+        done logically
+    ;
+
+    done by ordinal.def
+qed
+
+theorem ordinal.sub_mem [α β : term] : (α : Ord) (β : Ord) (β ⊆ α)
+    |- β ∈ α ∨ β = α
+proof
+    -- we just need to show β ∈ α if β ≠ α
+    suffices β ≠ α → β ∈ α logically; assume β ≠ α;
+    
+    -- construct α - β which is a non-empty subset of α.
+    let S := α - β;
+    follows S ⊆ α by set_diff.sub;
+    follows S ≠ ∅ by set_diff.non_empty;
+
+    -- we claim that the least element in S is β which suffices.
+    obtain μ st is_least(μ, S) by ordinal.def, well_ordered.def given α : Ord;
+    follows  μ ∈ S by is_least.def;
+    follows  μ ∈ α by set_diff.def;
+    follows  μ ∉ β by set_diff.def;
+    follows  μ ⊆ α by ordinal.def, transitive.def;
+    suffices μ = β logically;
+
+    follows μ ⊆ β as
+        suffices ∀δ ∈ μ, δ ∈ β by sub.def;
+        arbitrary δ; assume δ ∈ μ;
+
+        -- idea: δ must be in β because otherwise it would be in S and then we
+        -- would have μ ∈ δ and δ in μ
+        assume  δ ∉ β for_contra;
+        follows δ ∈ α by sub.def given δ ∈ μ and μ ⊆ α;
+        thus    δ ∈ S by set_diff.def;
+
+        follows δ ≠ μ by mem.irrefl given δ ∈ μ;
+        thus    μ ∈ δ by is_least.def given δ ∈ S and is_least(μ, S);
+        thus    ⊥     by mem.no_loop given δ ∈ μ and μ ∈ δ;
+    ;
+
+    follows β ⊆ μ as
+        suffices ∀δ ∈ β, δ ∈ μ by sub.def;
+        arbitrary δ; assume δ ∈ β;
+
+        -- the idea here is that μ ∉ δ because if it was then μ would be in δ
+        -- by transitivity. so then it must be that δ ∈ μ by transitivity in α
+        follows δ ≠ μ given δ ∈ β and μ ∉ β;
+        follows μ ∉ δ as
+            assume  μ ∈ δ for_contra;
+            follows δ ⊆ β by ordinal.def, transitive.def given β : Ord and δ ∈ β;
+            follows μ ∈ β by sub.def;
+            contradiction
+        ;
+
+        follows δ ∈ α by sub.def given β ⊆ α and δ ∈ β;
+        thus    δ ∈ μ by ordinal.internal_trichotomy given δ ≠ μ and μ ∉ δ;
+    ;
+
+    thus μ = β by sub.sub_eq;
+qed
+
+theorem ordinal.trichotomy [α β : term] : (α : Ord) (β : Ord)
+    |- α ∈ β ∨ α = β ∨ β ∈ α
+proof
+    let γ := α ∩ β;
+    follows γ : Ord by ordinal.inter.is;
+
+    -- since γ is a subset of both α and β we have that either is or is a member of each
+    follows γ ⊆ α by inter.sub_left;
+    follows γ ∈ α ∨ γ = α by ordinal.sub_mem;
+    follows γ ⊆ β by inter.sub_right;
+    follows γ ∈ β ∨ γ = β by ordinal.sub_mem;
+
+    -- but it can't be a member of both because then it would be a member of itself.
+    follows ¬(γ ∈ α ∧ γ ∈ β) as
+        assume  γ ∈ α ∧ γ ∈ β for_contra;
+        thus    γ ∈ γ by inter.def;
+        follows γ ∉ γ by mem.irrefl;
+        contradiction
+    ;
+
+    -- so γ must be one of α and β;
+    follows γ = α ∨ γ = β logically;
+
+    -- if it is both then we are done.
+    assume γ = α ∧ γ = β then α = β logically;
+
+    -- if it is just one then we are also done
+    assume γ = α ∧ γ ≠ β then α ∈ β given γ ∈ β ∨ γ = β;
+    assume γ = β ∧ γ ≠ α then β ∈ α given γ ∈ α ∨ γ = α;
+
+    -- and those are all the cases
+    done logically
+qed
+
+### Omega
+
+The defining property of $\omega$ is that it is the smallest set which contains
+$\emptyset$ and is closed under the successor operation. We will call this closure
+property inductivity.
+
+definition
+    inductive(α) := ∅ ∈ α ∧ (∀n ∈ α, succ(n) ∈ α)
+end
+
+theorem inductive.def [α : term] :
+    |- inductive(α) ↔ ∅ ∈ α ∧ (∀n ∈ α, succ(n) ∈ α)
+proof
+    done by iff.refl [inductive(α)]
+qed
+
+By the smallest set we mean that $\omega$ is a subset of any inductive set. Put
+another way, $\omega$ is the intersection of the proper class of all inductive sets. 
+However, our theory does not contain proper classes so we cannot use the 
+intersection operator developed previously. We can instead define $\omega$ using 
+an unrestricted comprehension.
+
+definition
+    ω := {x | ∀α, inductive(α) → x ∈ α}
+end
+
+The ZF axiom of infinity guarantees that at least one inductive set exists,
+which is what will let us conclude that $\omega$ is well defined.
+
+lemma inductive.exists :
+    |- ∃α, inductive(α)
+proof
+    suffices ∃α, ∅ ∈ α ∧ ∀n ∈ α, n ∪ {n} ∈ α;
+
+    -- the object whose existence is guaranteed by the axiom of infinity is the
+    -- α that we want.
+    obtain x st (∃y, y ∈ x ∧ ∀z, z ∉ y) ∧ (∀y ∈ x, ∃z ∈ x, ∀w, w ∈ z ↔ w ∈ y ∨ w = y)
+        by zfc.infinity;
+
+    -- the ∃y, y ∈ x ∧ ∀z, z ∉ y tells us that x contains ∅
+    follows ∅ ∈ x by empty.def, zfc.extensionality;
+
+    -- now we need to show that x is closed under the successor operation
+    follows ∀n ∈ x, n ∪ {n} ∈ x as
+        arbitrary n; assume n ∈ x;
+        obtain z st z ∈ x ∧ (∀w, w ∈ z ↔ w ∈ n ∨ w = n) logically;
+        follows ∀w, w ∈ n ∪ {n} ↔ (w ∈ n ∨ w = n) by singleton.def, union.def;
+        follows z = n ∪ {n} by zfc.extensionality;
+        thus    n ∪ {n} ∈ x logically;
+    ;
+
+    done logically
+qed
+
+From this lemma we can deduce that $\omega$ will be well defined, as it is a
+subset of that inductive set.
+
+theorem omega.def :
+    |- ∀x, x ∈ ω ↔ (∀α, inductive(α) → x ∈ α)
+proof
+    -- we have at least one inductive set. since ω is an infinite intersection
+    -- restricting the comprehension doesn't change anything. so ω' = ω.
+    obtain α st inductive(α) by inductive.exists;
+    let ω' := {x ∈ α | ∀β, inductive(β) → x ∈ β};
+
+    -- we prove that ω' has the defining property of ω
+    follows ∀y, y ∈ ω' ↔ (∀β, inductive(β) → y ∈ β) as
+        arbitrary y;
+        suffices y ∈ {x ∈ α | ∀β, inductive(β) → x ∈ β} ↔ (∀β, inductive(β) → y ∈ β);
+        assume y ∈ {x ∈ α | ∀β, inductive(β) → x ∈ β} then ∀β, inductive(β) → y ∈ β logically;
+        assume ∀β, inductive(β) → y ∈ β then y ∈ {x ∈ α | ∀β, inductive(β) → x ∈ β} as
+            follows y ∈ α given inductive(α);
+            follows y ∈ α ∧ (∀β, inductive(β) → y ∈ β) logically;
+            done logically
+        ;
+        done logically
+    ;
+
+    -- ω' proves that the infinite intersection exists, so ω is well defined
+    -- and thus has the desired property.
+    thus ∃w, ∀x, x ∈ w ↔ (∀β, inductive(β) → x ∈ β) logically;
+    thus ∀x, x ∈ ω ↔ (∀β, inductive(β) → x ∈ β) by uncomp.def [∀β, inductive(β) → _ ∈ β];
+qed
+
+corollary omega.sub_inductive [a : term] : (inductive(a))
+    |- ω ⊆ a
+proof
+    done by omega.def, sub.def
+qed
+
+corollary omega.inductive :
+    |- inductive(ω)
+proof
+    follows ∀α, inductive(α) → ∅ ∈ α by inductive.def;
+    thus                       ∅ ∈ ω by omega.def;
+
+    follows ∀n ∈ ω, succ(n) ∈ ω as
+        arbitrary n; assume n ∈ ω;
+        follows ∀α, inductive(α) → n ∈ α by omega.def;
+        follows ∀α, inductive(α) → succ(n) ∈ α by inductive.def;
+        thus succ(n) ∈ ω by omega.def;
+    ;
+
+    done by inductive.def
+qed
+
+With zero and a successor operation we can essentially form each natural number.
+We can continue iterating the successor operation indefinitely. However there
+are more ordinal numbers than these. In particular, $\omega$ is the set of all
+ordinals formed by iterating the successor operation on ordinals, and it is also
+an ordinal. 
+
+theorem ordinal.omega.is :
+    |- ω : Ord
+proof
+    follows transitive(ω) as 
+        -- define the set of elements of ω that are subsets of ω. We will show
+        -- that T is inductive, thus T ⊆ ω, thus T = ω, thus ω is transitive.
+        let T := {n ∈ ω | n ⊆ ω};
+        follows T ⊆ ω by comp.sub [_ ⊆ ω] [ω];
+
+        -- T is inductive
+        follows ∅ ∈ T as
+            follows ∅ ∈ ω by omega.inductive, inductive.def;
+            follows ∅ ⊆ ω by empty.is_sub;
+            thus ∅ ∈ T logically;
+        ;
+        follows ∀n ∈ T, succ(n) ∈ T as
+            arbitrary n; assume n ∈ T;
+            thus n ∈ ω ∧ n ⊆ ω logically;
+            thus succ(n) ∈ ω by omega.inductive, inductive.def;
+            follows n ∪ {n} ⊆ ω as
+                suffices ∀x, x ∈ n ∪ {n} → x ∈ ω;
+                arbitrary x; assume x ∈ n ∪ {n};
+                follows x = n ∨ x ∈ n by union.def, singleton.def;
+                thus x ∈ ω by sub.def given n ⊆ ω and n ∈ ω;
+            ;
+            thus succ(n) ⊆ ω by ordinal.succ.def;
+            thus succ(n) ∈ T given succ(n) ∈ ω and succ(n) ⊆ ω;
+        ;
+
+        -- T = ω
+        thus inductive(T) by inductive.def;
+        thus ω ⊆ T by omega.sub_inductive;
+        thus ω = T by sub.sub_eq given T ⊆ ω and ω ⊆ T;
+
+        -- T is transitive
+        thus ∀x ∈ ω, x ⊆ ω given ω = T;
+        thus transitive(ω) by transitive.def;
+    ;
+
+    follows ∀n ∈ ω, n : Ord as
+        -- the idea is to show the set of ordinals in ω is inductive.
+        let T := {n ∈ ω | n : Ord};
+        follows T ⊆ ω by comp.sub [_ : Ord] [ω];
+
+        follows ∅ : Ord by ordinal.empty.is;
+        follows ∅ ∈ ω   by omega.inductive, inductive.def;
+        thus    ∅ ∈ T   logically;
+
+        follows ∀n ∈ T, succ(n) ∈ T as
+            arbitrary n; assume n ∈ T;
+
+            follows n : Ord logically;
+            thus succ(n) : Ord by ordinal.succ.is;
+
+            follows n ∈ ω logically;
+            follows succ(n) ∈ ω by omega.inductive, inductive.def;
+
+            thus succ(n) ∈ T logically;
+        ;
+
+        -- thus T is inductive so ω = T and every element of T is an ordinal,
+        -- by definition, so we are done.
+        thus inductive(T) by inductive.def;
+        thus ω ⊆ T by omega.sub_inductive;
+        thus ω = T by sub.sub_eq;
+        done logically
+    ;
+
+    follows well_ordered(ω) as
+        suffices ∀β, β ⊆ ω ∧ β ≠ ∅ → ∃γ, is_least(γ, β) by well_ordered.def;
+        arbitrary β; assume β ⊆ ω ∧ β ≠ ∅;
+
+        -- idea: we restrict β to a subset of one of it's elements. we know δ+
+        -- is an ordinal so we get a least element in β ∩ δ+ ⊆ δ+ which will 
+        -- also be least in β.
+        obtain δ st δ ∈ β by nonempty.has_element;
+        let β' := β ∩ succ(δ);
+
+        -- β' is a non-empty subset of succ(δ)
+        follows β' ⊆ succ(δ) by inter.sub_right;
+        follows δ ∈ succ(δ)  by ordinal.succ.def, union.def, singleton.def;
+        thus    δ ∈ β'       by inter.def;
+        thus    β' ≠ ∅       by nonempty.has_element;
+
+        -- it follows that succ(δ) is an ordinal
+        follows β ⊆ ω given transitive(ω);
+        thus δ ∈ ω by sub.def given δ ∈ β;
+        thus δ : Ord given ∀n ∈ ω, n : Ord;
+        thus succ(δ) : Ord by ordinal.succ.is;
+
+        -- therefore can obtain a least element in β'
+        thus well_ordered(succ(δ)) by ordinal.def;
+        obtain γ st is_least(γ, β') by well_ordered.def;
+        
+        -- we want to claim γ is also least in β.
+        suffices is_least(γ, β) logically;
+
+        follows γ ∈ β' by is_least.def given is_least(γ, β');
+        follows γ ∈ β  by inter.def;
+        suffices ∀η ∈ β, η ≠ γ → γ ∈ η by is_least.def;
+
+        -- assume there was some smaller element η ∈ β.
+        arbitrary η; assume η ∈ β; assume η ≠ γ;
+        assume γ ∉ η for_contra;
+        follows η ∈ γ as
+            follows η ∈ ω by sub.def given η ∈ β and β ⊆ ω;
+            follows γ ∈ ω by sub.def given γ ∈ β and β ⊆ ω;
+            thus η : Ord ∧ γ : Ord given ∀n ∈ ω, n : Ord;
+            thus η ∈ γ by ordinal.trichotomy given η ≠ γ and γ ∉ η;
+        ;
+
+        -- that η would also have to be in β' since succ(δ) is transitive.
+        follows γ ∈ succ(δ) by inter.def given γ ∈ β';
+        follows γ ⊆ succ(δ) by ordinal.def, transitive.def given succ(δ) : Ord;
+        thus    η ∈ succ(δ) by sub.def given η ∈ γ;
+        thus    η ∈ β' by inter.def given η ∈ β and η ∈ succ(δ);
+
+        -- but then we have both η ∈ γ and γ ∈ η.
+        thus γ ∈ η by is_least.def given is_least(γ, β');
+        thus ⊥ by mem.no_loop given η ∈ γ and γ ∈ η;
+    ;
+
+    done by ordinal.def
 qed
