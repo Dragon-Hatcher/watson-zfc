@@ -1,4 +1,5 @@
 local dispatch = require("./dispatch")
+local frag = require("./frag")
 local state = require("./state")
 local shared = require("./shared")
 
@@ -41,7 +42,7 @@ function M.handleAssume(
     state: state.State
 ): state.State
     -- match the goal as an implication
-    local matches = state.goal:match(shared.impPattern)
+    local matches = frag.reduceTop(state.goal):match(shared.impPattern)
     if matches == nil then
         Diagnostic:new("goal must be an implication", tactic.kw.span:label(""))
             :withTacticInfo(state.info)

@@ -945,9 +945,9 @@ end
 
 This proof follows simply from the definition of the ordered pair and the properties of unions and intersections.
 
-theorem ordered_pair_second.def [a b : term] :
-    |- π₂(⟨a, b⟩) = b
-proof
+-- theorem ordered_pair_second.def [a b : term] :
+--     |- π₂(⟨a, b⟩) = b
+-- proof
     -- suffices ⋃{x ∈ ⋃{{a}, {a, b}} | ⋃{{a}, {a, b}} ≠ ⋂{{a}, {a, b}} → x ∉ ⋂{{a}, {a, b}}} = b;
     -- thus ∀x, x ∈ ⋃{{a}, {a, b}} ↔ (x ∈ {a} ∨ x ∈ {a, b}) by union.def [{a}] [{a, b}];
     -- follows ∀x, x ∈ ⋂{{a}, {a, b}} ↔ (x ∈ {a} ∧ x ∈ {a, b}) by inter.def [{a}] [{a, b}];
@@ -973,23 +973,23 @@ proof
     -- follows ∀x, x ∈ ⋃{b} ↔ x ∈ b logically;
     -- thus ⋃{b} = b by zfc.extensionality;
     -- done logically
-    todo
-qed
+    -- todo
+-- qed
 
 Finally, we show that two ordered pairs are equal iff their first and second elements are equal.
 
-theorem ordered_pair.eq [a b c d : term] :
-    |- ⟨a, b⟩ = ⟨c, d⟩ ↔ (a = c ∧ b = d)
-proof
-    hence ⟨a, b⟩ = ⟨c, d⟩ → π₁(⟨a, b⟩) = π₁(⟨c, d⟩) by zfc.extensionality;
-    follows π₁(⟨a, b⟩) = π₁(⟨c, d⟩) ↔ a = c by ordered_pair_first.def;
-    follows ⟨a, b⟩ = ⟨c, d⟩ → π₂(⟨a, b⟩) = π₂(⟨c, d⟩) by zfc.extensionality;
-    follows π₂(⟨a, b⟩) = π₂(⟨c, d⟩) ↔ b = d by ordered_pair_second.def;
-    -- suffices ⟨a, b⟩ = ⟨c, d⟩ ↔ (a = c ∧ b = d);
-    hence ⟨a, b⟩ = ⟨c, d⟩ → (a = c ∧ b = d) logically;
-    hence (a = c ∧ b = d) → ⟨a, b⟩ = ⟨c, d⟩ logically;
-    done logically
-qed
+-- theorem ordered_pair.eq [a b c d : term] :
+--     |- ⟨a, b⟩ = ⟨c, d⟩ ↔ (a = c ∧ b = d)
+-- proof
+--     hence ⟨a, b⟩ = ⟨c, d⟩ → π₁(⟨a, b⟩) = π₁(⟨c, d⟩) by zfc.extensionality;
+--     follows π₁(⟨a, b⟩) = π₁(⟨c, d⟩) ↔ a = c by ordered_pair_first.def;
+--     follows ⟨a, b⟩ = ⟨c, d⟩ → π₂(⟨a, b⟩) = π₂(⟨c, d⟩) by zfc.extensionality;
+--     follows π₂(⟨a, b⟩) = π₂(⟨c, d⟩) ↔ b = d by ordered_pair_second.def;
+--     -- suffices ⟨a, b⟩ = ⟨c, d⟩ ↔ (a = c ∧ b = d);
+--     hence ⟨a, b⟩ = ⟨c, d⟩ → (a = c ∧ b = d) logically;
+--     hence (a = c ∧ b = d) → ⟨a, b⟩ = ⟨c, d⟩ logically;
+--     done logically
+-- qed
 
 ### The Cartesian Product
 
@@ -1086,12 +1086,12 @@ end
 
 -- The proof follows from (I'll figure this out when I complete the proof)
 
-theorem set_map.def [f : term] [A : term] :
-    |- ∀y, y ∈ {f(x) | x ∈ A} ↔ (∃x, x ∈ A ∧ y = f(x))
-proof
-    suffices ∀y, y ∈ {f(x) | x ∈ A} ↔ (∃x, x ∈ A ∧ y = f(x));
-    todo
-qed
+-- theorem set_map.def [f : term] [A : term] :
+--     |- ∀y, y ∈ {f(x) | x ∈ A} ↔ (∃x, x ∈ A ∧ y = f(x))
+-- proof
+--     suffices ∀y, y ∈ {f(x) | x ∈ A} ↔ (∃x, x ∈ A ∧ y = f(x));
+--     todo
+-- qed
 
 
 ## The Ordinals
@@ -1417,49 +1417,11 @@ proof
     done by ordinal.def
 qed
 
-theorem ordinal.induction [p(_) : sentence(term)] : (∀α, (α : Ord ∧ ∀β ∈ α, p(β)) → p(α))
-    |- ∀α, α : Ord → p(α)
+theorem ordinal.trans [α β γ : term] : (γ : Ord) (α ∈ β) (β ∈ γ)
+    |- α ∈ γ
 proof
-    -- suppose we have an ordinal such that ¬p
-    assume ¬(∀α, α : Ord → p(α)) for_contra;
-    obtain α st α : Ord ∧ ¬p(α) logically;
-
-    let s := {δ ∈ succ(α) | ¬p(δ)};
-
-    -- s is a non-empty subset of succ(α)
-    follows s ⊆ succ(α) by sub.def;
-    follows α ∈ succ(α) by ordinal.succ.def, union.def, singleton.def;
-    follows s ≠ ∅       by empty.def;
-
-    -- thus, since succ(α) is well ordered, we can find the least element.
-    follows succ(α) : Ord         by ordinal.succ.is;
-    thus    well_ordered(succ(α)) by ordinal.def;
-    obtain  μ st is_least(μ, s)   by well_ordered.def;
-
-    -- μ is an ordinal since it is in succ(α)
-    follows μ ∈ s       by is_least.def;
-    follows μ ∈ succ(α) logically;
-    follows μ : Ord     by ordinal.el.is;
-
-    -- every member β of μ satisfies p because otherwise it would be in s.
-    follows ∀β ∈ μ, p(β) as
-        arbitrary β; assume β ∈ μ;
-        assume ¬p(β) for_contra;
-
-        -- we get that β is in s
-        follows μ ⊆ succ(α) by ordinal.def, transitive.def given μ ∈ succ(α);
-        thus    β ∈ succ(α) by sub.def given β ∈ μ;
-        thus    β ∈ s       given ¬p(β) and β ∈ succ(α);
-        
-        -- but then it can't be the case that β ∈ μ since μ is least in s
-        follows β ≠ μ by mem.irrefl   given β ∈ μ;
-        thus    μ ∈ β by is_least.def given β ∈ s and is_least(μ, s);
-        thus    ⊥     by mem.no_loop  given β ∈ μ and μ ∈ β;
-    ;
-
-    thus     p(μ) logically;
-    follows ¬p(μ) given μ ∈ s;
-    contradiction
+    follows β ⊆ γ by ordinal.def, transitive.def;
+    thus    α ∈ γ by sub.def;
 qed
 
 theorem ordinal.inter.is [α β : term] : (α : Ord) (β : Ord)
@@ -1573,6 +1535,69 @@ proof
 
     -- and those are all the cases
     done logically
+qed
+
+theorem ordinal.induction [p(_) : sentence(term)] : (∀α, (α : Ord ∧ ∀β ∈ α, p(β)) → p(α))
+    |- ∀α, α : Ord → p(α)
+proof
+    -- suppose we have an ordinal such that ¬p
+    assume ¬(∀α, α : Ord → p(α)) for_contra;
+    obtain α st α : Ord ∧ ¬p(α) logically;
+
+    let s := {δ ∈ succ(α) | ¬p(δ)};
+
+    -- s is a non-empty subset of succ(α)
+    follows s ⊆ succ(α) by sub.def;
+    follows α ∈ succ(α) by ordinal.succ.def, union.def, singleton.def;
+    follows s ≠ ∅       by empty.def;
+
+    -- thus, since succ(α) is well ordered, we can find the least element.
+    follows succ(α) : Ord         by ordinal.succ.is;
+    thus    well_ordered(succ(α)) by ordinal.def;
+    obtain  μ st is_least(μ, s)   by well_ordered.def;
+
+    -- μ is an ordinal since it is in succ(α)
+    follows μ ∈ s       by is_least.def;
+    follows μ ∈ succ(α) logically;
+    follows μ : Ord     by ordinal.el.is;
+
+    -- every member β of μ satisfies p because otherwise it would be in s.
+    follows ∀β ∈ μ, p(β) as
+        arbitrary β; assume β ∈ μ;
+        assume ¬p(β) for_contra;
+
+        -- we get that β is in s
+        follows μ ⊆ succ(α) by ordinal.def, transitive.def given μ ∈ succ(α);
+        thus    β ∈ succ(α) by sub.def given β ∈ μ;
+        thus    β ∈ s       given ¬p(β) and β ∈ succ(α);
+        
+        -- but then it can't be the case that β ∈ μ since μ is least in s
+        follows β ≠ μ by mem.irrefl   given β ∈ μ;
+        thus    μ ∈ β by is_least.def given β ∈ s and is_least(μ, s);
+        thus    ⊥     by mem.no_loop  given β ∈ μ and μ ∈ β;
+    ;
+
+    thus     p(μ) logically;
+    follows ¬p(μ) given μ ∈ s;
+    contradiction
+qed
+
+corollary ordinal.induction.up_to [p(_) : sentence(term)] [α : term] : (α : Ord)
+    (∀β ∈ α, (∀γ ∈ β, p(γ)) → p(β))
+    |- ∀β ∈ α, p(β)
+proof
+    suffices ∀β, β ∈ α → p(β);
+    suffices ∀β, β : Ord → (β ∈ α → p(β)) by ordinal.el.is;
+    suffices ∀β, (β : Ord ∧ (∀γ ∈ β, γ ∈ α → p(γ))) → (β ∈ α → p(β))
+        by ordinal.induction [_ ∈ α → p(_)];
+
+    arbitrary β; 
+    assume β : Ord ∧ (∀γ ∈ β, γ ∈ α → p(γ));
+    assume β ∈ α;
+
+    follows ∀γ ∈ β, γ ∈ α by ordinal.trans;
+    follows ∀γ ∈ β, p(γ) logically;
+    thus p(β) given ∀β ∈ α, (∀γ ∈ β, p(γ)) → p(β) and β ∈ α;
 qed
 
 ### Omega
@@ -1810,4 +1835,11 @@ proof
     ;
 
     done by ordinal.def
+qed
+
+corollary omega.induction [p(_) : sentence(term)] : (∀n ∈ ω, (∀m ∈ n, p(m)) → p(n))
+    |- ∀n ∈ ω, p(n)
+proof
+    follows ω : Ord by ordinal.omega.is;
+    done by ordinal.induction.up_to [p(_)] [ω]
 qed
