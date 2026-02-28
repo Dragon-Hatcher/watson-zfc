@@ -1526,3 +1526,49 @@ proof
 
     done by ordinal.def
 qed
+
+theorem ordinal.induction [p(_) : sentence(term)] : (∀α, (α : Ord ∧ ∀β ∈ α, p(β)) → p(α))
+    |- ∀α, α : Ord → p(α)
+proof
+    -- suppose we have an ordinal such that ¬p
+    assume ¬(∀α, α : Ord → p(α)) for_contra;
+    obtain α st α : Ord ∧ ¬p(α) logically;
+
+    let s := {δ ∈ succ(α) | ¬p(δ)};
+
+    -- s is a non-empty subset of succ(α)
+    follows s ⊆ succ(α) by sub.def;
+    follows α ∈ succ(α) by ordinal.succ.def, union.def, singleton.def;
+    follows s ≠ ∅       by empty.def;
+
+    -- thus, since succ(α) is well ordered, we can find the least element.
+    follows succ(α) : Ord         by ordinal.succ.is;
+    thus    well_ordered(succ(α)) by ordinal.def;
+    obtain  μ st is_least(μ, s)   by well_ordered.def;
+
+    -- μ is an ordinal since it is in succ(α)
+    follows μ ∈ s       by is_least.def;
+    follows μ ∈ succ(α) logically;
+    follows μ : Ord     by ordinal.el.is;
+
+    -- every member β of μ satisfies p because otherwise it would be in s.
+    follows ∀β ∈ μ, p(β) as
+        arbitrary β; assume β ∈ μ;
+        assume ¬p(β) for_contra;
+
+        -- we get that β is in s
+        follows μ ⊆ succ(α) by ordinal.def, transitive.def given μ ∈ succ(α);
+        thus    β ∈ succ(α) by sub.def given β ∈ μ;
+        thus    β ∈ s       given ¬p(β) and β ∈ succ(α);
+        
+        -- but then it can't be the case that β ∈ μ since μ is least in s
+        follows β ≠ μ by mem.irrefl   given β ∈ μ;
+        thus    μ ∈ β by is_least.def given β ∈ s and is_least(μ, s);
+        follows μ ∉ β by mem.no_loop;
+        contradiction
+    ;
+
+    thus     p(μ) logically;
+    follows ¬p(μ) given μ ∈ s;
+    contradiction
+qed
