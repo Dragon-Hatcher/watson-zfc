@@ -1267,7 +1267,18 @@ proof
             -- consider only the subset of β in α
             let β' := β ∩ α;
             follows β' ⊆ α ∧ β' ⊆ β by inter.sub_right, inter.sub_left;
-            follows β' ≠ ∅ as todo;
+            follows β' ≠ ∅ as 
+                obtain x st x ∈ β ∧ x ≠ α as
+                    suffices ¬∀x ∈ β, x = α logically;
+                    assume ∀x ∈ β, x = α for_contra;
+                    thus β = {α} by singleton.def, nonempty.has_element, zfc.extensionality;
+                    contradiction
+                ;
+                follows x ∈ succ(α) by sub.def given β ⊆ succ(α) and x ∈ β;
+                follows x ∈ α       by ordinal.succ.def, union.def, singleton.def;
+                thus    x ∈ β'      by inter.def given x ∈ α and x ∈ β;
+                thus    β' ≠ ∅      by nonempty.has_element;
+            ;
             -- we get the minimal element of this subset by the well ordering of α
             follows well_ordered(α) by ordinal.def given α : Ord;
             obtain γ st is_least(γ, β') by well_ordered.def;
