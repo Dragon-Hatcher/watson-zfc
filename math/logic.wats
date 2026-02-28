@@ -670,7 +670,7 @@ adding this axiom are different than our reasons for the other axioms.
 To write the axiom we will need some way of denoting a property of $p$.
 
 notation sentence.with_sentence
-    sentence ::= @name "(" sentence ")"
+    sentence (1000) ::= @name "(" sentence ")"
 end
 
 Then we can state the axiom, which we will call `iff.rw` for if and only if
@@ -757,7 +757,7 @@ $a$ with $b$, the sentence remains true. In order to describe this rule to
 Watson, we will need notation for a sentence which contains a term.
 
 notation sentence.with_term
-    sentence ::= @name "(" term ")"
+    sentence (1000) ::= @name "(" term ")"
 end
 
 And now we can state the axiom.
@@ -1022,7 +1022,7 @@ We can see these all play nicely together in the following classic theorem
 (which will be the first theorem using a predicate on two terms).
 
 notation sentence.with_term_term
-    sentence ::= @name "(" term ", " term ")"
+    sentence (1000) ::= @name "(" term ", " term ")"
 end
 
 theorem exists_forall.swap [p(_0, _1) : sentence(term, term)] : (∃x, ∀y, p(x, y))

@@ -804,7 +804,7 @@ qed
 We will define the powerset as the set of all subsets of a set. 
 
 notation term.with_term
-    term ::= @name "(" term ")"
+    term (1000) ::= @name "(" term ")"
 end
 
 definition
@@ -1015,7 +1015,7 @@ qed
 Next we define our set of binary relations between two sets as the powerset of the Cartesian product of those two sets.
 
 notation term.with_term_term
-    term ::= @name "(" term ", " term ")"
+    term (1000) ::= @name "(" term ", " term ")"
 end
 
 definition
@@ -1035,7 +1035,7 @@ end
 We define a function mapping as the second element of a unique element of a functional relation.
 
 notation function_application
-    term ::= term "(" term ")"
+    term (1000) ::= term "(" term ")"
 end
 
 definition
@@ -1368,7 +1368,7 @@ proof
     follows transitive(ω) as 
         -- define the set of elements of ω that are subsets of ω. We will show
         -- that T is inductive, thus T ⊆ ω, thus T = ω, thus ω is transitive.
-        let T := {x ∈ ω | x ⊆ ω};
+        let T := {n ∈ ω | n ⊆ ω};
         follows T ⊆ ω by comp.sub [_ ⊆ ω] [ω];
 
         -- T is inductive
@@ -1401,7 +1401,69 @@ proof
         thus transitive(ω) by transitive.def;
     ;
 
-    todo
+    follows ∀n ∈ ω, n : Ord as
+        -- the idea is to show the set of ordinals in ω is inductive.
+        let T := {n ∈ ω | n : Ord};
+        follows T ⊆ ω by comp.sub [_ : Ord] [ω];
+
+        follows ∅ : Ord by ordinal.empty.is;
+        follows ∅ ∈ ω   by omega.inductive, inductive.def;
+        thus    ∅ ∈ T   logically;
+
+        follows ∀n ∈ T, succ(n) ∈ T as
+            arbitrary n; assume n ∈ T;
+
+            follows n : Ord logically;
+            thus succ(n) : Ord by ordinal.succ.is;
+
+            follows n ∈ ω logically;
+            follows succ(n) ∈ ω by omega.inductive, inductive.def;
+
+            thus succ(n) ∈ T logically;
+        ;
+
+        -- thus T is inductive so ω = T and every element of T is an ordinal,
+        -- by definition, so we are done.
+        thus inductive(T) by inductive.def;
+        thus ω ⊆ T by omega.sub_inductive;
+        thus ω = T by sub.sub_eq;
+        done logically
+    ;
+
+    follows well_ordered(ω) as
+        suffices ∀β, β ⊆ ω ∧ β ≠ ∅ → ∃γ, is_least(γ, β) by well_ordered.def;
+        arbitrary β; 
+        assume β ⊆ ω ∧ β ≠ ∅;
+
+        -- idea: we restrict β to a subset of one of it's elements. we know δ+
+        -- is an ordinal so β ∩ δ+ ⊆ δ+. So we get a least element in β ∩ δ+ 
+        -- which will also be least in β.
+        obtain δ st δ ∈ β by nonempty.has_element;
+        let β' := β ∩ succ(δ);
+
+        -- β' is a non-empty subset of succ(δ)
+        follows β' ⊆ succ(δ) by inter.sub_right;
+        follows δ ∈ succ(δ)  by ordinal.succ.def, union.def, singleton.def;
+        thus    δ ∈ β'       by inter.def;
+        thus    β' ≠ ∅       by nonempty.has_element;
+
+        -- it follows that succ(δ) is an ordinal
+        follows β ⊆ ω given transitive(ω);
+        thus δ ∈ ω by sub.def given δ ∈ β;
+        thus δ : Ord given ∀n ∈ ω, n : Ord;
+        thus succ(δ) : Ord by ordinal.succ.is;
+
+        -- therefore can obtain a least element in β'
+        thus well_ordered(succ(δ)) by ordinal.def;
+        obtain γ st is_least(γ, β') by well_ordered.def;
+        
+        -- we want to claim γ is also least in β.
+        suffices is_least(γ, β) logically;
+
+        todo
+    ;
+
+    done by ordinal.def
 qed
 
 Returning to our characterization of ordinals as sets containing every previous
@@ -1564,8 +1626,7 @@ proof
         -- but then it can't be the case that β ∈ μ since μ is least in s
         follows β ≠ μ by mem.irrefl   given β ∈ μ;
         thus    μ ∈ β by is_least.def given β ∈ s and is_least(μ, s);
-        follows μ ∉ β by mem.no_loop;
-        contradiction
+        thus    ⊥     by mem.no_loop  given β ∈ μ and μ ∈ β;
     ;
 
     thus     p(μ) logically;
