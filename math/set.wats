@@ -205,6 +205,17 @@ goal to Vampire to have it generate a proof. This proof is then translated
 for Watson to understand. This is a very complex but also very powerful tactic
 which eliminates the need for tedious manipulations.
 
+tactic justification.logically
+    justification ::= @kw"logically"
+end
+
+At this point we are also going to start doing more complex mathematics so it
+will helpful to add a few more useful tactics. 
+
+Sometimes it is helpful to annotate exactly which hypotheses go into an
+application of a theorem. We will add `given` as a justification which uses
+Vampire like `logically` but also checks that Vampire uses the given hypotheses.
+
 grammar_category sentence_list
 
 tactic sentence_list.one sentence_list ::= sentence:@fragment(sentence) end
@@ -215,18 +226,13 @@ grammar_category givens
 tactic givens.none givens ::= end
 tactic givens.some givens ::= @kw"given" sentences:sentence_list end
 
-tactic justification.logically
-    justification ::= @kw"logically"
-end
-
 tactic justification.given
     justification ::= @kw"given" givens:sentence_list
 end
 
--- TODO: explain
-tactic tactic.done
-    tactic ::= @kw"done" just:justification
-end
+We will also extend the by tactic to use Vampire to apply the provided theorem.
+Note that Vampire can't do second order reasoning so this won't work with any
+theorems that contain templates more complex than unparameterized terms.
 
 grammar_category theorem_list
 
@@ -234,9 +240,31 @@ tactic theorem_list.one theorem_list ::= thm:@name end
 tactic theorem_list.many theorem_list ::= thm:@name "," rest:theorem_list end
 
 tactic justification.by.vampire
-    -- bind weaker than the original by so we don't override it.
+    -- bind stronger than the original to override it.
     justification (600) ::= @kw"by" thms:theorem_list givens:givens
 end
+
+If we want to have Vampire use a theorem multiple times the `recall` tactic
+will add the statement of the theorem to the current proof state, making it so
+Vampire can use it in all future proofs. 
+
+tactic tactic.recall
+    tactic ::= @kw"recall" thm:@name ";" next:tactic
+end
+
+We will also add the `done` tactic which is just an alias for using a 
+justification to prove the current goal instead of a tactic. This is equivalent
+to `thus goal <just>`.
+
+tactic tactic.done
+    tactic ::= @kw"done" just:justification
+end
+
+We will also add a `cases` tactic. This is a little more complex then just
+splitting an or. By default, Vampire is used to prove this disjunction of all
+the case conditions. Or a separate justification can be provided for this
+purpose. Then the provided tactics are used to prove each case implies the
+original goal. 
 
 grammar_category case_list
 grammar_category case
@@ -252,16 +280,14 @@ tactic tactic.cases
     tactic ::= @kw"cases" just:justification ":" cases:case_list
 end
 
-We have also enhanced our pre-existing tactics with the power of Vampire. For
-example, `contradiction` will now use Vampire to search for a contradiction and
-`by` will now employ Vampire to prove the goal using the theorem. If we want to 
-inform Vampire of a theorem that it would find useful we can also use the `recall`
- tactic which will add the named theorem to our list of known facts, making it
-usable by Vampire.
+The final new tactic we will add is the `let` tactic. This allows making new
+definitions inside a proof. These definitions will be invisible to Vampire so
+adding them won't effect reasoning at all.
 
-tactic tactic.recall
-    tactic ::= @kw"recall" thm:@name ";" next:tactic
+tactic tactic.let
+    tactic ::= @kw"let" name:@name ":=" frag:@fragment(term) ";" next:tactic
 end
+
 
 ### The Subset Relation
 
@@ -483,9 +509,7 @@ end
 theorem singleton.def [a : term] :
     |- ∀x, x ∈ {a} ↔ x = a
 proof
-    -- expand the definition of {a}
     suffices ∀x, x ∈ {a, a} ↔ x = a;
-    -- and then Vampire easily finishes the job from the definition of {a, a}
     thus ∀x, x ∈ {a, a} ↔ x = a by pair.def;
 qed
 
@@ -696,8 +720,7 @@ proof
     thus    ∀x, x ∈ ⋂b →              x ∈ a  logically;
 qed
 
-We do however define the small intersection the same way we defined the big
-intersection.
+We define the small intersection the same way we defined the small union.
 
 notation inter
     term (700) ::= term " ∩ " term
@@ -713,12 +736,10 @@ defined.
 theorem inter.def [a b : term] :
     |- ∀x, x ∈ a ∩ b ↔ (x ∈ a ∧ x ∈ b)
 proof
-    -- we need that the pair set isn't empty.
-    follows a ∈ {a, b} by pair.def;
-    thus    {a, b} ≠ ∅ by empty.def; 
-
-    -- which allows us to continue the proof using big_inter.def
     suffices ∀x, x ∈ ⋂{a, b} ↔ (x ∈ a ∧ x ∈ b);
+
+    -- we need that the pair set isn't empty to apply big_inter.def.
+    follows {a, b} ≠ ∅ by pair.non_empty; 
     follows  ∀x, x ∈ ⋂{a, b} ↔ (∀y, y ∈ {a, b} → x ∈ y) by big_inter.def;
     follows  ∀y, y ∈  {a, b} ↔ (y = a ∨ y = b)          by pair.def;
     thus     ∀x, x ∈ ⋂{a, b} ↔ (x ∈ a ∧ x ∈ b)          logically;
@@ -803,13 +824,15 @@ definition
     a - b := {x ∈ a | x ∉ b}
 end
 
-The theorem follows easily from the definition of the set difference:
+Since we used a restricted comprehension, the defining property follows directly
+without any more existence proofs.
 
 theorem set_diff.def [a b : term] :
     |- ∀x, x ∈ a - b ↔ (x ∈ a ∧ x ∉ b)
 proof
     suffices ∀x, x ∈ {y ∈ a | y ∉ b} ↔ (x ∈ a ∧ x ∉ b);
-    done logically
+    -- remember we gave Vampire the power to understand restricted comprehensions.
+    done logically 
 qed
 
 The set difference is a subset of the first set. This follows from the fact that
@@ -1045,7 +1068,7 @@ proof
 
         -- we already have that x is a pair so we just need to prove it is in the powerset
         suffices x ∈ 𝒫(𝒫(A ∪ B)) ∧ (∃a ∈ A, ∃b ∈ B, x = ⟨a, b⟩) logically;
-        suffices x ∈ 𝒫(𝒫(A ∪ B)) logically;
+        suffices x ∈ 𝒫(𝒫(A ∪ B)) given x = ⟨a, b⟩;
 
         follows a ∈ A ∪ B ∧ b ∈ A ∪ B    by union.def given a ∈ A and b ∈ B;
         thus  {a}          ∈   𝒫(A ∪ B)  by powset.singleton_in;
@@ -1057,7 +1080,10 @@ proof
     done logically
 qed
 
-Next we define our set of binary relations between two sets as the powerset of the Cartesian product of those two sets.
+We can define the set of binary relations between two sets as the powerset of 
+the Cartesian product of those two sets. Conceptually, if $R$ is a relation
+between $A$ and $B$ then it is the set of all pairs $(a, b)$ where $a$ and $b$
+are related by $R$.
 
 notation term.with_term_term
     term (1000) ::= @name "(" term ", " term ")"
@@ -1067,17 +1093,20 @@ definition
     Rel(A, B) := 𝒫(A × B)
 end
 
-A functional relation is a subset of all binary relations such that the first element of each ordered pair in the relation is unique.
+A functional relation is a particular kind of binary relation where the first 
+element of each ordered pair in the relation is unique.
 
 notation functional_relation
     term ::= term " → " term
 end
 
 definition
-    A → B := {f ∈ Rel(A, B) | ∀a, a ∈ A → (∃!b, b ∈ B ∧ ⟨a, b⟩ ∈ f)}
+    A → B := {f ∈ Rel(A, B) | ∀a ∈ A, ∃!b, b ∈ B ∧ ⟨a, b⟩ ∈ f}
 end
 
-We define a function mapping as the second element of a unique element of a functional relation.
+We define function mapping by extracting the second element of the unique 
+ordered pair which has the argument as the first element. We can make this
+ definition using the iota operator.
 
 notation function_application
     term (1000) ::= term "(" term ")"
@@ -1089,13 +1118,13 @@ end
 
 -- Now, we define a set map which contains the entire image of a function on a set.
 
-notation set_map
-  term ::= "{" term(x) " | " x:@binding(term) " ∈ " term "}"
-end
+-- notation set_map
+--   term ::= "{" term(x) " | " x:@binding(term) " ∈ " term "}"
+-- end
 
-definition
-    {f(x) | x ∈ A} := {y | ∃x, x ∈ A ∧ y = f(x)}
-end
+-- definition
+--     {f(x) | x ∈ A} := {y | ∃x, x ∈ A ∧ y = f(x)}
+-- end
 
 -- The proof follows from (I'll figure this out when I complete the proof)
 
@@ -1109,35 +1138,20 @@ end
 
 ## The Ordinals
 
+### Definitions
+
 Our first goal upon the completion of our development of set theory will be to
-define the natural numbers. In order to prove the existence of the set of
-natural numbers we will need at least one infinite set. The existence of such a
-set is guaranteed by the axiom of infinity. Specifically, we will use infinity
-to prove the existence of the first infinite ordinal $\omega$.
-
-First let's define the successor operation on ordinals.
-
-definition
-    succ(n) := n ∪ {n}
-end
-
-theorem ordinal.succ.def [n : term] :
-    |- succ(n) = n ∪ {n}
-proof
-    done by eq.refl [succ(n)]
-qed
-
-At this point we could prove that induction holds on $\omega$. However, $\omega$
-is actually just one element of a larger number system called the ordinals. A
-more powerful form of induction holds on these ordinal numbers so we will 
-instead define the ordinals and prove _transfinite_ induction.
+define the natural numbers. We will not develop the natural numbers directly
+but we will instead consider them to be certain "ordinal" numbers. So we will
+start by developing the ordinals.
 
 The intuitive definition of the ordinal numbers is as follows: The empty set is
 an ordinal number and any set which contains every previously defined ordinal is
-an ordinal number. The problem is that this definition is recursive and we are
-attempting to use the ordinals to define recursion. Luckily, the ordinals admit
-an alternate definition. We define an ordinal as a transitive set that is well
-ordered by $\in$.
+an ordinal number. The goal is to produce a canonical set with each "number" of
+elements. The problem is that this definition is recursive and we will need
+ordinals before we can define recursion. Luckily, the ordinals admit an 
+alternate definition. We define an ordinal as a _transitive_ set that is 
+_well ordered_ by $\in$.
 
 A transitive set is one where every element is also a subset.
 
@@ -1189,6 +1203,11 @@ proof
     done by iff.refl [α : Ord]
 qed
 
+Since $\in$ well orders an ordinal, we can think of $\in$ as being $<$ for
+ordinals. It would be helpful, then, to know that $\in$ is anti-reflexive and
+anti-symmetric. These two properties follows by classic proofs from the 
+ axiom of regularity.
+
 lemma mem.irrefl [a : term] : 
     |- a ∉ a
 proof
@@ -1207,10 +1226,15 @@ proof
     done by pair.def
 qed
 
-The ordinals are ordered by $\in$ so $\alpha < \beta$ can be thought of as
-$\alpha \in \beta$. Any ordinal is the set of every previous ordinal. Thus, it
-stands to reason that the first ordinal is $\empty$. The two properties are
-vacuous when applied to the empty set.
+### Our First Ordinals
+
+We are now ready for our first proof about ordinals. Recall from our intuative
+ definition that we wanted $\empty$ to be the first ordinal number. Another way
+of thinking about this is that $\alpha < \beta$ can be thought of as
+$\alpha \in \beta$ and any ordinal is the set of every previous ordinal. Thus, it
+stands to reason that the first ordinal is $\empty$. The proof that $\empty$
+satisfies our definition is easy; the two required properties are vacuous when 
+applied to the empty set.
 
 theorem ordinal.empty.is :
     |- ∅ : Ord
@@ -1231,11 +1255,23 @@ proof
 qed
 
 The empty set is the zero of the ordinal numbers. We can get the next ordinal
-from any previous ordinal number by applying the successor operation.
+from any previous ordinal number by applying the successor operation. If $n$ is
+an ordinal then it is the set of all previous ordinals. So the next ordinal
+after $n$ should include all the ordinals in $n$ and $n$ itself. Hence the
+definition.
 
-tactic tactic.let
-    tactic ::= @kw"let" name:@name ":=" frag:@fragment(term) ";" next:tactic
+definition
+    succ(n) := n ∪ {n}
 end
+
+theorem ordinal.succ.def [n : term] :
+    |- succ(n) = n ∪ {n}
+proof
+    done by eq.refl [succ(n)]
+qed
+
+We can prove now that the result we get is still an ordinal. This proof isn't 
+conceptually complicated but it has a few things to check.
 
 theorem ordinal.succ.is [α : term] : (α : Ord)
     |- succ(α) : Ord
@@ -1320,8 +1356,16 @@ proof
     thus succ(α) : Ord by ordinal.def given transitive(succ(α)) and well_ordered(succ(α));
 qed
 
+### Properties
+
 Returning to our characterization of ordinals as sets containing every previous
-ordinal, we can prove that every element of an ordinal is an ordinal.
+ordinal, we want to prove that every element of an ordinal is an ordinal.
+Doing this will require several new lemmas.
+
+First we will prove that we have the trichotomy property for members of an 
+ordinal. We will have a stronger trichotomy on all ordinals later but since we
+do not yet know that the elements of an ordinal are still ordinals, we cannot
+apply it.
 
 lemma ordinal.internal_trichotomy [α β γ : term] : (α : Ord) (β ∈ α) (γ ∈ α)
     |- γ ∈ β ∨ γ = β ∨ β ∈ γ
@@ -1346,6 +1390,9 @@ proof
     -- which suffices. you can check the cases on δ = β ∨ δ = γ
     done logically
 qed
+
+We will also need the fact that $\in$ is transitive inside an ordinal. Again,
+we will have a stronger, non-internal version of this later.
 
 lemma ordinal.internal_trans [α β γ δ : term] : (α : Ord) (β ∈ α) (γ ∈ α) (δ ∈ α)
     (β ∈ γ) (γ ∈ δ)
@@ -1379,7 +1426,9 @@ proof
     thus    β ∈ δ by is_least.def;
 qed
 
-theorem ordinal.el.is [α β : term] : (α ∈ β) (β : Ord)
+Now we are ready for the theorem itself.
+
+theorem ordinal.mem.is [α β : term] : (α ∈ β) (β : Ord)
     |- α : Ord
 proof
     follows well_ordered(β) ∧ transitive(β) by ordinal.def;
@@ -1422,12 +1471,11 @@ proof
     done by ordinal.def
 qed
 
-theorem ordinal.trans [α β γ : term] : (γ : Ord) (α ∈ β) (β ∈ γ)
-    |- α ∈ γ
-proof
-    follows β ⊆ γ by ordinal.def, transitive.def;
-    thus    α ∈ γ by sub.def;
-qed
+With this theorem we can now make proper use of the full ordinal trichotomy,
+although the proof of the trichotomy does not actually rely on the members of
+an ordinal being in ordinal. It will, however, need two more lemmas. First, the
+intersection of two ordinals is an ordinal. Intuitively, the intersection is
+just the small ordinal.
 
 theorem ordinal.inter.is [α β : term] : (α : Ord) (β : Ord)
     |- α ∩ β : Ord
@@ -1452,6 +1500,9 @@ proof
 
     done by ordinal.def
 qed
+
+Ordinals are transitive but they also have the inverse property: any subset is
+a member. Unless the subset is just the original set.
 
 theorem ordinal.sub_mem [α β : term] : (α : Ord) (β : Ord) (β ⊆ α)
     |- β ∈ α ∨ β = α
@@ -1508,6 +1559,8 @@ proof
     thus μ = β by sub.sub_eq;
 qed
 
+With these facts we can prove the full trichotomy theorem.
+
 theorem ordinal.trichotomy [α β : term] : (α : Ord) (β : Ord)
     |- α ∈ β ∨ α = β ∨ β ∈ α
 proof
@@ -1524,8 +1577,7 @@ proof
     follows ¬(γ ∈ α ∧ γ ∈ β) as
         assume  γ ∈ α ∧ γ ∈ β for_contra;
         thus    γ ∈ γ by inter.def;
-        follows γ ∉ γ by mem.irrefl;
-        contradiction
+        contradiction by mem.irrefl
     ;
 
     -- so γ must be one of α and β. split on which case we are in.
@@ -1536,6 +1588,23 @@ proof
     | γ = α ∧ γ ≠ β then done logically
     | γ = β ∧ γ ≠ α then done logically
 qed
+
+We can also write down the full transitivity property. This is really just a
+restatement of transitivity.
+
+theorem ordinal.trans [α β γ : term] : (γ : Ord) (α ∈ β) (β ∈ γ)
+    |- α ∈ γ
+proof
+    follows β ⊆ γ by ordinal.def, transitive.def;
+    thus    α ∈ γ by sub.def;
+qed
+
+### Induction
+
+We now arrive at one of the most important facts about ordinals. Just like the
+natural numbers, ordinals satisfy strong induction. (In fact, the naturals are
+just a special case of the ordinals). In some ways, induction is definitional.
+It is just another way of stating the well ordering property.
 
 theorem ordinal.induction [p(_) : sentence(term)] : (∀α, (α : Ord ∧ ∀β ∈ α, p(β)) → p(α))
     |- ∀α, α : Ord → p(α)
@@ -1559,7 +1628,7 @@ proof
     -- μ is an ordinal since it is in succ(α)
     follows μ ∈ s       by is_least.def;
     follows μ ∈ succ(α) logically;
-    follows μ : Ord     by ordinal.el.is;
+    follows μ : Ord     by ordinal.mem.is;
 
     -- every member β of μ satisfies p because otherwise it would be in s.
     follows ∀β ∈ μ, p(β) as
@@ -1582,12 +1651,15 @@ proof
     contradiction
 qed
 
+Sometimes we don't want something for all ordinals but just for all ordinals up
+to some ceiling. That version is a simple corollary.
+
 corollary ordinal.induction.up_to [p(_) : sentence(term)] [α : term] : (α : Ord)
     (∀β ∈ α, (∀γ ∈ β, p(γ)) → p(β))
     |- ∀β ∈ α, p(β)
 proof
     suffices ∀β, β ∈ α → p(β);
-    suffices ∀β, β : Ord → (β ∈ α → p(β)) by ordinal.el.is;
+    suffices ∀β, β : Ord → (β ∈ α → p(β)) by ordinal.mem.is;
     suffices ∀β, (β : Ord ∧ (∀γ ∈ β, γ ∈ α → p(γ))) → (β ∈ α → p(β))
         by ordinal.induction [_ ∈ α → p(_)];
 
@@ -1601,6 +1673,16 @@ proof
 qed
 
 ### Omega
+
+As mentioned a few times, the natural numbers are a particular subset of the 
+ordinals. Specifically, they are the ordinals that can be made by starting with
+the empty set and repeatedly applying the successor operation. It may not be
+obvious that this isn't just all the ordinals. In, fact, if we did not have the
+ axiom of infinity this would be all the ordinals! But with the axiom of 
+infinity we can prove the existence of a the set containing all the natural
+numbers. We call this set $\omega$ and it is actually an ordinal itself, since
+it contains all previous ordinals. Since we cannot reach $\omega$ using the
+successor operation from previous ordinals, we call it a _limit_ ordinals.
 
 The defining property of $\omega$ is that it is the smallest set which contains
 $\emptyset$ and is closed under the successor operation. We will call this closure
@@ -1684,6 +1766,8 @@ proof
     thus ∀x, x ∈ ω ↔ (∀β, inductive(β) → x ∈ β) by uncomp.def [∀β, inductive(β) → _ ∈ β];
 qed
 
+Since $\omega$ is a subset of all inductive sets, it is itself inductive.
+
 corollary omega.sub_inductive [a : term] : (inductive(a))
     |- ω ⊆ a
 proof
@@ -1706,11 +1790,41 @@ proof
     done by inductive.def
 qed
 
-With zero and a successor operation we can essentially form each natural number.
-We can continue iterating the successor operation indefinitely. However there
-are more ordinal numbers than these. In particular, $\omega$ is the set of all
-ordinals formed by iterating the successor operation on ordinals, and it is also
-an ordinal. 
+The proof that $\omega$ is an ordinal is rather complex. We will observe first,
+as a lemma, that all the elements in $\omega$ are ordinals.
+
+lemma omega.mem.is_ordinal [n : term] : (n ∈ ω)
+    |- n : Ord
+proof
+    let T := {n ∈ ω | n : Ord};
+    follows T ⊆ ω by comp.sub [_ : Ord] [ω];
+
+    follows ∅ : Ord by ordinal.empty.is;
+    follows ∅ ∈ ω   by omega.inductive, inductive.def;
+    thus    ∅ ∈ T   logically;
+
+    follows ∀n ∈ T, succ(n) ∈ T as
+        arbitrary n; assume n ∈ T;
+
+        follows n : Ord logically;
+        thus succ(n) : Ord by ordinal.succ.is;
+
+        follows n ∈ ω logically;
+        follows succ(n) ∈ ω by omega.inductive, inductive.def;
+
+        thus succ(n) ∈ T logically;
+    ;
+
+    -- thus T is inductive so ω = T and every element of T is an ordinal,
+    -- by definition, so we are done.
+    thus inductive(T) by inductive.def;
+    thus ω ⊆ T by omega.sub_inductive;
+    thus ω = T by sub.sub_eq;
+    done logically
+qed
+
+It requires a few careful arguments to see that $\omega$ is transitive and
+well ordered.
 
 theorem ordinal.omega.is :
     |- ω : Ord
@@ -1751,35 +1865,6 @@ proof
         thus transitive(ω) by transitive.def;
     ;
 
-    follows ∀n ∈ ω, n : Ord as
-        -- the idea is to show the set of ordinals in ω is inductive.
-        let T := {n ∈ ω | n : Ord};
-        follows T ⊆ ω by comp.sub [_ : Ord] [ω];
-
-        follows ∅ : Ord by ordinal.empty.is;
-        follows ∅ ∈ ω   by omega.inductive, inductive.def;
-        thus    ∅ ∈ T   logically;
-
-        follows ∀n ∈ T, succ(n) ∈ T as
-            arbitrary n; assume n ∈ T;
-
-            follows n : Ord logically;
-            thus succ(n) : Ord by ordinal.succ.is;
-
-            follows n ∈ ω logically;
-            follows succ(n) ∈ ω by omega.inductive, inductive.def;
-
-            thus succ(n) ∈ T logically;
-        ;
-
-        -- thus T is inductive so ω = T and every element of T is an ordinal,
-        -- by definition, so we are done.
-        thus inductive(T) by inductive.def;
-        thus ω ⊆ T by omega.sub_inductive;
-        thus ω = T by sub.sub_eq;
-        done logically
-    ;
-
     follows well_ordered(ω) as
         suffices ∀β, β ⊆ ω ∧ β ≠ ∅ → ∃γ, is_least(γ, β) by well_ordered.def;
         arbitrary β; assume β ⊆ ω ∧ β ≠ ∅;
@@ -1799,7 +1884,7 @@ proof
         -- it follows that succ(δ) is an ordinal
         follows β ⊆ ω given transitive(ω);
         thus δ ∈ ω by sub.def given δ ∈ β;
-        thus δ : Ord given ∀n ∈ ω, n : Ord;
+        thus δ : Ord by omega.mem.is_ordinal;
         thus succ(δ) : Ord by ordinal.succ.is;
 
         -- therefore can obtain a least element in β'
@@ -1819,7 +1904,7 @@ proof
         follows η ∈ γ as
             follows η ∈ ω by sub.def given η ∈ β and β ⊆ ω;
             follows γ ∈ ω by sub.def given γ ∈ β and β ⊆ ω;
-            thus η : Ord ∧ γ : Ord given ∀n ∈ ω, n : Ord;
+            thus η : Ord ∧ γ : Ord by omega.mem.is_ordinal;
             thus η ∈ γ by ordinal.trichotomy given η ≠ γ and γ ∉ η;
         ;
 
@@ -1836,6 +1921,9 @@ proof
 
     done by ordinal.def
 qed
+
+Since $\omega$ is an ordinal induction holds inside of it. From this we get
+induction on the natural numbers!
 
 corollary omega.induction [p(_) : sentence(term)] : (∀n ∈ ω, (∀m ∈ n, p(m)) → p(n))
     |- ∀n ∈ ω, p(n)
