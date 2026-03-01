@@ -399,7 +399,7 @@ finds such a contradiction it will complete the proof. Otherwise it will produce
 an error.
 
 tactic tactic.contradiction
-    tactic ::= @kw"contradiction"
+    tactic ::= @kw"contradiction" just:justification
 end
 
 The other proof pattern we observed came at the start. We saw that $p \lor q$

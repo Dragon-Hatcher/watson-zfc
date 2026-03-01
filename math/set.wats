@@ -238,6 +238,19 @@ tactic justification.by.vampire
     justification (600) ::= @kw"by" thms:theorem_list givens:givens
 end
 
+grammar_category case_list
+grammar_category case
+
+tactic case_list.one  case_list ::= c:case end
+tactic case_list.many case_list ::= c:case rest:case_list end
+
+tactic case
+    case ::= "|" sentence:@fragment(sentence) @kw"then" tactic:tactic
+end
+
+tactic tactic.cases
+    tactic ::= @kw"cases" just:justification ":" cases:case_list
+end
 
 We have also enhanced our pre-existing tactics with the power of Vampire. For
 example, `contradiction` will now use Vampire to search for a contradiction and
@@ -1233,20 +1246,17 @@ proof
         suffices ∀x ∈ succ(α), x ⊆ succ(α) by transitive.def;
         arbitrary x; assume x ∈ succ(α);
 
-        -- x is either from α or is α.
+        -- x is either from α or is α. split on which case we are in.
         follows x ∈ α ∨ x = α by union.def, singleton.def given succ(α) = α ∪ {α};
 
-        -- if it is α then it is in succ(α) by definition.
-        assume x = α then x ⊆ succ(α) by union.left_sub given succ(α) = α ∪ {α};
-        -- if it is an element of α then the fact that α is transitive helps us.
-        assume x ∈ α then x ⊆ succ(α) as
+        cases:
+        | x ∈ α then
             follows transitive(α) by ordinal.def given α : Ord;
             thus x ⊆ α by transitive.def;
             follows α ⊆ succ(α) by union.left_sub;
-            thus x ⊆ succ(α) by sub.trans;
-        ;
-
-        done given x ∈ α ∨ x = α
+            done by sub.trans
+        | x = α then 
+            done by union.left_sub given succ(α) = α ∪ {α}
     ;
 
     follows well_ordered(succ(α)) as
@@ -1290,17 +1300,15 @@ proof
             follows γ ∈ β by sub.def given γ ∈ β' and β' ⊆ β;
             follows ∀δ ∈ β, δ ≠ γ → γ ∈ δ as
                 arbitrary δ; assume δ ∈ β; assume δ ≠ γ;
-                -- any element of β is either in β' or is α
-                follows δ ∈ α ∨ δ = α by union.def, singleton.def, sub.def 
+                -- any element of β is either in α or is α. split on which case.
+                follows δ ∈ α ∨ δ = α by union.def, singleton.def, sub.def
                     given δ ∈ β and β ⊆ succ(α) and succ(α) = α ∪ {α};
-                -- if it is in β' the fact that γ is least in β' suffices
-                assume δ ∈ α then γ ∈ δ as
+
+                cases:
+                | δ ∈ α then
                     follows δ ∈ β' by inter.def given δ ∈ β and δ ∈ α;
-                    thus γ ∈ δ given ∀δ ∈ β, δ ≠ γ → γ ∈ δ;
-                ;
-                -- if it is α then it is easy since every element of β' is in α
-                assume δ = α then γ ∈ δ by sub.def given γ ∈ β' and β' ⊆ α;
-                done logically
+                    done given ∀δ ∈ β, δ ≠ γ → γ ∈ δ
+                | δ = α then done by sub.def given γ ∈ β' and β' ⊆ α
             ;
 
             done logically
@@ -1387,20 +1395,17 @@ proof
         thus    x ⊆ β by transitive.def;
         thus    y ∈ β by sub.def;
 
-        follows y ∈ α ∨ y = α ∨ α ∈ y by ordinal.internal_trichotomy;
-        
-        assume y = α then ⊥ as
-            -- we have y ∈ x ∈ α so we get α ∈ x ∈ α.
+        cases by ordinal.internal_trichotomy:
+        | y ∈ α then 
+            done logically
+        | y = α then
+            -- we have y ∈ x ∈ α so we get α ∈ x ∈ α, a contradiction.
             follows α ∈ x given y ∈ x;
-            done by mem.no_loop given x ∈ α
-        ;
-        assume α ∈ y then ⊥ as
-            -- basically the same as above. α ∈ y ∈ x ∈ α
+            contradiction by mem.no_loop given x ∈ α
+        | α ∈ y then
+            -- α ∈ y ∈ x ∈ α, also a contradiction.
             follows α ∈ x by ordinal.internal_trans [β] [α] [y] [x];
-            done by mem.no_loop given x ∈ α
-        ;
-
-        thus y ∈ α logically;
+            contradiction by mem.no_loop given x ∈ α
     ;
 
     follows well_ordered(α) as
@@ -1523,18 +1528,13 @@ proof
         contradiction
     ;
 
-    -- so γ must be one of α and β;
+    -- so γ must be one of α and β. split on which case we are in.
     follows γ = α ∨ γ = β logically;
 
-    -- if it is both then we are done.
-    assume γ = α ∧ γ = β then α = β logically;
-
-    -- if it is just one then we are also done
-    assume γ = α ∧ γ ≠ β then α ∈ β given γ ∈ β ∨ γ = β;
-    assume γ = β ∧ γ ≠ α then β ∈ α given γ ∈ α ∨ γ = α;
-
-    -- and those are all the cases
-    done logically
+    cases:
+    | γ = α ∧ γ = β then done logically
+    | γ = α ∧ γ ≠ β then done logically
+    | γ = β ∧ γ ≠ α then done logically
 qed
 
 theorem ordinal.induction [p(_) : sentence(term)] : (∀α, (α : Ord ∧ ∀β ∈ α, p(β)) → p(α))

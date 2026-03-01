@@ -1,3 +1,4 @@
+local dispatch = require("./dispatch")
 local state = require("./state")
 local shared = require("./shared")
 local vampire = require("./vampire")
@@ -16,10 +17,27 @@ function vampErrToDiag(err: vampire.VampError, span: Span): Diagnostic
     end
 end
 
+function proveFromFalsum(falseState: state.State, originalState: state.State): state.State
+    -- Otherwise apply explosion to derive the original goal from ⊥.
+    originalState.formal = falseState.formal:applyTheorem(shared.explosionThm, {originalState.goal})
+    originalState.info = originalState.info:withDeduce(originalState.goal:fact())
+    originalState.knowns:set(originalState.goal.formal:fact(), originalState.goal:fact())
+    return originalState
+end
+
 function M.handleContradiction(
-    tactic: { _span: Span },
+    tactic: { _span: Span, just: Justification },
     state: state.State
 ): state.State
+    -- If a justification is provided, use it to prove ⊥ directly.
+    if tactic.just._rule ~= "justification.empty" then
+        local subState = state:copy()
+        subState.goal = shared.falsum
+        subState.info = subState.info:withGoal(shared.falsum)
+        subState = dispatch.handleJustification(tactic.just, subState)
+        return proveFromFalsum(subState, state)
+    end
+
     -- For each fact we know, check if we have not that fact
     for fact, _ in state.knowns :: {[Fact]: boolean} do
         -- Ignore fact with assumptions
