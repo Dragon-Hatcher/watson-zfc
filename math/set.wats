@@ -1405,25 +1405,20 @@ proof
     follows ∀x, x ∈ S ↔ x = β ∨ x = γ ∨ x = δ by singleton.def, union.def;
 
     -- obtain the least element of S
-    thus S ⊆ α by sub.def;
-    thus S ≠ ∅ by empty.def;
+    thus S ⊆ α ∧ S ≠ ∅ by sub.def, empty.def;
     follows well_ordered(α) by ordinal.def;
     obtain η st is_least(η, S) by well_ordered.def;
-    
-    -- neither of γ and δ can be the least element because they cause ∈ loops.
-    assume η = γ then ⊥ as
-        thus γ ∈ β by is_least.def;
-        done by mem.no_loop given β ∈ γ
-    ;
-    assume η = δ then ⊥ as
-        thus δ ∈ γ by is_least.def;
-        done by mem.no_loop given γ ∈ δ
-    ;
+    thus η ∈ S by is_least.def;
 
-    -- thus η must be β and since δ ∈ S this is good enough.
-    follows η ∈ S by is_least.def;
-    thus    η = β logically;
-    thus    β ∈ δ by is_least.def;
+    cases:
+    | η = γ then 
+        follows γ ∈ β by is_least.def;
+        contradiction by mem.no_loop given β ∈ γ
+    | η = δ then 
+        follows δ ∈ γ by is_least.def;
+        contradiction by mem.no_loop given γ ∈ δ
+    | η = β then 
+        follows β ∈ δ by is_least.def;
 qed
 
 Now we are ready for the theorem itself.
@@ -1446,14 +1441,14 @@ proof
 
         cases by ordinal.internal_trichotomy:
         | y ∈ α then 
-            done logically
+            done
         | y = α then
             -- we have y ∈ x ∈ α so we get α ∈ x ∈ α, a contradiction.
             follows α ∈ x given y ∈ x;
             contradiction by mem.no_loop given x ∈ α
         | α ∈ y then
             -- α ∈ y ∈ x ∈ α, also a contradiction.
-            follows α ∈ x by ordinal.internal_trans [β] [α] [y] [x];
+            follows α ∈ x by ordinal.internal_trans given α ∈ y and y ∈ x;
             contradiction by mem.no_loop given x ∈ α
     ;
 
@@ -1475,7 +1470,7 @@ With this theorem we can now make proper use of the full ordinal trichotomy,
 although the proof of the trichotomy does not actually rely on the members of
 an ordinal being in ordinal. It will, however, need two more lemmas. First, the
 intersection of two ordinals is an ordinal. Intuitively, the intersection is
-just the small ordinal.
+just the smaller ordinal.
 
 theorem ordinal.inter.is [α β : term] : (α : Ord) (β : Ord)
     |- α ∩ β : Ord
@@ -1513,14 +1508,14 @@ proof
     -- construct α - β which is a non-empty subset of α.
     let S := α - β;
     follows S ⊆ α by set_diff.sub;
-    follows S ≠ ∅ by set_diff.non_empty;
+    follows S ≠ ∅ by set_diff.non_empty given β ≠ α;
 
     -- we claim that the least element in S is β which suffices.
     obtain μ st is_least(μ, S) by ordinal.def, well_ordered.def given α : Ord;
     follows  μ ∈ S by is_least.def;
     follows  μ ∈ α by set_diff.def;
     follows  μ ∉ β by set_diff.def;
-    follows  μ ⊆ α by ordinal.def, transitive.def;
+    follows  μ ⊆ α by ordinal.def, transitive.def given α : Ord;
     suffices μ = β logically;
 
     follows μ ⊆ β as
@@ -1528,14 +1523,14 @@ proof
         arbitrary δ; assume δ ∈ μ;
 
         -- idea: δ must be in β because otherwise it would be in S and then we
-        -- would have μ ∈ δ and δ in μ
+        -- would have μ ∈ δ and δ ∈ μ
         assume  δ ∉ β for_contra;
         follows δ ∈ α by sub.def given δ ∈ μ and μ ⊆ α;
         thus    δ ∈ S by set_diff.def;
 
         follows δ ≠ μ by mem.irrefl given δ ∈ μ;
         thus    μ ∈ δ by is_least.def given δ ∈ S and is_least(μ, S);
-        thus    ⊥     by mem.no_loop given δ ∈ μ and μ ∈ δ;
+        contradiction by mem.no_loop given δ ∈ μ and μ ∈ δ
     ;
 
     follows β ⊆ μ as
@@ -1567,7 +1562,8 @@ proof
     let γ := α ∩ β;
     follows γ : Ord by ordinal.inter.is;
 
-    -- since γ is a subset of both α and β we have that either is or is a member of each
+    -- since γ is a subset of both α and β we have that it either is or 
+    -- is a member of each
     follows γ ⊆ α by inter.sub_left;
     follows γ ∈ α ∨ γ = α by ordinal.sub_mem;
     follows γ ⊆ β by inter.sub_right;
@@ -1584,9 +1580,17 @@ proof
     follows γ = α ∨ γ = β logically;
 
     cases:
-    | γ = α ∧ γ = β then done logically
-    | γ = α ∧ γ ≠ β then done logically
-    | γ = β ∧ γ ≠ α then done logically
+    | γ = α ∧ γ = β then 
+        follows α = β logically; 
+        done logically
+    | γ = α ∧ γ ≠ β then 
+        follows γ ∈ β given γ ∈ β ∨ γ = β;
+        thus    α ∈ β logically;
+        done logically
+    | γ ≠ α ∧ γ = β then 
+        follows γ ∈ α given γ ∈ α ∨ γ = α;
+        thus    β ∈ α logically;
+        done logically
 qed
 
 We can also write down the full transitivity property. This is really just a
@@ -1643,7 +1647,7 @@ proof
         -- but then it can't be the case that β ∈ μ since μ is least in s
         follows β ≠ μ by mem.irrefl   given β ∈ μ;
         thus    μ ∈ β by is_least.def given β ∈ s and is_least(μ, s);
-        thus    ⊥     by mem.no_loop  given β ∈ μ and μ ∈ β;
+        contradiction by mem.no_loop  given β ∈ μ and μ ∈ β
     ;
 
     thus     p(μ) logically;
@@ -1916,7 +1920,7 @@ proof
 
         -- but then we have both η ∈ γ and γ ∈ η.
         thus γ ∈ η by is_least.def given is_least(γ, β');
-        thus ⊥ by mem.no_loop given η ∈ γ and γ ∈ η;
+        contradiction by mem.no_loop given η ∈ γ and γ ∈ η
     ;
 
     done by ordinal.def
