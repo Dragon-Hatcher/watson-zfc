@@ -908,6 +908,66 @@ proof
     thus {a, b} ∈ 𝒫(A) by powset.def;
 qed
 
+### If
+
+Using restricted comprehensions we can define the if then else operator. This
+will be useful for casewise definitions.
+
+notation if
+    term ::= "if " sentence " then " term " else " term
+end
+
+definition
+    if p then a else b := {x ∈ a | p} ∪ {x ∈ b | ¬p}
+end
+
+theorem union.empty [a : term] :
+    |- a ∪ ∅ = a
+proof
+    todo
+qed
+
+theorem empty.union [a : term] :
+    |- ∅ ∪ a = a
+proof
+    done by union.empty, union.symm
+qed
+
+theorem if.true [p : sentence] [a b : term] : (p)
+    |- if p then a else b = a
+proof
+    suffices {x ∈ a | p} ∪ {x ∈ b | ¬p} = a;
+    follows {x ∈ a |  p} = a given p;
+    follows {x ∈ b | ¬p} = ∅ by empty.def given p;
+    follows a ∪ ∅ = a        by union.empty;
+    done logically
+qed
+
+theorem if.false [p : sentence] [a b : term] : (¬p)
+    |- if p then a else b = b
+proof
+    suffices {x ∈ a | p} ∪ {x ∈ b | ¬p} = b;
+    follows {x ∈ a |  p} = ∅ by empty.def given ¬p;
+    follows {x ∈ b | ¬p} = b given ¬p;
+    follows ∅ ∪ b = b        by empty.union;
+    done logically
+qed
+
+theorem if.swap [p : sentence] [a b : term] :
+    |- if p then a else b = if ¬p then b else a
+proof
+    cases:
+    | p  then
+        follows if  p then a else b = a by if.true [p] [a] [b];
+        follows ¬¬p logically; -- TODO: use vampire for this.
+        follows if ¬p then b else a = a by if.false [¬p] [b] [a];
+        done logically
+    | ¬p then
+        follows if  p then a else b = b by if.false [p] [a] [b];
+        follows if ¬p then b else a = b by if.true [¬p] [b] [a];
+        done logically
+qed
+
 
 ## Functions
 
