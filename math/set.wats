@@ -1186,7 +1186,7 @@ definition
     {f(x) | x ∈ A} := {y | ∃x, x ∈ A ∧ y = f(x)}
 end
 
-The proof follows from (I'll figure this out when I complete the proof)
+The proof follows from the replacement axiom and the definition of the set map.
 
 theorem set_map.def [f(_) : term(term)] [A : term] :
     |- ∀y, y ∈ {f(x) | x ∈ A} ↔ (∃x, x ∈ A ∧ y = f(x))
