@@ -1178,22 +1178,40 @@ end
 
 -- Now, we define a set map which contains the entire image of a function on a set.
 
--- notation set_map
---   term ::= "{" term(x) " | " x:@binding(term) " ∈ " term "}"
--- end
+notation set_map
+  term ::= "{" term(x) " | " x:@binding(term) " ∈ " term "}"
+end
 
--- definition
---     {f(x) | x ∈ A} := {y | ∃x, x ∈ A ∧ y = f(x)}
--- end
+definition
+    {f(x) | x ∈ A} := {y | ∃x, x ∈ A ∧ y = f(x)}
+end
 
--- The proof follows from (I'll figure this out when I complete the proof)
+The proof follows from (I'll figure this out when I complete the proof)
 
--- theorem set_map.def [f : term] [A : term] :
---     |- ∀y, y ∈ {f(x) | x ∈ A} ↔ (∃x, x ∈ A ∧ y = f(x))
--- proof
---     suffices ∀y, y ∈ {f(x) | x ∈ A} ↔ (∃x, x ∈ A ∧ y = f(x));
---     todo
--- qed
+theorem set_map.def [f(_) : term(term)] [A : term] :
+    |- ∀y, y ∈ {f(x) | x ∈ A} ↔ (∃x, x ∈ A ∧ y = f(x))
+proof
+    suffices ∀y, y ∈ {z | ∃x, x ∈ A ∧ z = f(x)} ↔ (∃x, x ∈ A ∧ y = f(x));
+    suffices (∃x, ∀y, y ∈ x ↔ ∃x, x ∈ A ∧ y = f(x)) by uncomp.def [∃x, x ∈ A ∧ _ = f(x)];
+    hence ∀x ∈ A, ∃!y, y = f(x) logically;
+    follows ∀a, (∀x, x ∈ a → ∃!y, y = f(x)) → (∃x, ∀y, y ∈ x ↔ (∃z, z ∈ a ∧ y = f(z))) by zfc.replacement [_1 = f(_0)];
+    done logically
+qed
+
+notation function_maps_to
+    term ::= x:@binding(term) " ∈ " term " ↦ " term(x)
+end
+
+definition
+    x ∈ X ↦ f(x) := {⟨x, f(x)⟩ | x ∈ X}
+end
+
+theorem fun_map.is.rel [A B : term] [f(_) : term(term)]: (∀x ∈ A, f(x) ∈ B)
+    |- x ∈ A ↦ f(x) ∈ (A → B)
+proof
+    suffices {⟨x, f(x)⟩ | x ∈ A} ∈ {f ∈ Rel(A, B) | ∀a, a ∈ A → (∃!b, b ∈ B ∧ ⟨a, b⟩ ∈ f)};
+    todo
+qed
 
 
 ## The Ordinals

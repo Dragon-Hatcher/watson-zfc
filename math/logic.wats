@@ -830,6 +830,7 @@ notation exists.at_most_one
     sentence (000) ::= "∃*" x:@binding(term) ", " sentence(x) 
 end
 
+@[reducible]
 definition
     ∃*x, p(x) := ∀y, ∀z, p(y) ∧ p(z) → y = z
 end
@@ -838,6 +839,7 @@ notation exists.unique
     sentence (000) ::= "∃!" x:@binding(term) ", " sentence(x) 
 end
 
+@[reducible]
 definition
     ∃!x, p(x) := (∃x, p(x)) ∧ (∃*x, p(x))
 end

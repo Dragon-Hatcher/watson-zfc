@@ -161,10 +161,20 @@ function termToV(term: Frag, bindings: ConversionCtx): VTerm?
     -- Now we can make a new function symbol
     if term.replacement then
         return termCacheGet(term.replacement, #children):with(children)
-    else
-        -- TODO: templates
-        assert(false)
     end
+    if term.formal.templateIdx ~= nil then
+        -- Convert all the children into terms
+        local children = {}
+        for i, child in term.formal.children do
+            local vChild = termToV(child, bindings)
+            if vChild == nil then return nil end
+            children[i] = vChild
+        end
+        local idx = term.formal.templateIdx
+        local vTerm = VFunction:new(`temp{idx}`, #children)
+        return vTerm:with(children)
+    end
+    return nil
 end
 
 function predToV(pred: Frag, bindings: ConversionCtx): VFormula?
