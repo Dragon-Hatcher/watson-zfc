@@ -22,7 +22,7 @@ certain property. Therefore, we might naturally expect to have an introduction
 rule similar to the following:
 
 ```
- axiom zfc.comprehension [p(_:term) : sentence] :
+ axiom zfc.comprehension [p(_) : sentence(term)] :
     |- ∃x, ∀y, (y ∈ x ↔ p(y))
  end
 ```

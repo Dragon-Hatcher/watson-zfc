@@ -90,7 +90,7 @@ tactic justification.given
     justification ::= @kw"given" givens:sentence_list
 end
 
-We will also extend the by tactic to use Vampire to apply the provided theorem.
+We will also extend the `by` tactic to use Vampire to apply the provided theorem.
 Note that Vampire can't do second order reasoning so this won't work with any
 theorems that contain templates more complex than unparameterized terms.
 
@@ -457,7 +457,7 @@ proof
     thus    ∀x,      x ∈ a          → x ∈ ⋃b logically;
 qed
 
-Next we show that the Union of a singleton is the element of the singleton.
+Next, we show that the union of a singleton is the element of the singleton.
 
 theorem big_union.singleton [a : term] :
     |- ⋃{a} = a
@@ -559,11 +559,9 @@ proof
     assume x ∈ {z ∈ ⋃a | ∀y, y ∈ a → z ∈ y} then ∀y, y ∈ a → x ∈ y logically;
 
     assume ∀y, y ∈ a → x ∈ y then x ∈ {z ∈ ⋃a | ∀y, y ∈ a → z ∈ y} as
-        follows x ∈ ⋃a as
-            obtain y st y ∈ a  by nonempty.has_element;
-            follows     x ∈ y  logically;
-            thus        x ∈ ⋃a by big_union.def;
-        ;
+        obtain y st y ∈ a  by nonempty.has_element;
+        follows     x ∈ y  logically;
+        thus        x ∈ ⋃a by big_union.def;
         done logically
     ;
 
@@ -600,9 +598,9 @@ proof
 
     -- we need that the pair set isn't empty to apply big_inter.def.
     follows {a, b} ≠ ∅ by pair.non_empty; 
-    follows  ∀x, x ∈ ⋂{a, b} ↔ (∀y, y ∈ {a, b} → x ∈ y) by big_inter.def;
-    follows  ∀y, y ∈  {a, b} ↔ (y = a ∨ y = b)          by pair.def;
-    thus     ∀x, x ∈ ⋂{a, b} ↔ (x ∈ a ∧ x ∈ b)          logically;
+    follows ∀x, x ∈ ⋂{a, b} ↔ (∀y, y ∈ {a, b} → x ∈ y) by big_inter.def;
+    follows ∀y, y ∈  {a, b} ↔ (y = a ∨ y = b)          by pair.def;
+    thus    ∀x, x ∈ ⋂{a, b} ↔ (x ∈ a ∧ x ∈ b)          logically;
 qed
 
 Like the union, the intersection is symmetric and associative. The proofs are
