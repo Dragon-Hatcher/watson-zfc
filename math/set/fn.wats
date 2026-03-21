@@ -239,3 +239,21 @@ proof
     suffices {⟨x, f(x)⟩ | x ∈ A} ∈ {f ∈ Rel(A, B) | ∀a, a ∈ A → (∃!b, b ∈ B ∧ ⟨a, b⟩ ∈ f)};
     todo
 qed
+
+TODO:
+
+notation fn_restriction
+    term ::= term " ↾ " term
+end
+
+definition
+    f ↾ A := {x ∈ f | π₁(x) ∈ A}
+end
+
+definition
+    dom(f) := {π₁(x) | x ∈ f}
+end
+
+definition
+    ran(f) := {π₂(x) | x ∈ f}
+end

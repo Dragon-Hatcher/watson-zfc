@@ -1,0 +1,76 @@
+The next thing we want to do is define operations on ordinals. In order to do
+this we will need recursion. It isn't obvious a priori that recursive operations
+are well defined. In fact, every recursive definition needs a proof to go with
+it. For example, $f(0) = 1$ and $f(n) = n \cdot f(n-1)$ is clearly well defined,
+it is the factorial function. Whereas $g(0) = 1$ and $g(n) = n \cdot g(n+1)$ is
+nonsense, despite just changing a $-$ to a $+$.
+
+In order to define a recursive function $f : \text{Ord} \to A$, we will make 
+use of an auxiliary function $g : \{\alpha \in \text{Ord} ~|~ \alpha \to A\} \to A$. 
+The idea is that $g$ has the property that, for all ordinals $\alpha$,
+$f(\alpha) = g(f \upharpoonright \alpha)$, i.e. that $g$ produces the next
+value of $f$ given the partial function of all previous values of $f$. Except,
+we will define $g$ instead of $f$ and use it to produce $f$.
+
+The key fact we will prove, is that if $f' : \alpha \to A$ satisfies the
+property $f'(\beta) = g(f \upharpoonright \beta)$ for all $\beta \in \alpha$,
+then $f'$ is a restriction of $f$. In particular $f' = f \upharpoonright \alpha$.
+Thus, we only have to find some way of identifying functions with that property,
+and then $f$ is easily defined via the union of all such functions.
+
+We will call a function with the given property _coherent_ (not a standard term).
+This property is relative to $g$. Note that, since $g$ is a function over the
+whole class of ordinals, it is not a set, so we need to be slightly more verbose.
+
+notation sentence.with_term_of_term_and_term
+    sentence ::= @name "(" x:@binding(term) "↦" term(x) "," term ")"
+end
+
+definition
+    coherent(f' ↦ g(f'), f) := ∀β ∈ dom(f), f(β) = g(f ↾ β)
+end
+
+And the theorem is that all coherent functions with the same domain are equal.
+
+theorem coherent.unique [g(_) : term(term)] [f₁ f₂ : term] : (dom(f₁) = dom(f₂))
+    (dom(f₁) : Ord)
+    |- f₁ = f₂
+proof
+    todo
+qed
+
+And for each ordinal there exists a coherent function with that ordinal as its
+domain. This is a simple inductive argument.
+
+theorem coherent.exists [g(_) : term(term)] [α : term] : (α : Ord)
+    |- ∃f, dom(f) = α ∧ coherent(f' ↦ g(f'), f)
+proof
+    todo
+qed
+
+Together, these facts let us pick _the_ coherent function with each length. We
+will call this the recursive partial function with domain $\alpha$.
+
+notation term.with_term_of_term_and_term
+    term ::= @name "(" x:@binding(term) "↦" term(x) "," term ")"
+end
+
+definition
+    rec.partial(f' ↦ g(f'), α) := ℩f, dom(f) = α ∧ coherent(f' ↦ g(f'), f)
+end
+
+And this allows us to define the recursive function itself simply as the value
+returned by each of these partial functions.
+
+definition
+    rec(f' ↦ g(f'), α) := rec.partial(f' ↦ g(f'), α)(α)
+end
+
+And we need to prove that this definition produces a recursive function with
+the desired property.
+
+theorem recursion.def [g(_) : term(term)] [α : term] : (α : Ord)
+    |- rec(f' ↦ g(f'), α) = g(β ∈ α ↦ rec(f' ↦ g(f'), β))
+proof
+    todo
+qed
