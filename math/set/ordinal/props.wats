@@ -1,0 +1,244 @@
+Returning to our characterization of ordinals as sets containing every previous
+ordinal, we want to prove that every element of an ordinal is an ordinal.
+Doing this will require several new lemmas.
+
+First we will prove that we have the trichotomy property for members of an 
+ordinal. We will have a stronger trichotomy on all ordinals later but since we
+do not yet know that the elements of an ordinal are still ordinals, we cannot
+apply it.
+
+lemma ordinal.internal_trichotomy [α β γ : term] : (α : Ord) (β ∈ α) (γ ∈ α)
+    |- γ ∈ β ∨ γ = β ∨ β ∈ γ
+proof
+    follows transitive(α) ∧ well_ordered(α) by ordinal.def;
+
+    -- The idea here is that {β, γ} ⊆ α so it must have a least element.
+    follows {β, γ} ⊆ α by pair.def, sub.def given β ∈ α and γ ∈ α;
+    follows {β, γ} ≠ ∅ by pair.non_empty;
+
+    -- the least element δ must be either β or γ
+    obtain  δ st is_least(δ, {β, γ}) by well_ordered.def given well_ordered(α);
+    follows δ ∈ {β, γ}    by is_least.def given is_least(δ, {β, γ});
+    follows δ = β ∨ δ = γ by pair.def;
+
+    -- whichever one δ is it must be either equal to or in the other
+    follows ∀η ∈ {β, γ}, η ≠ δ → δ ∈ η by is_least.def given is_least(δ, {β, γ});
+    follows ∀η ∈ {β, γ}, η = δ ∨ δ ∈ η logically;
+    follows β = δ ∨ δ ∈ β by pair.def;
+    follows γ = δ ∨ δ ∈ γ by pair.def;
+
+    -- which suffices. you can check the cases on δ = β ∨ δ = γ
+    done logically
+qed
+
+We will also need the fact that $\in$ is transitive inside an ordinal. Again,
+we will have a stronger, non-internal version of this later.
+
+lemma ordinal.internal_trans [α β γ δ : term] : (α : Ord) (β ∈ α) (γ ∈ α) (δ ∈ α)
+    (β ∈ γ) (γ ∈ δ)
+    |- β ∈ δ
+proof
+    -- the idea here is to use the well ordering of α to find a minimal element
+    -- in {β, γ, δ}. If it is β we are happy. If it is γ we have a contradiction
+    -- from β ∈ γ and γ ∈ β. If it is δ then we have one from γ ∈ δ and δ ∈ γ.
+    let S := {β} ∪ {γ} ∪ {δ};
+    follows ∀x, x ∈ S ↔ x = β ∨ x = γ ∨ x = δ by singleton.def, union.def;
+
+    -- obtain the least element of S
+    thus S ⊆ α ∧ S ≠ ∅ by sub.def, empty.def;
+    follows well_ordered(α) by ordinal.def;
+    obtain η st is_least(η, S) by well_ordered.def;
+    thus η ∈ S by is_least.def;
+
+    cases:
+    | η = γ then 
+        follows γ ∈ β by is_least.def;
+        contradiction by mem.no_loop given β ∈ γ
+    | η = δ then 
+        follows δ ∈ γ by is_least.def;
+        contradiction by mem.no_loop given γ ∈ δ
+    | η = β then 
+        follows β ∈ δ by is_least.def;
+qed
+
+Now we are ready for the theorem itself.
+
+theorem ordinal.mem.is [α β : term] : (α ∈ β) (β : Ord)
+    |- α : Ord
+proof
+    follows well_ordered(β) ∧ transitive(β) by ordinal.def;
+
+    follows transitive(α) as
+        suffices ∀x ∈ α, x ⊆ α by transitive.def;
+        arbitrary x; assume x ∈ α;
+        suffices ∀y ∈ x, y ∈ α by sub.def;
+        arbitrary y; assume y ∈ x;
+
+        follows α ⊆ β by transitive.def given transitive(β) and α ∈ β;
+        thus    x ∈ β by sub.def given x ∈ α;
+        thus    x ⊆ β by transitive.def;
+        thus    y ∈ β by sub.def;
+
+        cases by ordinal.internal_trichotomy:
+        | y ∈ α then 
+            done
+        | y = α then
+            -- we have y ∈ x ∈ α so we get α ∈ x ∈ α, a contradiction.
+            follows α ∈ x given y ∈ x;
+            contradiction by mem.no_loop given x ∈ α
+        | α ∈ y then
+            -- α ∈ y ∈ x ∈ α, also a contradiction.
+            follows α ∈ x by ordinal.internal_trans given α ∈ y and y ∈ x;
+            contradiction by mem.no_loop given x ∈ α
+    ;
+
+    follows well_ordered(α) as
+        suffices ∀δ, δ ⊆ α ∧ δ ≠ ∅ → ∃γ, is_least(γ, δ) by well_ordered.def;
+        arbitrary δ; assume δ ⊆ α ∧ δ ≠ ∅;
+
+        -- by the transitivity of β, α ⊆ β, so δ ⊆ β as well. and then we use
+        -- the well ordering of β. 
+        follows α ⊆ β by transitive.def given α ∈ β and transitive(β);
+        thus    δ ⊆ β by sub.trans given δ ⊆ α;
+        thus ∃γ, is_least(γ, δ) by well_ordered.def given well_ordered(β) and δ ⊆ α ∧ δ ≠ ∅;
+    ;
+
+    done by ordinal.def
+qed
+
+With this theorem we can now make proper use of the full ordinal trichotomy,
+although the proof of the trichotomy does not actually rely on the members of
+an ordinal being in ordinal. It will, however, need two more lemmas. First, the
+intersection of two ordinals is an ordinal. Intuitively, the intersection is
+just the smaller ordinal.
+
+theorem ordinal.inter.is [α β : term] : (α : Ord) (β : Ord)
+    |- α ∩ β : Ord
+proof
+    follows transitive(α ∩ β) as
+        suffices ∀γ ∈ α ∩ β, γ ⊆ α ∩ β by transitive.def;
+        arbitrary γ; assume γ ∈ α ∩ β;
+        follows γ ∈ α ∧ γ ∈ β by inter.def;
+
+        follows γ ⊆ α by ordinal.def, transitive.def given α : Ord;
+        follows γ ⊆ β by ordinal.def, transitive.def given β : Ord;
+        thus γ ⊆ α ∩ β by inter.sub_both;
+    ;
+
+    follows well_ordered(α ∩ β) as
+        suffices ∀δ, δ ⊆ α ∩ β ∧ δ ≠ ∅ → ∃γ, is_least(γ, δ);
+        arbitrary δ; assume δ ⊆ α ∩ β ∧ δ ≠ ∅;
+        follows δ ⊆ α by inter.left_sub;
+        obtain γ st is_least(γ, δ) by ordinal.def, well_ordered.def;
+        done logically
+    ;
+
+    done by ordinal.def
+qed
+
+Ordinals are transitive but they also have the inverse property: any subset is
+a member. Unless the subset is just the original set.
+
+theorem ordinal.sub_mem [α β : term] : (α : Ord) (β : Ord) (β ⊆ α)
+    |- β ∈ α ∨ β = α
+proof
+    -- we just need to show β ∈ α if β ≠ α
+    suffices β ≠ α → β ∈ α logically; assume β ≠ α;
+    
+    -- construct α - β which is a non-empty subset of α.
+    let S := α - β;
+    follows S ⊆ α by set_diff.sub;
+    follows S ≠ ∅ by set_diff.non_empty given β ≠ α;
+
+    -- we claim that the least element in S is β which suffices.
+    obtain μ st is_least(μ, S) by ordinal.def, well_ordered.def given α : Ord;
+    follows  μ ∈ S by is_least.def;
+    follows  μ ∈ α by set_diff.def;
+    follows  μ ∉ β by set_diff.def;
+    follows  μ ⊆ α by ordinal.def, transitive.def given α : Ord;
+    suffices μ = β logically;
+
+    follows μ ⊆ β as
+        suffices ∀δ ∈ μ, δ ∈ β by sub.def;
+        arbitrary δ; assume δ ∈ μ;
+
+        -- idea: δ must be in β because otherwise it would be in S and then we
+        -- would have μ ∈ δ and δ ∈ μ
+        assume  δ ∉ β for_contra;
+        follows δ ∈ α by sub.def given δ ∈ μ and μ ⊆ α;
+        thus    δ ∈ S by set_diff.def;
+
+        follows δ ≠ μ by mem.irrefl given δ ∈ μ;
+        thus    μ ∈ δ by is_least.def given δ ∈ S and is_least(μ, S);
+        contradiction by mem.no_loop given δ ∈ μ and μ ∈ δ
+    ;
+
+    follows β ⊆ μ as
+        suffices ∀δ ∈ β, δ ∈ μ by sub.def;
+        arbitrary δ; assume δ ∈ β;
+
+        -- the idea here is that μ ∉ δ because if it was then μ would be in δ
+        -- by transitivity. so then it must be that δ ∈ μ by transitivity in α
+        follows δ ≠ μ given δ ∈ β and μ ∉ β;
+        follows μ ∉ δ as
+            assume  μ ∈ δ for_contra;
+            follows δ ⊆ β by ordinal.def, transitive.def given β : Ord and δ ∈ β;
+            follows μ ∈ β by sub.def;
+            contradiction
+        ;
+
+        follows δ ∈ α by sub.def given β ⊆ α and δ ∈ β;
+        thus    δ ∈ μ by ordinal.internal_trichotomy given δ ≠ μ and μ ∉ δ;
+    ;
+
+    thus μ = β by sub.sub_eq;
+qed
+
+With these facts we can prove the full trichotomy theorem.
+
+theorem ordinal.trichotomy [α β : term] : (α : Ord) (β : Ord)
+    |- α ∈ β ∨ α = β ∨ β ∈ α
+proof
+    let γ := α ∩ β;
+    follows γ : Ord by ordinal.inter.is;
+
+    -- since γ is a subset of both α and β we have that it either is or 
+    -- is a member of each
+    follows γ ⊆ α by inter.sub_left;
+    follows γ ∈ α ∨ γ = α by ordinal.sub_mem;
+    follows γ ⊆ β by inter.sub_right;
+    follows γ ∈ β ∨ γ = β by ordinal.sub_mem;
+
+    -- but it can't be a member of both because then it would be a member of itself.
+    follows ¬(γ ∈ α ∧ γ ∈ β) as
+        assume  γ ∈ α ∧ γ ∈ β for_contra;
+        thus    γ ∈ γ by inter.def;
+        contradiction by mem.irrefl
+    ;
+
+    -- so γ must be one of α and β. split on which case we are in.
+    follows γ = α ∨ γ = β logically;
+
+    cases:
+    | γ = α ∧ γ = β then 
+        follows α = β logically; 
+        done logically
+    | γ = α ∧ γ ≠ β then 
+        follows γ ∈ β given γ ∈ β ∨ γ = β;
+        thus    α ∈ β logically;
+        done logically
+    | γ ≠ α ∧ γ = β then 
+        follows γ ∈ α given γ ∈ α ∨ γ = α;
+        thus    β ∈ α logically;
+        done logically
+qed
+
+We can also write down the full transitivity property. This is really just a
+restatement of transitivity.
+
+theorem ordinal.trans [α β γ : term] : (γ : Ord) (α ∈ β) (β ∈ γ)
+    |- α ∈ γ
+proof
+    follows β ⊆ γ by ordinal.def, transitive.def;
+    thus    α ∈ γ by sub.def;
+qed

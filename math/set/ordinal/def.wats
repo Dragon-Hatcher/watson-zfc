@@ -1,0 +1,85 @@
+Our first goal upon the completion of our development of set theory will be to
+define the natural numbers. We will not develop the natural numbers directly
+but we will instead consider them to be certain "ordinal" numbers. So we will
+start by developing the ordinals.
+
+The intuitive definition of the ordinal numbers is as follows: The empty set is
+an ordinal number and any set which contains every previously defined ordinal is
+an ordinal number. The goal is to produce a canonical set with each "number" of
+elements. The problem is that this definition is recursive and we will need
+ordinals before we can define recursion. Luckily, the ordinals admit an 
+alternate definition. We define an ordinal as a _transitive_ set that is 
+_well ordered_ by $\in$.
+
+A transitive set is one where every element is also a subset.
+
+definition 
+    transitive(α) := ∀x ∈ α, x ⊆ α
+end
+
+theorem transitive.def [α : term] :
+    |- transitive(α) ↔ ∀x ∈ α, x ⊆ α
+proof
+    done by iff.refl [transitive(α)]
+qed
+
+A well ordered set is one where every non-empty subset has a least element.
+
+definition
+    is_least(α, β) := α ∈ β ∧ (∀γ ∈ β, γ ≠ α → α ∈ γ)
+end
+
+theorem is_least.def [α β : term] :
+    |- is_least(α, β) ↔ α ∈ β ∧ (∀γ ∈ β, γ ≠ α → α ∈ γ)
+proof
+    done by iff.refl [is_least(α, β)]
+qed
+
+definition
+    well_ordered(α) := ∀β, β ⊆ α ∧ β ≠ ∅ → ∃γ, is_least(γ, β)
+end
+
+theorem well_ordered.def [α : term] :
+    |- well_ordered(α) ↔ ∀β, β ⊆ α ∧ β ≠ ∅ → ∃γ, is_least(γ, β)
+proof
+    done by iff.refl [well_ordered(α)]
+qed
+
+The combination of these two properties is what defines an ordinal.
+
+notation postfix_pred
+    sentence ::= term " : " @name
+end
+
+definition
+    α : Ord := transitive(α) ∧ well_ordered(α)
+end
+
+theorem ordinal.def [α : term] :
+    |- α : Ord ↔ transitive(α) ∧ well_ordered(α)
+proof
+    done by iff.refl [α : Ord]
+qed
+
+Since $\in$ well orders an ordinal, we can think of $\in$ as being $<$ for
+ordinals. It would be helpful, then, to know that $\in$ is anti-reflexive and
+anti-symmetric. These two properties follows by classic proofs from the 
+ axiom of regularity.
+
+lemma mem.irrefl [a : term] : 
+    |- a ∉ a
+proof
+    follows ∃x, x ∈ {a} by singleton.def;
+    obtain y st y ∈ {a} ∧ ¬∃z, (z ∈ y ∧ z ∈ {a}) by zfc.regularity;
+    done by singleton.def
+qed
+
+lemma mem.no_loop [a b : term] :
+    |- ¬(a ∈ b ∧ b ∈ a)
+proof
+    follows ∃x, x ∈ {a, b} by pair.def;
+    obtain y st y ∈ {a, b} ∧ ¬∃z, (z ∈ y ∧ z ∈ {a, b}) by zfc.regularity;
+    -- if y = a then b ∈ a ∧ b ∈ {a, b} would lead to a contradiction and 
+    -- vice versa. just let vampire work it out.
+    done by pair.def
+qed

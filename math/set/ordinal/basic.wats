@@ -1,0 +1,127 @@
+We are now ready for our first proof about ordinals. Recall from our intuative
+ definition that we wanted $\empty$ to be the first ordinal number. Another way
+of thinking about this is that $\alpha < \beta$ can be thought of as
+$\alpha \in \beta$ and any ordinal is the set of every previous ordinal. Thus, it
+stands to reason that the first ordinal is $\empty$. The proof that $\empty$
+satisfies our definition is easy; the two required properties are vacuous when 
+applied to the empty set.
+
+theorem ordinal.empty.is :
+    |- ∅ : Ord
+proof
+    follows transitive(∅) as
+        suffices ∀x ∈ ∅, x ⊆ ∅ by transitive.def;
+        follows ∀x, x ∉ ∅ by empty.def;
+        done logically
+    ;
+
+    follows well_ordered(∅) as
+        suffices ∀β, β ⊆ ∅ ∧ β ≠ ∅ → ∃γ, is_least(γ, β) by well_ordered.def;
+        follows  ∀β, β ⊆ ∅ → β = ∅ by empty.sub_is_empty;
+        done logically
+    ;
+
+    thus ∅ : Ord by ordinal.def given transitive(∅) and well_ordered(∅);
+qed
+
+The empty set is the zero of the ordinal numbers. We can get the next ordinal
+from any previous ordinal number by applying the successor operation. If $n$ is
+an ordinal then it is the set of all previous ordinals. So the next ordinal
+after $n$ should include all the ordinals in $n$ and $n$ itself. Hence the
+definition.
+
+definition
+    succ(n) := n ∪ {n}
+end
+
+theorem ordinal.succ.def [n : term] :
+    |- succ(n) = n ∪ {n}
+proof
+    done by eq.refl [succ(n)]
+qed
+
+We can prove now that the result we get is still an ordinal. This proof isn't 
+conceptually complicated but it has a few things to check.
+
+theorem ordinal.succ.is [α : term] : (α : Ord)
+    |- succ(α) : Ord
+proof
+    follows succ(α) = α ∪ {α} by ordinal.succ.def;
+    
+    follows transitive(succ(α)) as
+        suffices ∀x ∈ succ(α), x ⊆ succ(α) by transitive.def;
+        arbitrary x; assume x ∈ succ(α);
+
+        -- x is either from α or is α. split on which case we are in.
+        follows x ∈ α ∨ x = α by union.def, singleton.def given succ(α) = α ∪ {α};
+
+        cases:
+        | x ∈ α then
+            follows transitive(α) by ordinal.def given α : Ord;
+            thus x ⊆ α by transitive.def;
+            follows α ⊆ succ(α) by union.left_sub;
+            done by sub.trans
+        | x = α then 
+            done by union.left_sub given succ(α) = α ∪ {α}
+    ;
+
+    follows well_ordered(succ(α)) as
+        suffices ∀β, β ⊆ succ(α) ∧ β ≠ ∅ → ∃γ, is_least(γ, β) by well_ordered.def;
+        arbitrary β; assume β ⊆ succ(α) ∧ β ≠ ∅;
+
+        -- there are two cases. either β = {α} in which case α is the least
+        -- element or β ∩ α ≠ ∅ in which case we can use the well orderedness of
+        -- α to get a least element from it.
+        assume β = {α} then is_least(α, β) as
+            suffices α ∈ β ∧ (∀γ ∈ β, γ ≠ α → α ∈ γ);
+            follows α ∈ β          by singleton.def given β = {α};
+            follows ¬∃γ ∈ β, γ ≠ α by singleton.def;
+            done logically
+        ;
+
+        assume β ≠ {α} then ∃γ, is_least(γ, β) as
+            -- consider only the subset of β in α
+            let β' := β ∩ α;
+            follows β' ⊆ α ∧ β' ⊆ β by inter.sub_right, inter.sub_left;
+            follows β' ≠ ∅ as 
+                obtain x st x ∈ β ∧ x ≠ α as
+                    suffices ¬∀x ∈ β, x = α logically;
+                    assume ∀x ∈ β, x = α for_contra;
+                    thus β = {α} by singleton.def, nonempty.has_element, zfc.extensionality;
+                    contradiction
+                ;
+                follows x ∈ succ(α) by sub.def given β ⊆ succ(α) and x ∈ β;
+                follows x ∈ α       by ordinal.succ.def, union.def, singleton.def;
+                thus    x ∈ β'      by inter.def given x ∈ α and x ∈ β;
+                thus    β' ≠ ∅      by nonempty.has_element;
+            ;
+            -- we get the minimal element of this subset by the well ordering of α
+            follows well_ordered(α) by ordinal.def given α : Ord;
+            obtain γ st is_least(γ, β') by well_ordered.def;
+            thus γ ∈ β' ∧ (∀δ ∈ β', δ ≠ γ → γ ∈ δ) by is_least.def;
+            -- we want that this is still the least element of β
+            suffices is_least(γ, β) logically;
+            suffices γ ∈ β ∧ (∀δ ∈ β, δ ≠ γ → γ ∈ δ) by is_least.def;
+            -- it's in β just because β' ⊆ β
+            follows γ ∈ β by sub.def given γ ∈ β' and β' ⊆ β;
+            follows ∀δ ∈ β, δ ≠ γ → γ ∈ δ as
+                arbitrary δ; assume δ ∈ β; assume δ ≠ γ;
+                -- any element of β is either in α or is α. split on which case.
+                follows δ ∈ α ∨ δ = α by union.def, singleton.def, sub.def
+                    given δ ∈ β and β ⊆ succ(α) and succ(α) = α ∪ {α};
+
+                cases:
+                | δ ∈ α then
+                    follows δ ∈ β' by inter.def given δ ∈ β and δ ∈ α;
+                    done given ∀δ ∈ β, δ ≠ γ → γ ∈ δ
+                | δ = α then done by sub.def given γ ∈ β' and β' ⊆ α
+            ;
+
+            done logically
+        ;
+
+        done logically
+    ;
+
+    thus succ(α) : Ord by ordinal.def given transitive(succ(α)) and well_ordered(succ(α));
+qed

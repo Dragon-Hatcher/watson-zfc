@@ -1,0 +1,241 @@
+### The Ordered Pair
+
+An ordered pair (a, b) is a set composed of a singleton {a} and a pair {a, b}. We can use ordered pairs to enforce certain structure on sets.
+notation ordered_pair
+    term ::= "⟨" term ", " term "⟩"
+end
+
+definition
+    ⟨a, b⟩ := {{a}, {a, b}}
+end
+
+The proof follows from the pairing axiom and the definition of the ordered pair.
+
+theorem ordered_pair.def [a b : term] :
+    |- ∀x, x ∈ ⟨a, b⟩ ↔ (x = {a} ∨ x = {a, b})
+proof
+    suffices ∀x, x ∈ {{a}, {a, b}} ↔ (x = {a} ∨ x = {a, b});
+    follows ∃c, ∀x, x ∈ c ↔ (x = {a} ∨ x = {a, b})      by zfc.pairing;
+    thus ∀x, x ∈ {{a}, {a, b}} ↔ (x = {a} ∨ x = {a, b}) by uncomp.def [_ = {a} ∨ _ = {a, b}];
+qed
+
+Lets prove some basic properties of ordered pairs
+
+theorem ordered_pair.union [a b : term] :
+    |- ⋃⟨a, b⟩ = {a, b}
+proof
+    suffices ⋃{{a}, {a, b}} = {a, b};
+    thus ∀x, x ∈ {a, b} ↔ (x = a ∨ x = b) by pair.def;
+    thus ∀x, x ∈ ⋃{{a}, {a, b}} ↔ (x ∈ {a} ∨ x ∈ {a, b}) by union.def [{a}] [{a, b}];
+    hence ∀x, (x = a ∨ (x = a ∨ x = b)) ↔ (x = a ∨ x = b) logically;
+    follows ∀x, (x ∈ {a} ∨ x ∈ {a, b}) ↔ (x = a ∨ (x = a ∨ x = b)) by singleton.def, pair.def;
+    done by zfc.extensionality
+qed
+
+theorem ordered_pair.inter [a b : term] :
+    |- ⋂⟨a, b⟩ = {a}
+proof
+    suffices ⋂{{a}, {a, b}} = {a};
+    thus ∀x, x ∈ {a} ↔ x = a by singleton.def;
+    thus ∀x, x ∈ {a, b} ↔ (x = a ∨ x = b) by pair.def;
+    thus ∀x, x ∈ ⋂{{a}, {a, b}} ↔ (x ∈ {a} ∧ x ∈ {a, b}) by inter.def [{a}] [{a, b}];
+    hence ∀x, (x = a ∧ (x = a ∨ x = b)) ↔ x = a logically;
+    thus ∀x, x ∈ ⋂{{a}, {a, b}} ↔ x ∈ {a} by singleton.def;
+    follows ⋂{{a}, {a, b}} = {a} by zfc.extensionality;
+qed
+
+Next, we define a function which gives us the first element of an ordered pair. We define this function somewhat broadly, but it allows for an easy proof.
+
+definition
+    π₁(a) := ⋃⋂a
+end
+
+The proof follows from the definition of the ordered pair and many of the intersection properties we've shown.
+
+theorem ordered_pair_first.def [a b : term] :
+    |- π₁(⟨a, b⟩) = a
+proof
+    hence ⋂⟨a, b⟩ = {a} by ordered_pair.inter;
+    thus ⋃{a} = a by big_union.singleton;
+    hence ⋃⋂⟨a, b⟩ = a logically;
+qed
+
+Naturally, we now define the second element of an ordered pair.
+
+definition
+    π₂(a) := ⋃{x ∈ ⋃a | ⋃a ≠ ⋂a → x ∉ ⋂a}
+end
+
+This proof follows simply from the definition of the ordered pair and the properties of unions and intersections.
+
+theorem ordered_pair_second.def [a b : term] :
+    |- π₂(⟨a, b⟩) = b
+proof
+    -- suffices ⋃{x ∈ ⋃{{a}, {a, b}} | ⋃{{a}, {a, b}} ≠ ⋂{{a}, {a, b}} → x ∉ ⋂{{a}, {a, b}}} = b;
+    -- thus ∀x, x ∈ ⋃{{a}, {a, b}} ↔ (x ∈ {a} ∨ x ∈ {a, b}) by union.def [{a}] [{a, b}];
+    -- follows ∀x, x ∈ ⋂{{a}, {a, b}} ↔ (x ∈ {a} ∧ x ∈ {a, b}) by inter.def [{a}] [{a, b}];
+    -- follows ∀x, (x ∈ {a} ∧ x ∈ {a, b}) ↔ (x = a ∧ x ∈ {a, b}) by singleton.def;
+    -- follows ∀x, (x = a ∧ x ∈ {a, b}) ↔ (x = a ∧ (x = a ∨ x = b)) by pair.def;
+    -- hence ∀x, x ∈ ⋂{{a}, {a, b}} ↔ x = a by ordered_pair.inter;
+    -- thus ∀x, x = a ↔ x ∈ {a} by singleton.def;
+    -- follows ⋂{{a}, {a, b}} = {a} by zfc.extensionality;
+    -- hence ⋃⟨a, b⟩ = {a, b} by ordered_pair.union;
+    -- hence ⋃{x ∈ {a, b} | {a, b} ≠ {a} → x ∉ {a}} = ⋃{x ∈ ⋃{{a}, {a, b}} | ⋃{{a}, {a, b}} ≠ ⋂{{a}, {a, b}} → x ∉ ⋂{{a}, {a, b}}} logically;
+    -- thus ∀x, x ∈ {a, b} ↔ (x = a ∨ x = b) by pair.def;
+    -- hence ∀x, x ∈ {a} ↔ x = a by singleton.def;
+    -- follows {a, b} ≠ {a} ↔ a ≠ b logically;
+    -- hence ∀x, ((x = a ∨ x = b) ∧ (a ≠ b → x ∉ {a})) ↔ (x = b) logically;
+    -- thus ∀x, x ∈ {x ∈ {a, b} | {a, b} ≠ {a} → x ∉ {a}} ↔ x = b by zfc.extensionality;
+    -- hence ∀x, x = b ↔ x ∈ {b} by singleton.def;
+    -- follows ∀x, x ∈ {x ∈ {a, b} | {a, b} ≠ {a} → x ∉ {a}} ↔ x ∈ {b} logically; 
+    -- follows {x ∈ {a, b} | {a, b} ≠ {a} → x ∉ {a}} = {b} by zfc.extensionality;
+    -- hence ⋃{x ∈ {a, b} | {a, b} ≠ {a} → x ∉ {a}} = ⋃{b} logically;
+    -- hence ⋃{x ∈ ⋃{{a}, {a, b}} | ⋃{{a}, {a, b}} ≠ ⋂{{a}, {a, b}} → x ∉ ⋂{{a}, {a, b}}} = ⋃{b} logically;
+    -- thus ∀x, x ∈ ⋃{b} ↔ (∃y, x ∈ y ∧ y ∈ {b}) by big_union.def;
+    -- hence ∀x, (∃y, x ∈ y ∧ y ∈ {b}) ↔ x ∈ b logically;
+    -- follows ∀x, x ∈ ⋃{b} ↔ x ∈ b logically;
+    -- thus ⋃{b} = b by zfc.extensionality;
+    -- done logically
+    todo
+qed
+
+Finally, we show that two ordered pairs are equal iff their first and second elements are equal.
+
+theorem ordered_pair.eq [a b c d : term] :
+    |- ⟨a, b⟩ = ⟨c, d⟩ ↔ (a = c ∧ b = d)
+proof
+    hence ⟨a, b⟩ = ⟨c, d⟩ → π₁(⟨a, b⟩) = π₁(⟨c, d⟩) by zfc.extensionality;
+    follows π₁(⟨a, b⟩) = π₁(⟨c, d⟩) ↔ a = c by ordered_pair_first.def;
+    follows ⟨a, b⟩ = ⟨c, d⟩ → π₂(⟨a, b⟩) = π₂(⟨c, d⟩) by zfc.extensionality;
+    follows π₂(⟨a, b⟩) = π₂(⟨c, d⟩) ↔ b = d by ordered_pair_second.def;
+    -- suffices ⟨a, b⟩ = ⟨c, d⟩ ↔ (a = c ∧ b = d);
+    hence ⟨a, b⟩ = ⟨c, d⟩ → (a = c ∧ b = d) logically;
+    hence (a = c ∧ b = d) → ⟨a, b⟩ = ⟨c, d⟩ logically;
+    done logically
+qed
+
+### The Cartesian Product
+
+The Cartesian product of two sets is the set of all ordered pairs formed from
+the elements of those sets. A double powerset is sufficient to make a superset
+of the Cartesian product from which we can then restrict to get the required
+set.
+
+notation product
+    term (350) ::= term " × " term
+end
+
+definition
+    A × B := {x ∈ 𝒫(𝒫(A ∪ B)) | ∃a ∈ A, ∃b ∈ B, x = ⟨a, b⟩}
+end
+
+The difficult task is to prove that this gives us every possible ordered pair.
+
+theorem cart_prod.def [A B : term] :
+    |- ∀x, x ∈ A × B ↔ ∃a ∈ A, ∃b ∈ B, x = ⟨a, b⟩
+proof
+    arbitrary x;
+
+    -- remember the definition of A × B. (specifically have Vampire remember it)
+    follows A × B = {x ∈ 𝒫(𝒫(A ∪ B)) | ∃a ∈ A, ∃b ∈ B, x = ⟨a, b⟩}
+        by eq.refl [A × B];
+
+    -- the forward direction is pretty simple. it just comes directly from the
+    -- definition of restricted comprehension.
+    assume x ∈ A × B then ∃a ∈ A, ∃b ∈ B, x = ⟨a, b⟩ logically;
+
+    -- the other direction is harder. it follows quickly that x satisfies the
+    -- comprehension condition, but it is a little more work to show it is in
+    -- the double powerset.
+    assume ∃a ∈ A, ∃b ∈ B, x = ⟨a, b⟩ then x ∈ A × B as
+        obtain a st a ∈ A ∧ (∃b ∈ B, x = ⟨a, b⟩);
+        obtain b st b ∈ B ∧ x = ⟨a, b⟩ logically;
+        follows x = ⟨a, b⟩ logically;
+        thus x = {{a}, {a, b}};
+
+        -- we already have that x is a pair so we just need to prove it is in the powerset
+        suffices x ∈ 𝒫(𝒫(A ∪ B)) ∧ (∃a ∈ A, ∃b ∈ B, x = ⟨a, b⟩) logically;
+        suffices x ∈ 𝒫(𝒫(A ∪ B)) given x = ⟨a, b⟩;
+
+        follows a ∈ A ∪ B ∧ b ∈ A ∪ B    by union.def given a ∈ A and b ∈ B;
+        thus  {a}          ∈   𝒫(A ∪ B)  by powset.singleton_in;
+        thus       {a, b}  ∈   𝒫(A ∪ B)  by powset.pair_in;
+        thus {{a}, {a, b}} ∈ 𝒫(𝒫(A ∪ B)) by powset.pair_in;
+        thus             x ∈ 𝒫(𝒫(A ∪ B)) given x = {{a}, {a, b}};
+    ;
+
+    done logically
+qed
+
+We can define the set of binary relations between two sets as the powerset of 
+the Cartesian product of those two sets. Conceptually, if $R$ is a relation
+between $A$ and $B$ then it is the set of all pairs $(a, b)$ where $a$ and $b$
+are related by $R$.
+
+notation term.with_term_term
+    term (1000) ::= @name "(" term ", " term ")"
+end
+
+definition
+    Rel(A, B) := 𝒫(A × B)
+end
+
+A functional relation is a particular kind of binary relation where the first 
+element of each ordered pair in the relation is unique.
+
+notation functional_relation
+    term ::= term " → " term
+end
+
+definition
+    A → B := {f ∈ Rel(A, B) | ∀a ∈ A, ∃!b, b ∈ B ∧ ⟨a, b⟩ ∈ f}
+end
+
+We define function mapping by extracting the second element of the unique 
+ordered pair which has the argument as the first element. We can make this
+ definition using the iota operator.
+
+notation function_application
+    term (1000) ::= term "(" term ")"
+end
+
+definition
+    f:term (a) := ℩b, ⟨a, b⟩ ∈ f
+end
+
+-- Now, we define a set map which contains the entire image of a function on a set.
+
+notation set_map
+  term ::= "{" term(x) " | " x:@binding(term) " ∈ " term "}"
+end
+
+definition
+    {f(x) | x ∈ A} := {y | ∃x, x ∈ A ∧ y = f(x)}
+end
+
+The proof follows from the replacement axiom and the definition of the set map.
+
+theorem set_map.def [f(_) : term(term)] [A : term] :
+    |- ∀y, y ∈ {f(x) | x ∈ A} ↔ (∃x, x ∈ A ∧ y = f(x))
+proof
+    suffices ∀y, y ∈ {z | ∃x, x ∈ A ∧ z = f(x)} ↔ (∃x, x ∈ A ∧ y = f(x));
+    suffices (∃x, ∀y, y ∈ x ↔ ∃x, x ∈ A ∧ y = f(x)) by uncomp.def [∃x, x ∈ A ∧ _ = f(x)];
+    hence ∀x ∈ A, ∃!y, y = f(x) logically;
+    follows ∀a, (∀x, x ∈ a → ∃!y, y = f(x)) → (∃x, ∀y, y ∈ x ↔ (∃z, z ∈ a ∧ y = f(z))) by zfc.replacement [_1 = f(_0)];
+    done logically
+qed
+
+notation function_maps_to
+    term ::= x:@binding(term) " ∈ " term " ↦ " term(x)
+end
+
+definition
+    x ∈ X ↦ f(x) := {⟨x, f(x)⟩ | x ∈ X}
+end
+
+theorem fun_map.is.rel [A B : term] [f(_) : term(term)]: (∀x ∈ A, f(x) ∈ B)
+    |- x ∈ A ↦ f(x) ∈ (A → B)
+proof
+    suffices {⟨x, f(x)⟩ | x ∈ A} ∈ {f ∈ Rel(A, B) | ∀a, a ∈ A → (∃!b, b ∈ B ∧ ⟨a, b⟩ ∈ f)};
+    todo
+qed

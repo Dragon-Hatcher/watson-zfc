@@ -1,0 +1,829 @@
+The fundamental operation over sets is forming the set of all elements with a
+certain property. We discussed previously that this set does not always exist,
+however the iota operator allows us to define notation for it which will have
+the expected properties if it does exist.
+
+notation comprehension
+    term ::= "{" x:@binding(term) " | " sentence(x) "}"
+end
+
+definition
+    {x | p(x)} := ℩y, ∀x, x ∈ y ↔ p(x)
+end
+
+We want to prove that if the set $\{x ~|~ p(x)\}$ exists, then the notation we 
+have given for it will refer to that set. We need to invoke the iota axiom
+from the previous chapter.
+
+theorem uncomp.def [p(_) : sentence(term)] : (∃x, ∀y, y ∈ x ↔ p(y))
+    |- ∀y, y ∈ {x | p(x)} ↔ p(y) 
+proof
+    -- this property is essentially the definition of {x | p(x)} so we just
+    -- need to extract it using iota.unique. to do this we need that
+    -- the set is unique.
+    suffices ∃!x, ∀y, y ∈ x ↔ p(y) by iota.unique [∀y, y ∈ _ ↔ p(y)];
+
+    -- we can unwrap the definition of ∃!. this step is by definition.
+    suffices (∃x, ∀y, y ∈ x ↔ p(y)) ∧ (∃*x, ∀y, y ∈ x ↔ p(y));
+
+    -- we already have the lhs as a hypothesis.
+    suffices ∃*x, ∀y, y ∈ x ↔ p(y) by and.intro [∃x, ∀y, y ∈ x ↔ p(y)] [∃*x, ∀y, y ∈ x ↔ p(y)];
+
+    -- now we unwrap the definition of ∃*.
+    suffices ∀a, ∀b, (∀y, y ∈ a ↔ p(y)) ∧ (∀y, y ∈ b ↔ p(y)) → a = b;
+
+    -- let's extract all the pieces of this definition.
+    arbitrary a;
+    arbitrary b;
+    assume (∀y, y ∈ a ↔ p(y)) ∧ (∀y, y ∈ b ↔ p(y));
+    thus ∀y, y ∈ a ↔ p(y) by and.elim_left  [∀y, y ∈ a ↔ p(y)] [∀y, y ∈ b ↔ p(y)];
+    thus ∀y, y ∈ b ↔ p(y) by and.elim_right [∀y, y ∈ a ↔ p(y)] [∀y, y ∈ b ↔ p(y)];
+
+    -- now we can prove the equality using extensionality.
+    suffices ∀x, x ∈ a ↔ x ∈ b as
+        follows ∀a, ∀b, (∀x, x ∈ a ↔ x ∈ b) → a = b by zfc.extensionality;
+        thus ∀b, (∀x, x ∈ a ↔ x ∈ b) → a = b specializing ∀a, ∀b, (∀x, x ∈ a ↔ x ∈ b) → a = b;
+        thus (∀x, x ∈ a ↔ x ∈ b) → a = b     specializing ∀b, (∀x, x ∈ a ↔ x ∈ b) → a = b;
+        thus a = b by modus_ponens [∀x, x ∈ a ↔ x ∈ b] [a = b];
+    ;
+
+    arbitrary x;
+
+    -- We can use the transitivity of ↔ to finish the proof.
+    follows x ∈ a ↔ p(x) specializing ∀y, y ∈ a ↔ p(y);
+    follows x ∈ b ↔ p(x) specializing ∀y, y ∈ b ↔ p(y);
+    thus p(x) ↔ x ∈ b  by iff.symm [x ∈ b] [p(x)];
+    thus x ∈ a ↔ x ∈ b by iff.trans [x ∈ a] [p(x)] [x ∈ b];
+qed
+
+Sorry, was that painful to read? It was painful to write. That proof wasn't
+actually very complicated but it was 40 lines long anyway. This is not 
+sustainable. Lucky we have something to help. [Vampire](https://vprover.github.io/)
+is an _automated theorem prover_. It will find proofs of mathematical facts
+automatically. We can make a new tactic that sends the current known facts and
+goal to Vampire to have it generate a proof. This proof is then translated
+for Watson to understand. This is a very complex but also very powerful tactic
+which eliminates the need for tedious manipulations.
+
+tactic justification.logically
+    justification ::= @kw"logically"
+end
+
+At this point we are also going to start doing more complex mathematics so it
+will helpful to add a few more useful tactics. 
+
+Sometimes it is helpful to annotate exactly which hypotheses go into an
+application of a theorem. We will add `given` as a justification which uses
+Vampire like `logically` but also checks that Vampire uses the given hypotheses.
+
+grammar_category sentence_list
+
+tactic sentence_list.one sentence_list ::= sentence:@fragment(sentence) end
+tactic sentence_list.many sentence_list ::= sentence:@fragment(sentence) @kw"and" rest:sentence_list end
+
+grammar_category givens
+
+tactic givens.none givens ::= end
+tactic givens.some givens ::= @kw"given" sentences:sentence_list end
+
+tactic justification.given
+    justification ::= @kw"given" givens:sentence_list
+end
+
+We will also extend the by tactic to use Vampire to apply the provided theorem.
+Note that Vampire can't do second order reasoning so this won't work with any
+theorems that contain templates more complex than unparameterized terms.
+
+grammar_category theorem_list
+
+tactic theorem_list.one theorem_list ::= thm:@name end
+tactic theorem_list.many theorem_list ::= thm:@name "," rest:theorem_list end
+
+tactic justification.by.vampire
+    -- bind stronger than the original to override it.
+    justification (600) ::= @kw"by" thms:theorem_list givens:givens
+end
+
+If we want to have Vampire use a theorem multiple times the `recall` tactic
+will add the statement of the theorem to the current proof state, making it so
+Vampire can use it in all future proofs. 
+
+tactic tactic.recall
+    tactic ::= @kw"recall" thm:@name ";" next:tactic
+end
+
+We will also add the `done` tactic which is just an alias for using a 
+justification to prove the current goal instead of a tactic. This is equivalent
+to `thus goal <just>`.
+
+tactic tactic.done
+    tactic ::= @kw"done" just:justification
+end
+
+We will also add a `cases` tactic. This is a little more complex then just
+splitting an or. By default, Vampire is used to prove this disjunction of all
+the case conditions. Or a separate justification can be provided for this
+purpose. Then the provided tactics are used to prove each case implies the
+original goal. 
+
+grammar_category case_list
+grammar_category case
+
+tactic case_list.one  case_list ::= c:case end
+tactic case_list.many case_list ::= c:case rest:case_list end
+
+tactic case
+    case ::= "|" sentence:@fragment(sentence) @kw"then" tactic:tactic
+end
+
+tactic tactic.cases
+    tactic ::= @kw"cases" just:justification ":" cases:case_list
+end
+
+The final new tactic we will add is the `let` tactic. This allows making new
+definitions inside a proof. These definitions will be invisible to Vampire so
+adding them won't effect reasoning at all.
+
+tactic tactic.let
+    tactic ::= @kw"let" name:@name ":=" frag:@fragment(term) ";" next:tactic
+end
+
+
+### The Subset Relation
+
+The other fundamental relationship between sets, besides equality, is the
+subset relation.
+
+notation subset
+    sentence (500) ::= term " ⊆ " term
+end
+
+definition
+    a ⊆ b := ∀x, x ∈ a → x ∈ b
+end
+
+theorem sub.def [a b : term] :
+    |- a ⊆ b ↔ ∀x, x ∈ a → x ∈ b
+proof
+    done by iff.refl [a ⊆ b]
+qed
+
+The subset relation is both reflexive and transitive.
+
+theorem sub.refl [a : term] :
+    |- a ⊆ a
+proof
+    suffices ∀x, x ∈ a → x ∈ a by sub.def;
+    done logically
+qed
+
+theorem sub.trans [a b c : term] : (a ⊆ b) (b ⊆ c)
+    |- a ⊆ c
+proof
+    follows ∀x, x ∈ a → x ∈ b by sub.def given a ⊆ b;
+    follows ∀x, x ∈ b → x ∈ c by sub.def given b ⊆ c;
+    thus    ∀x, x ∈ a → x ∈ c logically;
+    done by sub.def
+qed
+
+We also have that if two sets are subsets of each other then they are equal. 
+In fact, this is just a restatement of the extensionality axiom.
+
+theorem sub.sub_eq [a b : term] : (a ⊆ b) (b ⊆ a)
+    |- a = b
+proof
+    follows ∀x, x ∈ a → x ∈ b by sub.def given a ⊆ b;
+    follows ∀x, x ∈ b → x ∈ a by sub.def given b ⊆ a;
+    thus ∀x, x ∈ a ↔ x ∈ b logically;
+    thus a = b by zfc.extensionality;
+qed
+
+We can also have the notion of a strict subset.
+
+notation strict_subset
+    sentence (500) ::= term " ⊂ " term
+end
+
+@[reducible]
+definition
+    a ⊂ b := a ⊆ b ∧ a ≠ b
+end
+
+theorem ssub.def [a b : term] :
+    |- a ⊂ b ↔ (a ⊆ b ∧ a ≠ b)
+proof
+    done by iff.refl [a ⊂ b]
+qed
+
+### Bounded Quantifiers
+
+When defining the subset relation we wrote $\forall x, x \in a \to x \in b$. The
+$x \in a \to$ component makes the quantifier only meaningful for elements of the
+set $a$. This is a very common pattern so we will define shorthand notation for
+it. 
+
+notation forall.bounded
+    sentence (000) ::= "∀" x:@binding(term) " ∈ " term ", " sentence(x)
+end
+
+@[reducible]
+definition
+    ∀x ∈ X, p(x) := ∀x, x ∈ X → p(x)
+end
+
+Note that for the existential quantifier we use $\land$ instead of $\to$
+because we are looking for an element that is both in the set and satisfies
+the property.
+
+notation exists.bounded
+    sentence (000) ::= "∃" x:@binding(term) " ∈ " term ", " sentence(x)
+end
+
+@[reducible]
+definition
+    ∃x ∈ X, p(x) := ∃x, x ∈ X ∧ p(x)
+end
+
+### The Empty Set
+
+Returning to mathematics, we can use the unrestricted comprehension syntax to 
+define our first concrete set, the empty set.
+
+notation empty_set
+    term ::= "∅"
+end
+
+definition
+    ∅ := {x | ⊥}
+end
+
+The empty set axiom tells us that this set actually exists.
+
+theorem empty.def :
+    |- ∀x, x ∉ ∅
+proof
+    -- expand the definition of ∅
+    suffices ∀x, x ∉ {x | ⊥};
+    -- existence from the axiom
+    follows ∃x, ∀y,  y ∉ x        by zfc.empty_set;
+    thus    ∃x, ∀y, (y ∈ x ↔ ⊥)   logically;     
+    -- and then set comprehension is always unique
+    thus    ∀y, (y ∈ {x | ⊥} ↔ ⊥) by uncomp.def [⊥];
+    thus    ∀y,  y ∉ {x | ⊥}      logically;
+qed
+
+We can also characterize a non-empty set as one containing an element.
+
+theorem nonempty.has_element [a : term] :
+    |- a ≠ ∅ ↔ ∃x, x ∈ a
+proof
+    follows ∀x, x ∉ ∅          by empty.def;
+    follows a = ∅ ↔  ∀x, x ∉ a by zfc.extensionality; 
+    thus    a ≠ ∅ ↔ ¬∀x, x ∉ a logically;
+    thus    a ≠ ∅ ↔  ∃x, x ∈ a logically;
+qed
+
+The empty set is a subset of any set.
+
+theorem empty.is_sub [a : term] :
+    |- ∅ ⊆ a
+proof
+    follows ∀x, x ∉ ∅         by empty.def;
+    thus    ∀x, x ∈ ∅ → x ∈ a logically;
+qed
+
+Every subset of the empty set is the empty set.
+
+theorem empty.sub_is_empty [a : term] : (a ⊆ ∅)
+    |- a = ∅
+proof
+    follows ∀x, x ∈ a → x ∈ ∅ by sub.def;
+    follows ∀x,         x ∉ ∅ by empty.def;
+    thus   ¬∃x, x ∈ a         logically;
+    thus    a = ∅             by zfc.extensionality;
+qed
+
+### The Unordered Pair
+
+We can develop the pair set in an essentially identical way.
+
+notation pair
+    term ::= "{" term ", " term "}"
+end
+
+definition 
+    {a, b} := {x | x = a ∨ x = b}
+end
+
+This time it is the pairing axiom that tells us that this set exists.
+
+theorem pair.def [a b : term] :
+    |- ∀x, x ∈ {a, b} ↔ (x = a ∨ x = b)
+proof
+    suffices ∀x, x ∈ {y | y = a ∨ y = b} ↔ (x = a ∨ x = b);
+    follows ∃c, ∀x, x ∈ c ↔ (x = a ∨ x = b)               by zfc.pairing;
+    thus    ∀x, x ∈ {y | y = a ∨ y = b} ↔ (x = a ∨ x = b) by uncomp.def [_ = a ∨ _ = b];
+qed
+
+The unordered pair is unordered. That is, it is symmetric.
+
+theorem pair.symm [a b : term] :
+    |- {a, b} = {b, a}
+proof
+    thus ∀x, x ∈ {a, b} ↔ x ∈ {b, a} by pair.def;
+    thus {a, b} = {b, a}             by zfc.extensionality;
+qed
+
+The unordered pair being a subset is equivalent to both elements of the pair
+being members of the set.
+
+theorem pair.sub [a b A : term] :
+    |- (a ∈ A ∧ b ∈ A) ↔ {a, b} ⊆ A
+proof
+    done by sub.def, pair.def
+qed
+
+It is also non-empty.
+
+theorem pair.non_empty [a b : term] :
+    |- {a, b} ≠ ∅
+proof
+    follows a ∈ {a, b} by pair.def;
+    thus {a, b} ≠ ∅    by empty.def;
+qed
+
+### The Singleton Set
+
+We can define the singleton set as the pair of the same element twice. We could
+define it as simply $\{a\} = \{x ~|~ x = a\}$ but how would we prove this set
+exists? We would have to appeal to the pairing axiom anyway.
+
+notation singleton
+    term ::= "{" term "}"
+end
+
+definition
+    {a} := {a, a}
+end
+
+theorem singleton.def [a : term] :
+    |- ∀x, x ∈ {a} ↔ x = a
+proof
+    suffices ∀x, x ∈ {a, a} ↔ x = a;
+    thus ∀x, x ∈ {a, a} ↔ x = a by pair.def;
+qed
+
+An element being in a set is equivalent to the singleton set being a subset.
+
+theorem singleton.sub [a A : term] :
+    |- a ∈ A ↔ {a} ⊆ A
+proof
+    follows a ∈ A → (∀x, x ∈ {a} → x ∈ A) by singleton.def;
+    follows (∀x, x ∈ {a} → x ∈ A) → a ∈ A by singleton.def;
+    done by sub.def
+qed
+
+### Restricted Comprehension
+
+In contrast to unrestricted comprehensions, which are not always sets, a
+comprehension which is limited to be a subset of another set always exists. This
+is guaranteed by the specification axiom.
+
+notation restricted_comprehension
+    term ::= "{" x:@binding(term) " ∈ " term " | " sentence(x) "}"
+end
+
+definition
+    {x ∈ X | p(x)} := {x | x ∈ X ∧ p(x)}
+end
+
+This proof follows from the specification axiom.
+
+theorem comp.def [p(_) : sentence(term)] [X : term] :
+    |- ∀y, y ∈ {x ∈ X | p(x)} ↔ (y ∈ X ∧ p(y))
+proof
+    suffices ∀y, y ∈ {x | x ∈ X ∧ p(x)} ↔ (y ∈ X ∧ p(y));
+    hence ∀a, ∃x, ∀y, y ∈ x ↔ (y ∈ a ∧ p(y)) by zfc.specification [p(_)];
+    follows ∃x, ∀y, y ∈ x ↔ (y ∈ X ∧ p(y))   logically;
+    thus ∀y, y ∈ {x | x ∈ X ∧ p(x)} ↔ (y ∈ X ∧ p(y)) by uncomp.def [_ ∈ X ∧ p(_)];
+qed
+
+It easily follows from this definition that a restricted comprehension is
+always a subset of the original set.
+
+theorem comp.sub [p(_) : sentence(term)] [X : term] :
+    |- {x ∈ X | p(x)} ⊆ X
+proof
+    follows ∀y, y ∈ {x ∈ X | p(x)} ↔ (y ∈ X ∧ p(y)) by comp.def [p(_)] [X];
+    thus    ∀y, y ∈ {x ∈ X | p(x)} →  y ∈ X         logically;
+qed
+
+Because `comp.def` is a second order theorem, that is it is schematized over
+all predicates $p$, Vampire cannot reason with it automatically. This is why we
+had to manually provide the template instantiations when we invoked it.
+Restricted comprehension comes up so frequently and invoking second order
+theorems is so tedious that we are just going to hard code this theorem so that
+it is automatically given to Vampire any time a comprehension appears in the 
+local context. 
+
+### Unions
+
+We can return to defining new sets with the union of a set.
+
+notation big_union
+    term (000) ::= "⋃" term
+end
+
+definition
+    ⋃a := {x | ∃y, x ∈ y ∧ y ∈ a}
+end
+
+Once more the existence of this set is guaranteed by the union axiom of ZFC.
+
+theorem big_union.def [a : term] :
+    |- ∀x, x ∈ ⋃a ↔ (∃y, x ∈ y ∧ y ∈ a)
+proof
+    suffices ∀x, x ∈ {x | ∃y, x ∈ y ∧ y ∈ a} ↔ (∃y, x ∈ y ∧ y ∈ a);
+    follows ∃x, ∀y, y ∈ x ↔ (∃z, y ∈ z ∧ z ∈ a) by zfc.union;
+    follows ∀x, x ∈ {x | ∃y, x ∈ y ∧ y ∈ a} ↔ (∃y, x ∈ y ∧ y ∈ a) by uncomp.def [∃y, _ ∈ y ∧ y ∈ a];
+qed
+
+Any element of a set is a subset of the union of that set.
+
+theorem big_union.super [a b : term] : (a ∈ b)
+    |- a ⊆ ⋃b
+proof
+    follows ∀x, (∃y, x ∈ y ∧ y ∈ b) ↔ x ∈ ⋃b by big_union.def;
+    thus    ∀x,      x ∈ a          → x ∈ ⋃b logically;
+qed
+
+Next we show that the Union of a singleton is the element of the singleton.
+
+theorem big_union.singleton [a : term] :
+    |- ⋃{a} = a
+proof
+    follows ∀x, x ∈ {a} ↔ x = a by singleton.def;
+    hence ∀x, x ∈ ⋃{a} ↔ (∃y, x ∈ y ∧ y ∈ {a}) by big_union.def [{a}];
+    thus ∀x, x ∈ ⋃{a} ↔ (∃y, x ∈ y ∧ y = a) logically;
+    follows ∀x, x ∈ ⋃{a} ↔ (∃y, x ∈ a) logically;
+    follows ∀x, x ∈ ⋃{a} ↔ x ∈ a logically;
+    done by zfc.extensionality
+qed
+We can define the regular union using the pair and the big union. Once again,
+although we could define this directly using unrestricted comprehension, it is
+easier to do it this way to avoid repeated proofs of existence.
+
+notation union
+    term (650>) ::= term " ∪ " term
+end
+
+definition
+    a ∪ b := ⋃{a, b}
+end
+
+The definition of the union can be easily proved from the definitions of the
+big union and the pair.
+
+theorem union.def [a b : term] :
+    |- ∀x, x ∈ a ∪ b ↔ (x ∈ a ∨ x ∈ b)
+proof
+    suffices ∀x, x ∈ ⋃{a, b} ↔ (x ∈ a ∨ x ∈ b);
+    follows  ∀x, x ∈ ⋃{a, b} ↔ ∃y, x ∈ y ∧ y ∈ {a, b} by big_union.def;
+    follows  ∀y, y ∈  {a, b} ↔ (y = a ∨ y = b)        by pair.def;
+    done logically
+qed
+
+The union operator is also symmetric. This follows either from the fact that
+the unordered pair is symmetric, or just the symmetry of or itself.
+
+theorem union.symm [a b : term] :
+    |- a ∪ b = b ∪ a
+proof
+    follows ∀x, x ∈ a ∪ b ↔ (x ∈ a ∨ x ∈ b) by union.def;
+    follows ∀x, x ∈ b ∪ a ↔ (x ∈ a ∨ x ∈ b) by union.def;
+    thus a ∪ b = b ∪ a                      by zfc.extensionality;
+qed
+
+The union is also associative. This follows from the associativity of or.
+
+theorem union.assoc [a b c : term] :
+    |- a ∪ (b ∪ c) = (a ∪ b) ∪ c
+proof
+    follows ∀x, x ∈ a ∪ (b ∪ c) ↔ (x ∈ a ∨ (x ∈ b ∨ x ∈ c)) by union.def;
+    follows ∀x, x ∈ (a ∪ b) ∪ c ↔ ((x ∈ a ∨ x ∈ b) ∨ x ∈ c) by union.def;
+    thus a ∪ (b ∪ c) = (a ∪ b) ∪ c                          by zfc.extensionality;
+qed
+
+Either set in the union is a subset of the union as a whole. These facts are
+really just simplifications of the defining fact.
+
+theorem union.left_sub [a b : term] :
+    |- a ⊆ a ∪ b
+proof
+    follows ∀x, (x ∈ a ∨ x ∈ b) ↔ x ∈ a ∪ b by union.def;
+    thus    ∀x,  x ∈ a          → x ∈ a ∪ b logically;
+qed
+
+theorem union.right_sub [a b : term] :
+    |- b ⊆ a ∪ b
+proof
+    follows ∀x, (x ∈ a ∨ x ∈ b) ↔ x ∈ a ∪ b by union.def;
+    thus    ∀x,          x ∈ b  → x ∈ a ∪ b logically;
+qed
+
+### Intersections
+
+Instead of defining the big intersection with an unrestricted comprehension as
+we did for the big union, we will define it as a subset of the union. This
+makes it easier to prove existence.
+
+notation big_inter
+    term (000) ::= "⋂" term
+end
+
+definition
+    ⋂a := {x ∈ ⋃a | ∀y, y ∈ a → x ∈ y}
+end
+
+This definition implies that the intersection of the empty set is the empty set.
+However, based on the defining property of the intersection, the intersection of
+the empty set should be the proper class of all sets, which isn't a set. So we
+restrict the definition theorem to only applying to non-empty sets.
+
+theorem big_inter.def [a : term] : (a ≠ ∅)
+    |- ∀x, x ∈ ⋂a ↔ (∀y, y ∈ a → x ∈ y)
+proof
+    arbitrary x;
+    suffices x ∈ {z ∈ ⋃a | ∀y, y ∈ a → z ∈ y} ↔ (∀y, y ∈ a → x ∈ y);
+
+    assume x ∈ {z ∈ ⋃a | ∀y, y ∈ a → z ∈ y} then ∀y, y ∈ a → x ∈ y logically;
+
+    assume ∀y, y ∈ a → x ∈ y then x ∈ {z ∈ ⋃a | ∀y, y ∈ a → z ∈ y} as
+        follows x ∈ ⋃a as
+            obtain y st y ∈ a  by nonempty.has_element;
+            follows     x ∈ y  logically;
+            thus        x ∈ ⋃a by big_union.def;
+        ;
+        done logically
+    ;
+
+    done logically
+qed
+
+The big intersection of a set is a subset of every element of the set.
+
+theorem big_inter.sub [a b : term] : (a ∈ b)
+    |- ⋂b ⊆ a
+proof
+    follows b ≠ ∅                            by nonempty.has_element;
+    follows ∀x, x ∈ ⋂b ↔ (∀y, y ∈ b → x ∈ y) by big_inter.def;
+    thus    ∀x, x ∈ ⋂b →              x ∈ a  logically;
+qed
+
+We define the small intersection the same way we defined the small union.
+
+notation inter
+    term (700) ::= term " ∩ " term
+end
+
+definition
+    a ∩ b := ⋂{a, b}
+end
+
+Since the pair set is always non-empty, the small intersection is always well
+defined.
+
+theorem inter.def [a b : term] :
+    |- ∀x, x ∈ a ∩ b ↔ (x ∈ a ∧ x ∈ b)
+proof
+    suffices ∀x, x ∈ ⋂{a, b} ↔ (x ∈ a ∧ x ∈ b);
+
+    -- we need that the pair set isn't empty to apply big_inter.def.
+    follows {a, b} ≠ ∅ by pair.non_empty; 
+    follows  ∀x, x ∈ ⋂{a, b} ↔ (∀y, y ∈ {a, b} → x ∈ y) by big_inter.def;
+    follows  ∀y, y ∈  {a, b} ↔ (y = a ∨ y = b)          by pair.def;
+    thus     ∀x, x ∈ ⋂{a, b} ↔ (x ∈ a ∧ x ∈ b)          logically;
+qed
+
+Like the union, the intersection is symmetric and associative. The proofs are
+identical to those for union, just replacing every $\lor$ with an $\land$.
+
+theorem inter.symm [a b : term] :
+    |- a ∩ b = b ∩ a
+proof
+    follows ∀x, x ∈ a ∩ b ↔ (x ∈ a ∧ x ∈ b) by inter.def;
+    follows ∀x, x ∈ b ∩ a ↔ (x ∈ a ∧ x ∈ b) by inter.def;
+    thus a ∩ b = b ∩ a                      by zfc.extensionality;
+qed
+
+theorem inter.assoc [a b c : term] :
+    |- a ∩ (b ∩ c) = (a ∩ b) ∩ c
+proof
+    follows ∀x, x ∈ a ∩ (b ∩ c) ↔ (x ∈ a ∧ (x ∈ b ∧ x ∈ c)) by inter.def;
+    follows ∀x, x ∈ (a ∩ b) ∩ c ↔ ((x ∈ a ∧ x ∈ b) ∧ x ∈ c) by inter.def;
+    thus a ∩ (b ∩ c) = (a ∩ b) ∩ c                          by zfc.extensionality;
+qed
+
+The intersection of two sets is a subset of both of the original sets.
+
+theorem inter.sub_left [a b : term] :
+    |- a ∩ b ⊆ a
+proof
+    follows ∀x, x ∈ a ∩ b ↔ (x ∈ a ∧ x ∈ b) by inter.def;
+    thus    ∀x, x ∈ a ∩ b →  x ∈ a          logically;
+qed
+
+theorem inter.sub_right [a b : term] :
+    |- a ∩ b ⊆ b
+proof
+    follows ∀x, x ∈ a ∩ b ↔ (x ∈ a ∧ x ∈ b) by inter.def;
+    thus    ∀x, x ∈ a ∩ b →          x ∈ b  logically;
+qed
+
+theorem inter.left_sub [a b c : term] : (c ⊆ a ∩ b)
+    |- c ⊆ a
+proof
+    follows ∀x, x ∈ c → x ∈ a ∧ x ∈ b by inter.def, sub.def given c ⊆ a ∩ b;
+    follows ∀x, x ∈ c → x ∈ a         logically;
+qed
+
+theorem inter.right_sub [a b c : term] : (c ⊆ a ∩ b)
+    |- c ⊆ b
+proof
+    follows ∀x, x ∈ c → x ∈ a ∧ x ∈ b by inter.def, sub.def given c ⊆ a ∩ b;
+    follows ∀x, x ∈ c →         x ∈ b logically;
+qed
+
+theorem inter.both_sub [a b c : term] : (a ⊆ c) (b ⊆ c)
+    |- a ∩ b ⊆ c
+proof
+    suffices ∀x, x ∈ a ∧ x ∈ b → x ∈ c by inter.def, sub.def;
+    follows  ∀x, x ∈ a         → x ∈ c by sub.def given a ⊆ c;
+    follows  ∀x,         x ∈ b → x ∈ c by sub.def given b ⊆ c;
+    done logically
+qed
+
+theorem inter.sub_both [a b c : term] : (c ⊆ a) (c ⊆ b)
+    |- c ⊆ a ∩ b
+proof
+    suffices ∀x, x ∈ c → x ∈ a ∧ x ∈ b by inter.def, sub.def;
+    follows  ∀x, x ∈ c → x ∈ a         by sub.def given c ⊆ a;
+    follows  ∀x, x ∈ c →         x ∈ b by sub.def given c ⊆ b;
+    done logically
+qed
+
+### The Set Difference
+
+We define the difference between two sets as the set of elements of the first set which are not in the second set.
+
+notation set_difference
+    term (700) ::= term " - " term
+end
+
+definition
+    a - b := {x ∈ a | x ∉ b}
+end
+
+Since we used a restricted comprehension, the defining property follows directly
+without any more existence proofs.
+
+theorem set_diff.def [a b : term] :
+    |- ∀x, x ∈ a - b ↔ (x ∈ a ∧ x ∉ b)
+proof
+    suffices ∀x, x ∈ {y ∈ a | y ∉ b} ↔ (x ∈ a ∧ x ∉ b);
+    -- remember we gave Vampire the power to understand restricted comprehensions.
+    done logically 
+qed
+
+The set difference is a subset of the first set. This follows from the fact that
+all restricted comprehensions are subsets.
+
+theorem set_diff.sub [a b : term] :
+    |- a - b ⊆ a
+proof
+    suffices {x ∈ a | x ∉ b} ⊆ a;
+    done by comp.sub [_ ∉ b] [a]
+qed
+
+We can also characterize a non-empty difference.
+
+theorem set_diff.non_empty [a b : term] : (b ⊆ a)
+    |- a - b ≠ ∅ ↔ a ≠ b
+proof
+    assume a - b ≠ ∅ then a ≠ b as
+        obtain x st x ∈ a - b by nonempty.has_element;
+        thus x ∈ a ∧ x ∉ b    by set_diff.def;
+        thus a ≠ b            by zfc.extensionality;
+    ;
+
+    assume a ≠ b then a - b ≠ ∅ as
+        obtain x st (x ∈ a ∧ x ∉ b) ∨ (x ∈ b ∧ x ∉ a) by zfc.extensionality;
+        follows ¬(x ∈ b ∧ x ∉ a) by sub.def;
+        thus      x ∈ a ∧ x ∉ b  logically;
+        thus      x ∈ a - b      by set_diff.def;
+        thus      a - b ≠ ∅      by nonempty.has_element;
+    ;
+
+    done logically
+qed
+
+### The Powerset
+
+We will define the powerset as the set of all subsets of a set. 
+
+notation term.with_term
+    term (1000) ::= @name "(" term ")"
+end
+
+definition
+    𝒫(a) := {x | x ⊆ a}
+end
+
+The existence of this set is provided by one of the ZFC axioms in the same
+manner as before.
+
+theorem powset.def [a : term] :
+    |- ∀x, x ∈ 𝒫(a) ↔ x ⊆ a
+proof
+    suffices ∀x, x ∈ {y | y ⊆ a} ↔ x ⊆ a;
+    follows ∃b, ∀x, x ∈ b ↔ (∀y, y ∈ x → y ∈ a) by zfc.powerset;
+    thus    ∃b, ∀x, x ∈ b ↔ x ⊆ a;
+    thus    ∀x, x ∈ {y | y ⊆ a} ↔ x ⊆ a by uncomp.def [_ ⊆ a];
+qed
+
+The singletons and pairs of elements from the original set are both examples
+of sets in the powerset.
+
+theorem powset.singleton_in [a A : term] : (a ∈ A)
+    |- {a} ∈ 𝒫(A)
+proof
+    follows {a} ⊆ A by singleton.sub;
+    thus {a} ∈ 𝒫(A) by powset.def;
+qed
+
+theorem powset.pair_in [a b A : term] : (a ∈ A) (b ∈ A)
+    |- {a, b} ∈ 𝒫(A)
+proof
+    follows {a, b} ⊆ A by pair.sub;
+    thus {a, b} ∈ 𝒫(A) by powset.def;
+qed
+
+### If
+
+Using restricted comprehensions we can define the if then else operator. This
+will be useful for casewise definitions.
+
+notation if
+    term ::= "if " sentence " then " term " else " term
+end
+
+definition
+    if p then a else b := {x ∈ a | p} ∪ {x ∈ b | ¬p}
+end
+
+theorem union.empty [a : term] :
+    |- a ∪ ∅ = a
+proof
+    todo
+qed
+
+theorem empty.union [a : term] :
+    |- ∅ ∪ a = a
+proof
+    done by union.empty, union.symm
+qed
+
+theorem if.true [p : sentence] [a b : term] : (p)
+    |- if p then a else b = a
+proof
+    suffices {x ∈ a | p} ∪ {x ∈ b | ¬p} = a;
+    follows {x ∈ a |  p} = a given p;
+    follows {x ∈ b | ¬p} = ∅ by empty.def given p;
+    follows a ∪ ∅ = a        by union.empty;
+    done logically
+qed
+
+theorem if.false [p : sentence] [a b : term] : (¬p)
+    |- if p then a else b = b
+proof
+    suffices {x ∈ a | p} ∪ {x ∈ b | ¬p} = b;
+    follows {x ∈ a |  p} = ∅ by empty.def given ¬p;
+    follows {x ∈ b | ¬p} = b given ¬p;
+    follows ∅ ∪ b = b        by empty.union;
+    done logically
+qed
+
+theorem if.swap [p : sentence] [a b : term] :
+    |- if p then a else b = if ¬p then b else a
+proof
+    cases:
+    | p  then
+        follows if  p then a else b = a by if.true [p] [a] [b];
+        follows ¬¬p logically; -- TODO: use vampire for this.
+        follows if ¬p then b else a = a by if.false [¬p] [b] [a];
+        done logically
+    | ¬p then
+        follows if  p then a else b = b by if.false [p] [a] [b];
+        follows if ¬p then b else a = b by if.true [¬p] [b] [a];
+        done logically
+qed

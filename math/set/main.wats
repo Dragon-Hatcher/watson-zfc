@@ -1,0 +1,36 @@
+Set theory is almost the simplest possible first order logical system. It
+contains no formal terms and only a single binary predicate symbol: $\in$. 
+
+syntax in
+    sentence (500) ::= term " ∈ " term
+end
+
+notation not_in
+    sentence (500) ::= term " ∉ " term
+end
+
+@[reducible]
+definition
+    a ∉ b := ¬a ∈ b
+end
+
+The intended reading of $x \in y$ is that $y$ is a set of which $x$ is an element.
+In our version of set theory, *all* objects are sets. Despite this simplicity,
+we can encode essentially all of mathematics using set theory. We will find
+ways to encode objects not traditionally thought of as sets using sets.
+
+We have an intuitive notion of what a set is, but of course, we will need to
+provide axioms to make this understanding rigorous.
+
+
+## Axioms
+module set.axioms
+
+## Set Operations
+module set.operations
+
+## Functions
+module set.fn
+
+## The Ordinals
+module set.ordinal
