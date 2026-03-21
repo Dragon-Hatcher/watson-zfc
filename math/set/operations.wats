@@ -426,6 +426,34 @@ theorems is so tedious that we are just going to hard code this theorem so that
 it is automatically given to Vampire any time a comprehension appears in the 
 local context. 
 
+### The Set Map
+
+TODO
+
+notation term.with_term
+    term (1000) ::= @name "(" term ")"
+end
+
+notation set_map
+  term ::= "{" term(x) " | " x:@binding(term) " ∈ " term "}"
+end
+
+definition
+    {f(x) | x ∈ A} := {y | ∃x, x ∈ A ∧ y = f(x)}
+end
+
+The proof follows from the replacement axiom and the definition of the set map.
+
+theorem set_map.def [f(_) : term(term)] [A : term] :
+    |- ∀y, y ∈ {f(x) | x ∈ A} ↔ (∃x, x ∈ A ∧ y = f(x))
+proof
+    suffices ∀y, y ∈ {z | ∃x, x ∈ A ∧ z = f(x)} ↔ (∃x, x ∈ A ∧ y = f(x));
+    suffices (∃x, ∀y, y ∈ x ↔ ∃x, x ∈ A ∧ y = f(x)) by uncomp.def [∃x, x ∈ A ∧ _ = f(x)];
+    hence ∀x ∈ A, ∃!y, y = f(x) logically;
+    follows ∀a, (∀x, x ∈ a → ∃!y, y = f(x)) → (∃x, ∀y, y ∈ x ↔ (∃z, z ∈ a ∧ y = f(z))) by zfc.replacement [_1 = f(_0)];
+    done logically
+qed
+
 ### Unions
 
 We can return to defining new sets with the union of a set.
@@ -728,10 +756,6 @@ qed
 ### The Powerset
 
 We will define the powerset as the set of all subsets of a set. 
-
-notation term.with_term
-    term (1000) ::= @name "(" term ")"
-end
 
 definition
     𝒫(a) := {x | x ⊆ a}

@@ -47,10 +47,6 @@ qed
 
 The combination of these two properties is what defines an ordinal.
 
-notation postfix_pred
-    sentence ::= term " : " @name
-end
-
 definition
     α : Ord := transitive(α) ∧ well_ordered(α)
 end

@@ -152,8 +152,14 @@ function termToV(term: Frag, bindings: ConversionCtx): VTerm?
     -- If we didn't manage to convert all the children, e.g. if some of the
     -- children are sentences, then we just convert the whole term to a constant
     -- for Vampire.
-    -- TODO: what if this term is unclosed? Then this isn't really correct.
     if children == nil then
+        -- TODO: if the term is unclosed or has template vars we need to make
+        -- this a function and not a constant. For now we just return nil if
+        -- unclosed. But we also need to be checking for template vars.
+        if term.unclosedCount ~= 0 then
+            return nil
+        end
+
         local constant = termCacheGet(term, 0)
         return constant:with({})
     end
@@ -417,6 +423,7 @@ function M.handleVampire(state: state.State, givens: {Given}?): (state.State, Va
 
     -- Check if Vampire was able to prove the conjecture
     if proof == nil then
+        log(tostring(problem))
         if reason == "unprovable" then
             return state:error(), nil, { err = "unprovable" }
         else

@@ -11,7 +11,7 @@ end
 
 The proof follows from the pairing axiom and the definition of the ordered pair.
 
-theorem ordered_pair.def [a b : term] :
+theorem opair.def [a b : term] :
     |- ∀x, x ∈ ⟨a, b⟩ ↔ (x = {a} ∨ x = {a, b})
 proof
     suffices ∀x, x ∈ {{a}, {a, b}} ↔ (x = {a} ∨ x = {a, b});
@@ -21,7 +21,7 @@ qed
 
 Lets prove some basic properties of ordered pairs
 
-theorem ordered_pair.union [a b : term] :
+theorem opair.union [a b : term] :
     |- ⋃⟨a, b⟩ = {a, b}
 proof
     suffices ⋃{{a}, {a, b}} = {a, b};
@@ -32,7 +32,7 @@ proof
     done by zfc.extensionality
 qed
 
-theorem ordered_pair.inter [a b : term] :
+theorem opair.inter [a b : term] :
     |- ⋂⟨a, b⟩ = {a}
 proof
     suffices ⋂{{a}, {a, b}} = {a};
@@ -52,10 +52,10 @@ end
 
 The proof follows from the definition of the ordered pair and many of the intersection properties we've shown.
 
-theorem ordered_pair_first.def [a b : term] :
+theorem opair_first.def [a b : term] :
     |- π₁(⟨a, b⟩) = a
 proof
-    hence ⋂⟨a, b⟩ = {a} by ordered_pair.inter;
+    hence ⋂⟨a, b⟩ = {a} by opair.inter;
     thus ⋃{a} = a by big_union.singleton;
     hence ⋃⋂⟨a, b⟩ = a logically;
 qed
@@ -68,7 +68,7 @@ end
 
 This proof follows simply from the definition of the ordered pair and the properties of unions and intersections.
 
-theorem ordered_pair_second.def [a b : term] :
+theorem opair_second.def [a b : term] :
     |- π₂(⟨a, b⟩) = b
 proof
     -- suffices ⋃{x ∈ ⋃{{a}, {a, b}} | ⋃{{a}, {a, b}} ≠ ⋂{{a}, {a, b}} → x ∉ ⋂{{a}, {a, b}}} = b;
@@ -76,10 +76,10 @@ proof
     -- follows ∀x, x ∈ ⋂{{a}, {a, b}} ↔ (x ∈ {a} ∧ x ∈ {a, b}) by inter.def [{a}] [{a, b}];
     -- follows ∀x, (x ∈ {a} ∧ x ∈ {a, b}) ↔ (x = a ∧ x ∈ {a, b}) by singleton.def;
     -- follows ∀x, (x = a ∧ x ∈ {a, b}) ↔ (x = a ∧ (x = a ∨ x = b)) by pair.def;
-    -- hence ∀x, x ∈ ⋂{{a}, {a, b}} ↔ x = a by ordered_pair.inter;
+    -- hence ∀x, x ∈ ⋂{{a}, {a, b}} ↔ x = a by opair.inter;
     -- thus ∀x, x = a ↔ x ∈ {a} by singleton.def;
     -- follows ⋂{{a}, {a, b}} = {a} by zfc.extensionality;
-    -- hence ⋃⟨a, b⟩ = {a, b} by ordered_pair.union;
+    -- hence ⋃⟨a, b⟩ = {a, b} by opair.union;
     -- hence ⋃{x ∈ {a, b} | {a, b} ≠ {a} → x ∉ {a}} = ⋃{x ∈ ⋃{{a}, {a, b}} | ⋃{{a}, {a, b}} ≠ ⋂{{a}, {a, b}} → x ∉ ⋂{{a}, {a, b}}} logically;
     -- thus ∀x, x ∈ {a, b} ↔ (x = a ∨ x = b) by pair.def;
     -- hence ∀x, x ∈ {a} ↔ x = a by singleton.def;
@@ -101,13 +101,13 @@ qed
 
 Finally, we show that two ordered pairs are equal iff their first and second elements are equal.
 
-theorem ordered_pair.eq [a b c d : term] :
+theorem opair.eq [a b c d : term] :
     |- ⟨a, b⟩ = ⟨c, d⟩ ↔ (a = c ∧ b = d)
 proof
     hence ⟨a, b⟩ = ⟨c, d⟩ → π₁(⟨a, b⟩) = π₁(⟨c, d⟩) by zfc.extensionality;
-    follows π₁(⟨a, b⟩) = π₁(⟨c, d⟩) ↔ a = c by ordered_pair_first.def;
+    follows π₁(⟨a, b⟩) = π₁(⟨c, d⟩) ↔ a = c by opair_first.def;
     follows ⟨a, b⟩ = ⟨c, d⟩ → π₂(⟨a, b⟩) = π₂(⟨c, d⟩) by zfc.extensionality;
-    follows π₂(⟨a, b⟩) = π₂(⟨c, d⟩) ↔ b = d by ordered_pair_second.def;
+    follows π₂(⟨a, b⟩) = π₂(⟨c, d⟩) ↔ b = d by opair_second.def;
     -- suffices ⟨a, b⟩ = ⟨c, d⟩ ↔ (a = c ∧ b = d);
     hence ⟨a, b⟩ = ⟨c, d⟩ → (a = c ∧ b = d) logically;
     hence (a = c ∧ b = d) → ⟨a, b⟩ = ⟨c, d⟩ logically;
@@ -180,6 +180,82 @@ definition
     Rel(A, B) := 𝒫(A × B)
 end
 
+theorem rel_on.def [A B : term] :
+    |- ∀R, R ∈ Rel(A, B) ↔ R ⊆ A × B
+proof
+    follows Rel(A, B) = 𝒫(A × B) by eq.refl [Rel(A, B)];
+    done by powset.def
+qed
+
+For a relation we have the notions of the domain and range which are the sets
+of the first element of each pair and the second element of each pair, respectively.
+
+definition
+    dom(R) := {π₁(x) | x ∈ R}
+end
+
+definition
+    ran(R) := {π₂(x) | x ∈ R}
+end
+
+theorem dom.def [R : term] :
+    |- ∀x, x ∈ dom(R) ↔ ∃y ∈ R, x = π₁(y)
+proof
+    todo
+qed
+
+theorem ran.def [R : term] :
+    |- ∀x, x ∈ ran(R) ↔ ∃y ∈ R, x = π₂(y)
+proof
+    todo
+qed
+
+We can also have the notion of being a relation without having to know the
+exact domain and range.
+
+notation postfix_pred
+    sentence ::= term " : " @name
+end
+
+definition
+    R : Rel := ∀x ∈ R, ∃a, ∃b, x = ⟨a, b⟩
+end
+
+theorem rel.def [R : term] :
+    |- R : Rel ↔ ∀x ∈ R, ∃a, ∃b, x = ⟨a, b⟩
+proof
+    done by iff.refl [R : Rel]
+qed
+
+theorem rel.is_rel_on_dom_ran [R : term] : (R : Rel)
+    |- R ∈ Rel(dom(R), ran(R))
+proof
+    suffices R ⊆ dom(R) × ran(R) by rel_on.def;
+    suffices ∀r ∈ R, r ∈ dom(R) × ran(R) by sub.def;
+    arbitrary r; assume r ∈ R;
+
+    follows ∀x ∈ R, ∃a, ∃b, x = ⟨a, b⟩; -- by the definition of Rel
+    thus ∃a, ∃b, r = ⟨a, b⟩ given r ∈ R;
+    obtain a st ∃b, r = ⟨a, b⟩;
+    obtain b st r = ⟨a, b⟩; -- todo. this should be one line.
+
+    follows π₁(r) ∈ dom(R) by dom.def;
+    follows π₂(r) ∈ ran(R) by ran.def;
+
+    follows π₁(r) = a by opair_first.def;
+    follows π₂(r) = b by opair_second.def;
+
+    thus r ∈ dom(R) × ran(R) by cart_prod.def;
+qed
+
+theorem rel.is_rel_on [R : term] :
+    |- R : Rel ↔ ∃A, ∃B, R ∈ Rel(A, B)
+proof
+    assume ∃A, ∃B, R ∈ Rel(A, B) then R : Rel by rel.def, cart_prod.def, sub.def, rel_on.def;
+    assume R : Rel then ∃A, ∃B, R ∈ Rel(A, B) by rel.is_rel_on_dom_ran;
+    done logically
+qed
+
 A functional relation is a particular kind of binary relation where the first 
 element of each ordered pair in the relation is unique.
 
@@ -191,7 +267,33 @@ definition
     A → B := {f ∈ Rel(A, B) | ∀a ∈ A, ∃!b, b ∈ B ∧ ⟨a, b⟩ ∈ f}
 end
 
-We define function mapping by extracting the second element of the unique 
+theorem fn_on.def [A B : term] :
+    |- ∀f, f ∈ (A → B) ↔ (f ∈ Rel(A, B) ∧ (∀a ∈ A, ∃!b, b ∈ B ∧ ⟨a, b⟩ ∈ f))
+proof
+    follows (A → B) = {f ∈ Rel(A, B) | ∀a ∈ A, ∃!b, b ∈ B ∧ ⟨a, b⟩ ∈ f} by eq.refl [A → B];
+    done logically
+qed
+
+And once again we can define the notion of being a function independent of the
+domain and range.
+
+definition
+    f : Fn := f : Rel ∧ (∀a ∈ dom(f), ∃!b, b ∈ ran(f) ∧ ⟨a, b⟩ ∈ f)
+end
+
+theorem fn.is_fn_on_dom_ran [f : term] : (f : Fn)
+    |- f ∈ (dom(f) → ran(f))
+proof
+    todo
+qed
+
+theorem fn.is_fn_on [f : term] :
+    |- f : Fn ↔ ∃A, ∃B, f ∈ (A → B)
+proof
+    todo
+qed
+
+We define function application by extracting the second element of the unique 
 ordered pair which has the argument as the first element. We can make this
  definition using the iota operator.
 
@@ -203,27 +305,19 @@ definition
     f:term (a) := ℩b, ⟨a, b⟩ ∈ f
 end
 
--- Now, we define a set map which contains the entire image of a function on a set.
-
-notation set_map
-  term ::= "{" term(x) " | " x:@binding(term) " ∈ " term "}"
-end
-
-definition
-    {f(x) | x ∈ A} := {y | ∃x, x ∈ A ∧ y = f(x)}
-end
-
-The proof follows from the replacement axiom and the definition of the set map.
-
-theorem set_map.def [f(_) : term(term)] [A : term] :
-    |- ∀y, y ∈ {f(x) | x ∈ A} ↔ (∃x, x ∈ A ∧ y = f(x))
+theorem fn_on.pairs [f A B : term] : (f ∈ (A → B))
+    |- f = {⟨a, f(a)⟩ | a ∈ A}
 proof
-    suffices ∀y, y ∈ {z | ∃x, x ∈ A ∧ z = f(x)} ↔ (∃x, x ∈ A ∧ y = f(x));
-    suffices (∃x, ∀y, y ∈ x ↔ ∃x, x ∈ A ∧ y = f(x)) by uncomp.def [∃x, x ∈ A ∧ _ = f(x)];
-    hence ∀x ∈ A, ∃!y, y = f(x) logically;
-    follows ∀a, (∀x, x ∈ a → ∃!y, y = f(x)) → (∃x, ∀y, y ∈ x ↔ (∃z, z ∈ a ∧ y = f(z))) by zfc.replacement [_1 = f(_0)];
-    done logically
+    todo
 qed
+
+theorem fn.pairs [f : term] : (f : Fn)
+    |- f = {⟨x, f(x)⟩ | x ∈ dom(f)}
+proof
+    follows f ∈ (dom(f) → ran(f)) by fn.is_fn_on_dom_ran;
+    done by fn_on.pairs [f] [dom(f)] [ran(f)]
+qed
+
 
 notation function_maps_to
     term ::= x:@binding(term) " ∈ " term " ↦ " term(x)
@@ -242,6 +336,30 @@ qed
 
 TODO:
 
+grammar_category chain_list
+
+tactic tactic.chain
+    tactic ::= @kw"chain" term:@fragment(term) list:chain_list
+end
+
+tactic chain_list.one
+    chain_list ::= "=" term:@fragment(term) just:justification ";"
+end
+tactic chain_list.many
+    chain_list ::= "=" term:@fragment(term) just:justification ";" rest:chain_list
+end
+
+
+theorem fn.eq_on_dom.eq [f g : term] : (f : Fn) (g : Fn) (dom(f) = dom(g))
+    (∀x ∈ dom(f), f(x) = g(x))
+    |- f = g
+proof
+    chain f = {⟨x, f(x)⟩ | x ∈ dom(f)} by fn.pairs;
+            = {⟨x, g(x)⟩ | x ∈ dom(f)} given ∀x ∈ dom(f), f(x) = g(x);
+            = {⟨x, g(x)⟩ | x ∈ dom(g)} given dom(f) = dom(g);
+            = g                        by fn.pairs;
+qed
+
 notation fn_restriction
     term ::= term " ↾ " term
 end
@@ -250,10 +368,25 @@ definition
     f ↾ A := {x ∈ f | π₁(x) ∈ A}
 end
 
-definition
-    dom(f) := {π₁(x) | x ∈ f}
-end
+theorem fn.restriction.is [f X : term] : (f : Fn)
+    |- f ↾ X : Fn
+proof
+    todo
+qed
 
-definition
-    ran(f) := {π₂(x) | x ∈ f}
-end
+theorem fn.restriction.pairs [f X : term] : (f : Fn)
+    |- f ↾ X = {⟨x, f(x)⟩ | x ∈ dom(f) ∩ X}
+proof
+    todo
+qed
+
+theorem fn.restriction.eq [f g X : term] : (f : Fn) (g : Fn) (dom(f) ∩ X = dom(g) ∩ X)
+    (∀x ∈ dom(f) ∩ X, f(x) = g(x))
+    |- f ↾ X = g ↾ X
+proof
+    chain f ↾ X 
+        = {⟨x, f(x)⟩ | x ∈ dom(f) ∩ X} by fn.restriction.pairs;
+        = {⟨x, g(x)⟩ | x ∈ dom(f) ∩ X} given ∀x ∈ X, f(x) = g(x);
+        = {⟨x, g(x)⟩ | x ∈ dom(g) ∩ X} given dom(f) ∩ X = dom(g) ∩ X;
+        = g ↾ X                        by fn.restriction.pairs;
+qed

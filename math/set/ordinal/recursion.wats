@@ -32,11 +32,28 @@ end
 
 And the theorem is that all coherent functions with the same domain are equal.
 
-theorem coherent.unique [g(_) : term(term)] [f₁ f₂ : term] : (dom(f₁) = dom(f₂))
-    (dom(f₁) : Ord)
+theorem coherent.unique [g(_) : term(term)] [f₁ f₂ : term] : (f₁ : Fn) (f₂ : Fn)
+    (dom(f₁) = dom(f₂)) (dom(f₁) : Ord) (coherent(f' ↦ g(f'), f₁)) 
+    (coherent(f' ↦ g(f'), f₂))
     |- f₁ = f₂
 proof
-    todo
+    let α := dom(f₁);
+    -- to prove two functions are equal, we show they are equal on their domains.
+    suffices ∀β ∈ α, f₁(β) = f₂(β) as todo;
+    -- we can complete the proof by induction.
+    suffices ∀β ∈ α, (∀γ ∈ β, f₁(γ) = f₂(γ)) → f₁(β) = f₂(β) 
+        by ordinal.induction.up_to [f₁(_) = f₂(_)] [α]; -- todo: induction tactic
+
+    arbitrary β; assume β ∈ α;
+    assume ∀γ ∈ β, f₁(γ) = f₂(γ);
+
+    -- since f₁ is coherent, f₁(β) = g(f₁ ↾ β). And the same for f₂
+    follows f₁(β) = g(f₁ ↾ β) as todo;
+    follows f₂(β) = g(f₂ ↾ β) as todo;
+
+    -- but f₁ ↾ β = f₂ ↾ β so we are done.
+    follows f₁ ↾ β = f₂ ↾ β as todo; -- by fn.restriction.eq;
+    done as todo
 qed
 
 And for each ordinal there exists a coherent function with that ordinal as its
