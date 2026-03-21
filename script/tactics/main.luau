@@ -1,6 +1,7 @@
 local assume = require("./assume")
 local by = require("./by")
 local cases = require("./cases")
+local chain = require("./chain")
 local contradiction = require("./contradiction")
 local dispatch = require("./dispatch")
 local done = require("./done")
@@ -46,6 +47,7 @@ dispatch.tacticTable = {
 	["tactic.vampire"] = vampire.handleVampireTactic,
 	["tactic.let"] = let.handleLetTactic,
 	["tactic.cases"] = cases.handleCases,
+	["tactic.chain"] = chain.handleChain,
 	["tactic.done"] = done.handleDone,
 	["tactic.empty"] = empty.handleEmpty,
 	["tactic.todo"] = function(tactic: {}, state: state.State)

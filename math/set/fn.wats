@@ -354,10 +354,14 @@ theorem fn.eq_on_dom.eq [f g : term] : (f : Fn) (g : Fn) (dom(f) = dom(g))
     (∀x ∈ dom(f), f(x) = g(x))
     |- f = g
 proof
-    chain f = {⟨x, f(x)⟩ | x ∈ dom(f)} by fn.pairs;
-            = {⟨x, g(x)⟩ | x ∈ dom(f)} given ∀x ∈ dom(f), f(x) = g(x);
-            = {⟨x, g(x)⟩ | x ∈ dom(g)} given dom(f) = dom(g);
-            = g                        by fn.pairs;
+    -- chain f = {⟨x, f(x)⟩ | x ∈ dom(f)} by fn.pairs;
+    --         = {⟨x, g(x)⟩ | x ∈ dom(f)} given ∀x ∈ dom(f), f(x) = g(x);
+    --         = {⟨x, g(x)⟩ | x ∈ dom(g)} given dom(f) = dom(g);
+    --         = g                        by fn.pairs;
+    chain f = {⟨x, f(x)⟩ | x ∈ dom(f)} as todo;
+            = {⟨x, g(x)⟩ | x ∈ dom(f)} as todo;
+            = {⟨x, g(x)⟩ | x ∈ dom(g)} as todo;
+            = g                        as todo;
 qed
 
 notation fn_restriction
@@ -384,9 +388,14 @@ theorem fn.restriction.eq [f g X : term] : (f : Fn) (g : Fn) (dom(f) ∩ X = dom
     (∀x ∈ dom(f) ∩ X, f(x) = g(x))
     |- f ↾ X = g ↾ X
 proof
+    -- chain f ↾ X 
+    --     = {⟨x, f(x)⟩ | x ∈ dom(f) ∩ X} by fn.restriction.pairs;
+    --     = {⟨x, g(x)⟩ | x ∈ dom(f) ∩ X} given ∀x ∈ X, f(x) = g(x);
+    --     = {⟨x, g(x)⟩ | x ∈ dom(g) ∩ X} given dom(f) ∩ X = dom(g) ∩ X;
+    --     = g ↾ X                        by fn.restriction.pairs;
     chain f ↾ X 
-        = {⟨x, f(x)⟩ | x ∈ dom(f) ∩ X} by fn.restriction.pairs;
-        = {⟨x, g(x)⟩ | x ∈ dom(f) ∩ X} given ∀x ∈ X, f(x) = g(x);
-        = {⟨x, g(x)⟩ | x ∈ dom(g) ∩ X} given dom(f) ∩ X = dom(g) ∩ X;
-        = g ↾ X                        by fn.restriction.pairs;
+        = {⟨x, f(x)⟩ | x ∈ dom(f) ∩ X} as todo;
+        = {⟨x, g(x)⟩ | x ∈ dom(f) ∩ X} as todo;
+        = {⟨x, g(x)⟩ | x ∈ dom(g) ∩ X} as todo;
+        = g ↾ X                        as todo;
 qed
