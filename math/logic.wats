@@ -1005,9 +1005,22 @@ tactic justification.using
 end
 
 The existential elimination rule becomes:
+grammar_category obtain_vars
+
 tactic tactic.obtain
-    tactic ::= @kw"obtain" var:@name @kw"st" st:@fragment(sentence) 
-               just:justification ";" next:tactic
+    tactic ::= @kw"obtain" list:obtain_vars just:justification ";" next:tactic
+end
+
+tactic obtain_vars.last
+    obtain_vars ::= var:@name @kw"st" st:@fragment(sentence)
+end
+
+tactic obtain_vars.more
+    obtain_vars ::= var:@name @kw"and" rest:obtain_vars
+end
+
+tactic obtain_vars.more_st
+    obtain_vars ::= var:@name @kw"st" st:@fragment(sentence) @kw"and" rest:obtain_vars
 end
 
 This is the forall introduction rule:

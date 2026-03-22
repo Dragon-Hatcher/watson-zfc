@@ -36,6 +36,12 @@ assert(M.forallElimThm ~= nil)
 M.extensionalityThm = Theorem:lookupByName("zfc.extensionality")
 assert(M.extensionalityThm ~= nil)
 
+M.andElimLeftThm = Theorem:lookupByName("and.elim_left")
+assert(M.andElimLeftThm ~= nil)
+
+M.andElimRightThm = Theorem:lookupByName("and.elim_right")
+assert(M.andElimRightThm ~= nil)
+
 function M.makePattern(
     text: string, cat: FormalCat, 
     vars: {{name: string, cat: FormalCat}}
