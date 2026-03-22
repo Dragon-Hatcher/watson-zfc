@@ -141,7 +141,7 @@ How, exactly, this reducible annotation will be used will be explained later.
 With this we are able to define and.
 
 notation and
-    sentence (350) ::= sentence " ∧ " sentence
+    sentence (350>) ::= sentence " ∧ " sentence
 end
 
 definition

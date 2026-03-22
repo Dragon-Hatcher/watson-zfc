@@ -150,7 +150,7 @@ proof
     assume ∃a ∈ A, ∃b ∈ B, x = ⟨a, b⟩ then x ∈ A × B as
         obtain a st a ∈ A ∧ (∃b ∈ B, x = ⟨a, b⟩);
         obtain b st b ∈ B ∧ x = ⟨a, b⟩ logically;
-        follows x = ⟨a, b⟩ logically;
+        follows x = ⟨a, b⟩ logically; -- todo: this should be one line.
         thus x = {{a}, {a, b}};
 
         -- we already have that x is a pair so we just need to prove it is in the powerset
@@ -218,42 +218,25 @@ notation postfix_pred
 end
 
 definition
-    R : Rel := ∀x ∈ R, ∃a, ∃b, x = ⟨a, b⟩
+    R : Rel := R ∈ Rel(dom(R), ran(R))
 end
 
 theorem rel.def [R : term] :
-    |- R : Rel ↔ ∀x ∈ R, ∃a, ∃b, x = ⟨a, b⟩
+    |- R : Rel ↔ R ∈ Rel(dom(R), ran(R))
 proof
     done by iff.refl [R : Rel]
-qed
-
-theorem rel.is_rel_on_dom_ran [R : term] : (R : Rel)
-    |- R ∈ Rel(dom(R), ran(R))
-proof
-    suffices R ⊆ dom(R) × ran(R) by rel_on.def;
-    suffices ∀r ∈ R, r ∈ dom(R) × ran(R) by sub.def;
-    arbitrary r; assume r ∈ R;
-
-    follows ∀x ∈ R, ∃a, ∃b, x = ⟨a, b⟩; -- by the definition of Rel
-    thus ∃a, ∃b, r = ⟨a, b⟩ given r ∈ R;
-    obtain a st ∃b, r = ⟨a, b⟩;
-    obtain b st r = ⟨a, b⟩; -- todo. this should be one line.
-
-    follows π₁(r) ∈ dom(R) by dom.def;
-    follows π₂(r) ∈ ran(R) by ran.def;
-
-    follows π₁(r) = a by opair_first.def;
-    follows π₂(r) = b by opair_second.def;
-
-    thus r ∈ dom(R) × ran(R) by cart_prod.def;
 qed
 
 theorem rel.is_rel_on [R : term] :
     |- R : Rel ↔ ∃A, ∃B, R ∈ Rel(A, B)
 proof
-    assume ∃A, ∃B, R ∈ Rel(A, B) then R : Rel by rel.def, cart_prod.def, sub.def, rel_on.def;
-    assume R : Rel then ∃A, ∃B, R ∈ Rel(A, B) by rel.is_rel_on_dom_ran;
-    done logically
+    todo
+qed
+
+theorem rel_on.is_rel [R A B : term] :
+    |- R ∈ Rel(A, B) ↔ (R : Rel ∧ dom(R) ⊆ A ∧ ran(R) ⊆ B)
+proof
+    todo
 qed
 
 A functional relation is a particular kind of binary relation where the first 
@@ -264,31 +247,36 @@ notation functional_relation
 end
 
 definition
-    A → B := {f ∈ Rel(A, B) | ∀a ∈ A, ∃!b, b ∈ B ∧ ⟨a, b⟩ ∈ f}
+    A → B := {f ∈ Rel(A, B) | ∀a ∈ A, ∃!b, ⟨a, b⟩ ∈ f}
 end
 
 theorem fn_on.def [A B : term] :
-    |- ∀f, f ∈ (A → B) ↔ (f ∈ Rel(A, B) ∧ (∀a ∈ A, ∃!b, b ∈ B ∧ ⟨a, b⟩ ∈ f))
+    |- ∀f, f ∈ (A → B) ↔ f ∈ Rel(A, B) ∧ ∀a ∈ A, ∃!b, ⟨a, b⟩ ∈ f
 proof
-    follows (A → B) = {f ∈ Rel(A, B) | ∀a ∈ A, ∃!b, b ∈ B ∧ ⟨a, b⟩ ∈ f} by eq.refl [A → B];
-    done logically
+    todo
 qed
 
 And once again we can define the notion of being a function independent of the
 domain and range.
 
 definition
-    f : Fn := f : Rel ∧ (∀a ∈ dom(f), ∃!b, b ∈ ran(f) ∧ ⟨a, b⟩ ∈ f)
+    f : Fn := f ∈ (dom(f) → ran(f))
 end
 
-theorem fn.is_fn_on_dom_ran [f : term] : (f : Fn)
-    |- f ∈ (dom(f) → ran(f))
+theorem fn.def [f : term] :
+    |- f : Fn ↔ f ∈ (dom(f) → ran(f))
 proof
-    todo
+    done by iff.refl [f : Fn]
 qed
 
 theorem fn.is_fn_on [f : term] :
     |- f : Fn ↔ ∃A, ∃B, f ∈ (A → B)
+proof
+    todo
+qed
+
+theorem fn_on.is_fn [f A B : term] :
+    |- f ∈ (A → B) ↔ (f : Fn ∧ dom(f) = A ∧ ran(f) ⊆ B)
 proof
     todo
 qed
@@ -314,7 +302,7 @@ qed
 theorem fn.pairs [f : term] : (f : Fn)
     |- f = {⟨x, f(x)⟩ | x ∈ dom(f)}
 proof
-    follows f ∈ (dom(f) → ran(f)) by fn.is_fn_on_dom_ran;
+    follows f ∈ (dom(f) → ran(f)) by fn.def;
     done by fn_on.pairs [f] [dom(f)] [ran(f)]
 qed
 
@@ -330,7 +318,7 @@ end
 theorem fun_map.is.rel [A B : term] [f(_) : term(term)]: (∀x ∈ A, f(x) ∈ B)
     |- x ∈ A ↦ f(x) ∈ (A → B)
 proof
-    suffices {⟨x, f(x)⟩ | x ∈ A} ∈ {f ∈ Rel(A, B) | ∀a, a ∈ A → (∃!b, b ∈ B ∧ ⟨a, b⟩ ∈ f)};
+    suffices {⟨x, f(x)⟩ | x ∈ A} ∈ {f ∈ Rel(A, B) | ∀a, a ∈ A → (∃!b, ⟨a, b⟩ ∈ f)};
     todo
 qed
 
