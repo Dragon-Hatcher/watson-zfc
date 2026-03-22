@@ -50,7 +50,7 @@ proof
     
     follows transitive(succ(α)) as
         suffices ∀x ∈ succ(α), x ⊆ succ(α) by transitive.def;
-        arbitrary x; assume x ∈ succ(α);
+        arbitrary x st x ∈ succ(α);
 
         -- x is either from α or is α. split on which case we are in.
         follows x ∈ α ∨ x = α by union.def, singleton.def given succ(α) = α ∪ {α};
@@ -67,7 +67,7 @@ proof
 
     follows well_ordered(succ(α)) as
         suffices ∀β, β ⊆ succ(α) ∧ β ≠ ∅ → ∃γ, is_least(γ, β) by well_ordered.def;
-        arbitrary β; assume β ⊆ succ(α) ∧ β ≠ ∅;
+        arbitrary β st β ⊆ succ(α) ∧ β ≠ ∅;
 
         -- there are two cases. either β = {α} in which case α is the least
         -- element or β ∩ α ≠ ∅ in which case we can use the well orderedness of
@@ -105,7 +105,7 @@ proof
             -- it's in β just because β' ⊆ β
             follows γ ∈ β by sub.def given γ ∈ β' and β' ⊆ β;
             follows ∀δ ∈ β, δ ≠ γ → γ ∈ δ as
-                arbitrary δ; assume δ ∈ β; assume δ ≠ γ;
+                arbitrary δ st δ ∈ β; assume δ ≠ γ;
                 -- any element of β is either in α or is α. split on which case.
                 follows δ ∈ α ∨ δ = α by union.def, singleton.def, sub.def
                     given δ ∈ β and β ⊆ succ(α) and succ(α) = α ∪ {α};

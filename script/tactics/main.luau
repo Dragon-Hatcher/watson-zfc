@@ -46,6 +46,7 @@ dispatch.tacticTable = {
 	["tactic.contradiction"] = contradiction.handleContradiction,
 	["tactic.obtain"] = obtain.handleObtain,
 	["tactic.arbitrary"] = arbitrary.handleArbitrary,
+	["tactic.arbitrary_st"] = arbitrary.handleArbitrary,
 	["tactic.recall"] = recall.handleRecallTactic,
 	["tactic.vampire"] = vampire.handleVampireTactic,
 	["tactic.let"] = let.handleLetTactic,

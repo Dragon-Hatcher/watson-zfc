@@ -44,7 +44,7 @@ proof
     suffices ∀β ∈ α, (∀γ ∈ β, f₁(γ) = f₂(γ)) → f₁(β) = f₂(β) 
         by ordinal.induction.up_to [f₁(_) = f₂(_)] [α]; -- todo: induction tactic
 
-    arbitrary β; assume β ∈ α;
+    arbitrary β st β ∈ α;
     assume ∀γ ∈ β, f₁(γ) = f₂(γ);
 
     -- since f₁ is coherent, f₁(β) = g(f₁ ↾ β). And the same for f₂

@@ -70,9 +70,9 @@ proof
 
     follows transitive(α) as
         suffices ∀x ∈ α, x ⊆ α by transitive.def;
-        arbitrary x; assume x ∈ α;
+        arbitrary x st x ∈ α;
         suffices ∀y ∈ x, y ∈ α by sub.def;
-        arbitrary y; assume y ∈ x;
+        arbitrary y st y ∈ x;
 
         follows α ⊆ β by transitive.def given transitive(β) and α ∈ β;
         thus    x ∈ β by sub.def given x ∈ α;
@@ -94,7 +94,7 @@ proof
 
     follows well_ordered(α) as
         suffices ∀δ, δ ⊆ α ∧ δ ≠ ∅ → ∃γ, is_least(γ, δ) by well_ordered.def;
-        arbitrary δ; assume δ ⊆ α ∧ δ ≠ ∅;
+        arbitrary δ st δ ⊆ α ∧ δ ≠ ∅;
 
         -- by the transitivity of β, α ⊆ β, so δ ⊆ β as well. and then we use
         -- the well ordering of β. 
@@ -117,7 +117,7 @@ theorem ordinal.inter.is [α β : term] : (α : Ord) (β : Ord)
 proof
     follows transitive(α ∩ β) as
         suffices ∀γ ∈ α ∩ β, γ ⊆ α ∩ β by transitive.def;
-        arbitrary γ; assume γ ∈ α ∩ β;
+        arbitrary γ st γ ∈ α ∩ β;
         follows γ ∈ α ∧ γ ∈ β by inter.def;
 
         follows γ ⊆ α by ordinal.def, transitive.def given α : Ord;
@@ -127,7 +127,7 @@ proof
 
     follows well_ordered(α ∩ β) as
         suffices ∀δ, δ ⊆ α ∩ β ∧ δ ≠ ∅ → ∃γ, is_least(γ, δ);
-        arbitrary δ; assume δ ⊆ α ∩ β ∧ δ ≠ ∅;
+        arbitrary δ st δ ⊆ α ∩ β ∧ δ ≠ ∅;
         follows δ ⊆ α by inter.left_sub;
         obtain γ st is_least(γ, δ) by ordinal.def, well_ordered.def;
         done logically
@@ -160,7 +160,7 @@ proof
 
     follows μ ⊆ β as
         suffices ∀δ ∈ μ, δ ∈ β by sub.def;
-        arbitrary δ; assume δ ∈ μ;
+        arbitrary δ st δ ∈ μ;
 
         -- idea: δ must be in β because otherwise it would be in S and then we
         -- would have μ ∈ δ and δ ∈ μ
@@ -175,7 +175,7 @@ proof
 
     follows β ⊆ μ as
         suffices ∀δ ∈ β, δ ∈ μ by sub.def;
-        arbitrary δ; assume δ ∈ β;
+        arbitrary δ st δ ∈ β;
 
         -- the idea here is that μ ∉ δ because if it was then μ would be in δ
         -- by transitivity. so then it must be that δ ∈ μ by transitivity in α

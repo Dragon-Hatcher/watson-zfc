@@ -1028,6 +1028,10 @@ tactic tactic.arbitrary
     tactic ::= kw:@kw"arbitrary" var:@name ";" next:tactic
 end
 
+tactic tactic.arbitrary_st
+    tactic ::= kw:@kw"arbitrary" var:@name @kw"st" st:@fragment(sentence) ";" next:tactic
+end
+
 And here is the forall elimination rule:
 tactic justification.specializing
     justification ::= @kw"specializing" forall:@fragment(sentence)

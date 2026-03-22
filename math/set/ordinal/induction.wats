@@ -29,7 +29,7 @@ proof
 
     -- every member β of μ satisfies p because otherwise it would be in s.
     follows ∀β ∈ μ, p(β) as
-        arbitrary β; assume β ∈ μ;
+        arbitrary β st β ∈ μ;
         assume ¬p(β) for_contra;
 
         -- we get that β is in s

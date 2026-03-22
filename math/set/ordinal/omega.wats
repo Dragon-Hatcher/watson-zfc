@@ -50,7 +50,7 @@ proof
 
     -- now we need to show that x is closed under the successor operation
     follows ∀n ∈ x, n ∪ {n} ∈ x as
-        arbitrary n; assume n ∈ x;
+        arbitrary n st n ∈ x;
         obtain z st z ∈ x ∧ (∀w, w ∈ z ↔ w ∈ n ∨ w = n) logically;
         follows ∀w, w ∈ n ∪ {n} ↔ (w ∈ n ∨ w = n) by singleton.def, union.def;
         follows z = n ∪ {n} by zfc.extensionality;
@@ -105,7 +105,7 @@ proof
     thus                       ∅ ∈ ω by omega.def;
 
     follows ∀n ∈ ω, succ(n) ∈ ω as
-        arbitrary n; assume n ∈ ω;
+        arbitrary n st n ∈ ω;
         follows ∀α, inductive(α) → n ∈ α by omega.def;
         follows ∀α, inductive(α) → succ(n) ∈ α by inductive.def;
         thus succ(n) ∈ ω by omega.def;
@@ -128,7 +128,7 @@ proof
     thus    ∅ ∈ T   logically;
 
     follows ∀n ∈ T, succ(n) ∈ T as
-        arbitrary n; assume n ∈ T;
+        arbitrary n st n ∈ T;
 
         follows n : Ord logically;
         thus succ(n) : Ord by ordinal.succ.is;
@@ -166,12 +166,12 @@ proof
             thus ∅ ∈ T logically;
         ;
         follows ∀n ∈ T, succ(n) ∈ T as
-            arbitrary n; assume n ∈ T;
+            arbitrary n st n ∈ T;
             thus n ∈ ω ∧ n ⊆ ω logically;
             thus succ(n) ∈ ω by omega.inductive, inductive.def;
             follows n ∪ {n} ⊆ ω as
                 suffices ∀x, x ∈ n ∪ {n} → x ∈ ω;
-                arbitrary x; assume x ∈ n ∪ {n};
+                arbitrary x st x ∈ n ∪ {n};
                 follows x = n ∨ x ∈ n by union.def, singleton.def;
                 thus x ∈ ω by sub.def given n ⊆ ω and n ∈ ω;
             ;
@@ -191,7 +191,7 @@ proof
 
     follows well_ordered(ω) as
         suffices ∀β, β ⊆ ω ∧ β ≠ ∅ → ∃γ, is_least(γ, β) by well_ordered.def;
-        arbitrary β; assume β ⊆ ω ∧ β ≠ ∅;
+        arbitrary β st β ⊆ ω ∧ β ≠ ∅;
 
         -- idea: we restrict β to a subset of one of it's elements. we know δ+
         -- is an ordinal so we get a least element in β ∩ δ+ ⊆ δ+ which will 
@@ -223,7 +223,7 @@ proof
         suffices ∀η ∈ β, η ≠ γ → γ ∈ η by is_least.def;
 
         -- assume there was some smaller element η ∈ β.
-        arbitrary η; assume η ∈ β; assume η ≠ γ;
+        arbitrary η st η ∈ β; assume η ≠ γ;
         assume γ ∉ η for_contra;
         follows η ∈ γ as
             follows η ∈ ω by sub.def given η ∈ β and β ⊆ ω;
