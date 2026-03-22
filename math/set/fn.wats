@@ -156,7 +156,7 @@ proof
     -- the double powerset.
     assume ∃a ∈ A, ∃b ∈ B, x = ⟨a, b⟩ then x ∈ A × B as
         obtain a st a ∈ A and b st b ∈ B ∧ x = ⟨a, b⟩ logically;
-        follows x = {{a}, {a, b}} by opair.unfold;
+        follows x = {{a}, {a, b}} by_def x = ⟨a, b⟩;
 
         -- we already have that x is a pair so we just need to prove it is in the powerset
         suffices x ∈ 𝒫(𝒫(A ∪ B)) ∧ (∃a ∈ A, ∃b ∈ B, x = ⟨a, b⟩) logically;

@@ -104,6 +104,10 @@ tactic justification.by.vampire
     justification (600) ::= @kw"by" thms:theorem_list givens:givens
 end
 
+tactic justification.by_def
+    justification ::= @kw"by_def" sentence:@fragment(sentence)
+end
+
 If we want to have Vampire use a theorem multiple times the `recall` tactic
 will add the statement of the theorem to the current proof state, making it so
 Vampire can use it in all future proofs. 

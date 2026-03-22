@@ -28,6 +28,7 @@ dispatch.justificationTable = {
 	end,
 	["justification.by"] = by.handleByTactic,
 	["justification.by.vampire"] = by.handleVampireByTactic,
+	["justification.by_def"] = by.handleByDef,
 	["justification.using"] = using.handleUsing,
 	["justification.specializing"] = specializing.handleSpecializing,
 	["justification.logically"] = vampire.handleVampireTactic,

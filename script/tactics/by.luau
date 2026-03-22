@@ -290,4 +290,50 @@ function M.handleVampireByTactic(
     return tryVampire(just.thms._span, thms, givens, state)
 end
 
+function M.handleByDef(
+    just: { _span: Span, sentence: UnResFrag },
+    state: state.State
+): state.State
+    local sentence, diag = just.sentence:resolve(state.scope)
+    if diag ~= nil then diag:withTacticInfo(state.info):report() end
+    if sentence == nil then return state:error() end
+
+    if sentence.formal ~= state.goal.formal then
+        Diagnostic:new(
+            "`" .. tostring(sentence) .. "` is not definitionally equal to goal",
+            just.sentence.span:label("")
+        )
+            :withTacticInfo(state.info)
+            :report()
+        return state:error()
+    end
+
+    -- The sentence is definitionally equal to the goal. Run Vampire to prove
+    -- the sentence in its notation (Vampire is notation-sensitive), then use
+    -- the result to satisfy the original goal.
+    local subState = state:copy()
+    subState.goal = sentence
+    subState.info = subState.info:withGoal(sentence)
+    local newState, info, err = vampire.handleVampire(subState)
+
+    if err ~= nil then
+        vampire.vampErrToDiag(err, just._span)
+            :withTacticInfo(state.info)
+            :report()
+        return state:error()
+    end
+
+    if info and not info.usesGoal then
+        Diagnostic:newWarning("Vampire proved a contradiction, not the goal", just._span:labelWarning(""))
+            :withTacticInfo(state.info)
+            :report()
+    end
+
+    -- Transfer the formal proof and record the original goal as proved.
+    state.formal = newState.formal
+    state.knowns:set(state.goal.formal:fact(), state.goal:fact())
+    state.info = state.info:withDeduce(state.goal:fact())
+    return state
+end
+
 return M
