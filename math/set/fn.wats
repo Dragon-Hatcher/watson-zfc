@@ -265,7 +265,8 @@ end
 theorem fn_on.def [A B : term] :
     |- ∀f, f ∈ (A → B) ↔ f ∈ Rel(A, B) ∧ ∀a ∈ A, ∃!b, ⟨a, b⟩ ∈ f
 proof
-    todo
+    suffices ∀f, f ∈ {f ∈ Rel(A, B) | ∀a ∈ A, ∃!b, ⟨a, b⟩ ∈ f} ↔ f ∈ Rel(A, B) ∧ ∀a ∈ A, ∃!b, ⟨a, b⟩ ∈ f;
+    done by zfc.extensionality
 qed
 
 And once again we can define the notion of being a function independent of the
