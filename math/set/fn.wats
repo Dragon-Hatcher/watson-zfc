@@ -192,6 +192,7 @@ proof
     done by powset.def
 qed
 
+
 For a relation we have the notions of the domain and range which are the sets
 of the first element of each pair and the second element of each pair, respectively.
 
@@ -203,16 +204,22 @@ definition
     ran(R) := {π₂(x) | x ∈ R}
 end
 
+We can prove the following using the set map definition.
+
 theorem dom.def [R : term] :
     |- ∀x, x ∈ dom(R) ↔ ∃y ∈ R, x = π₁(y)
 proof
-    todo
+    suffices ∀x, x ∈ {π₁(z) | z ∈ R} ↔ ∃y ∈ R, x = π₁(y);
+    thus ∀x, x ∈ {π₁(z) | z ∈ R} ↔ (∃z, z ∈ R ∧ x = π₁(z)) by set_map.def [π₁(_)] [R];
+    done logically
 qed
 
 theorem ran.def [R : term] :
     |- ∀x, x ∈ ran(R) ↔ ∃y ∈ R, x = π₂(y)
 proof
-    todo
+    suffices ∀x, x ∈ {π₂(z) | z ∈ R} ↔ ∃y ∈ R, x = π₂(y);
+    thus ∀x, x ∈ {π₂(z) | z ∈ R} ↔ (∃z, z ∈ R ∧ x = π₂(z)) by set_map.def [π₂(_)] [R];
+    done logically
 qed
 
 We can also have the notion of being a relation without having to know the
