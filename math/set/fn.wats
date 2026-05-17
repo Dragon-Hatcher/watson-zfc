@@ -172,6 +172,23 @@ proof
     done logically
 qed
 
+Next, we prove a useful result relating the cartesian product of sets to their subsets.
+
+lemma cart_prod.sub [A B C D : term] : (A ⊆ C) (B ⊆ D)
+    |- A × B ⊆ C × D
+proof
+    suffices ∀x ∈ A × B, x ∈ C × D;
+    arbitrary x;
+    assume x ∈ A × B then x ∈ C × D as
+        obtain a st a ∈ A and b st b ∈ B ∧ x = ⟨a, b⟩ by cart_prod.def;
+        follows a ∈ C by sub.def given A ⊆ C;
+        follows b ∈ D by sub.def given B ⊆ D;
+        done by cart_prod.def
+        ;
+    done logically
+qed
+
+
 We can define the set of binary relations between two sets as the powerset of 
 the Cartesian product of those two sets. Conceptually, if $R$ is a relation
 between $A$ and $B$ then it is the set of all pairs $(a, b)$ where $a$ and $b$
@@ -274,10 +291,58 @@ proof
     done logically
 qed
 
+We can show this fact in a similar manner to the previous proof, additionally making use of our cartesian product subset lemma.
 theorem rel_on.is_rel [R A B : term] :
     |- R ∈ Rel(A, B) ↔ (R : Rel ∧ dom(R) ⊆ A ∧ ran(R) ⊆ B)
 proof
-    todo
+    -- If R is a relation, then its a relation between sets
+    follows R : Rel ↔ ∃C, ∃D, R ∈ Rel(C, D) by rel.is_rel_on;
+    suffices R ∈ Rel(A, B) ↔ ((∃C, ∃D, R ∈ Rel(C, D)) ∧ dom(R) ⊆ A ∧ ran(R) ⊆ B) logically;
+    -- (→)
+    assume R ∈ Rel(A, B) then ((∃C, ∃D, R ∈ Rel(C, D)) ∧ dom(R) ⊆ A ∧ ran(R) ⊆ B) as
+        -- Really we just have to show that dom(R) ⊆ A and ran(R) ⊆ B as the first proposition is the same as our assumption
+        hence R ⊆ A × B by rel_on.def;
+        hence ∃C, ∃D, R ⊆ C × D logically;
+        follows ∃C, ∃D, R ∈ Rel(C, D) by rel_on.def;
+        suffices dom(R) ⊆ A ∧ ran(R) ⊆ B logically;
+        suffices (∀x ∈ dom(R), x ∈ A) ∧ (∀y ∈ ran(R), y ∈ B) by sub.def;
+        suffices (∀x, x ∈ dom(R) → x ∈ A) ∧ (∀y, y ∈ ran(R) → y ∈ B) logically;
+        -- Similarly to the last proof, we want to show the statement holds for an arbitrary element
+        hence (∀x, x ∈ dom(R) → x ∈ A) as
+            arbitrary x;
+            assume x ∈ dom(R) then x ∈ A as
+                obtain z st z ∈ R ∧ x = π₁(z) by dom.def;
+                follows z ∈ A × B by sub.def given R ⊆ A × B;
+                obtain a st a ∈ A and b st b ∈ B ∧ z = ⟨a, b⟩ by cart_prod.def;
+                follows π₁(z) = a by opair_first.def given z = ⟨a, b⟩;
+                done logically
+                ;
+            done logically
+            ;
+        hence (∀y, y ∈ ran(R) → y ∈ B) as
+            arbitrary y;
+            assume y ∈ ran(R) then y ∈ B as
+                obtain z st z ∈ R ∧ y = π₂(z) by ran.def;
+                follows z ∈ A × B by sub.def given R ⊆ A × B;
+                obtain b st b ∈ B and a st a ∈ A ∧ z = ⟨a, b⟩ by cart_prod.def;
+                follows π₂(z) = b by opair_second.def given z = ⟨a, b⟩;
+                done logically
+                ;
+            done logically
+            ;
+        done logically
+    ;
+    -- (←)
+    assume ((∃C, ∃D, R ∈ Rel(C, D)) ∧ dom(R) ⊆ A ∧ ran(R) ⊆ B) then R ∈ Rel(A, B) as
+        hence R : Rel by rel.is_rel_on;
+        follows R ∈ Rel(dom(R), ran(R)) by rel.def;
+        thus R ⊆ dom(R) × ran(R) by rel_on.def;
+        -- TODO: is this lemma useful?
+        follows dom(R) × ran(R) ⊆ A × B by cart_prod.sub;
+        hence R ⊆ A × B by sub.def given R ⊆ dom(R) × ran(R);
+        done by rel_on.def
+        ;
+    done logically
 qed
 
 A functional relation is a particular kind of binary relation where the first 
