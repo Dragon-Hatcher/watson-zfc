@@ -379,7 +379,14 @@ qed
 theorem fn.is_fn_on [f : term] :
     |- f : Fn ↔ ∃A, ∃B, f ∈ (A → B)
 proof
-    todo
+    suffices f ∈ (dom(f) → ran(f)) ↔ ∃A, ∃B, f ∈ (A → B);
+    assume f ∈ (dom(f) → ran(f)) then ∃A, ∃B, f ∈ (A → B) logically;
+    assume ∃A, ∃B, f ∈ (A → B) then f ∈ (dom(f) → ran(f)) as
+        obtain A st ∃B, f ∈ (A → B) logically;
+        obtain B st f ∈ (A → B) logically;
+        follows f ∈ Rel(A, B) ∧ ∀a ∈ A, ∃!b, 
+        ;
+        
 qed
 
 theorem fn_on.is_fn [f A B : term] :
