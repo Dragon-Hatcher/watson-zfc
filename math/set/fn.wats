@@ -376,6 +376,13 @@ proof
     done by iff.refl [f : Fn]
 qed
 
+lemma fn.in_rel [A B : term] :
+    |- (A → B) ⊆ Rel(A, B)
+proof
+    thus {f ∈ Rel(A, B) | ∀a ∈ A, ∃!b, ⟨a, b⟩ ∈ f} ⊆ Rel(A, B)
+        by comp.sub [∀a ∈ A, ∃!b, ⟨a, b⟩ ∈ _] [Rel(A, B)];
+qed
+
 theorem fn.is_fn_on [f : term] :
     |- f : Fn ↔ ∃A, ∃B, f ∈ (A → B)
 proof
@@ -384,9 +391,15 @@ proof
     assume ∃A, ∃B, f ∈ (A → B) then f ∈ (dom(f) → ran(f)) as
         obtain A st ∃B, f ∈ (A → B) logically;
         obtain B st f ∈ (A → B) logically;
-        follows f ∈ Rel(A, B) ∧ ∀a ∈ A, ∃!b, 
+        hence f ∈ Rel(A, B) ∧ ∀a ∈ A, ∃!b, ⟨a, b⟩ ∈ f by fn_on.def;
+        follows f : Rel by rel.is_rel_on;
+        follows f ∈ Rel(dom(f), ran(f)) by rel.def;
+        follows dom(f) ⊆ A by rel_on.is_rel;
+        follows ∀a, a ∈ dom(f) → a ∈ A by sub.def given dom(f) ⊆ A;
+        hence ∀a ∈ dom(f), ∃!b, ⟨a, b⟩ ∈ f logically;
+        done by fn_on.def
         ;
-        
+    done logically
 qed
 
 theorem fn_on.is_fn [f A B : term] :
