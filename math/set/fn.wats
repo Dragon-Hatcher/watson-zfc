@@ -405,7 +405,43 @@ qed
 theorem fn_on.is_fn [f A B : term] :
     |- f ∈ (A → B) ↔ (f : Fn ∧ dom(f) = A ∧ ran(f) ⊆ B)
 proof
-    todo
+    hence f: Fn ↔ ∃C, ∃D, f ∈ (C → D) by fn.is_fn_on;
+    suffices f ∈ (A → B) ↔ (∃C, ∃D, f ∈ (C → D) ∧ dom(f) = A ∧ ran(f) ⊆ B) logically;
+    assume f ∈ (A → B) then (∃C, ∃D, f ∈ (C → D) ∧ dom(f) = A ∧ ran(f) ⊆ B) as
+        hence ∃C, ∃D, f ∈ (C → D) logically;
+        thus ∀x, x ∈ (A → B) → ∀a ∈ A, ∃!b, ⟨a, b⟩ ∈ x by fn_on.def;
+        follows ∀a ∈ A, ∃!b, ⟨a, b⟩ ∈ f logically;
+        suffices dom(f) = A ∧ ran(f) ⊆ B logically;
+        follows (A → B) ⊆ Rel(A, B) by fn.in_rel;
+        follows f ∈ Rel(A, B) by sub.def given (A → B) ⊆ Rel(A, B);
+        follows dom(f) ⊆ A ∧ ran(f) ⊆ B by rel_on.is_rel;
+        suffices A ⊆ dom(f) by sub.sub_eq;
+        suffices ∀a ∈ A, a ∈ dom(f) by sub.def;
+        arbitrary a;
+        assume a ∈ A then a ∈ dom(f) as
+            obtain b st ⟨a, b⟩ ∈ f logically;
+            thus a = π₁(⟨a, b⟩) by opair_first.def;
+            done by dom.def given ⟨a, b⟩ ∈ f
+            ;
+        done logically
+        ;
+    assume (∃C, ∃D, f ∈ (C → D) ∧ dom(f) = A ∧ ran(f) ⊆ B) then f ∈ (A → B) as
+        obtain C st ∃D, f ∈ (C → D) ∧ dom(f) = A ∧ ran(f) ⊆ B logically;
+        obtain D st f ∈ (C → D) ∧ dom(f) = A ∧ ran(f) ⊆ B logically;
+        follows f : Fn by fn.is_fn_on;
+        follows f ∈ (dom(f) → ran(f)) by fn.def;
+        follows ∀a ∈ dom(f), ∃!b, ⟨a, b⟩ ∈ f by fn_on.def;
+        hence ∀a ∈ A, ∃!b, ⟨a, b⟩ ∈ f logically;
+        follows (C → D) ⊆ Rel(C, D) by fn.in_rel;
+        follows f ∈ Rel(C, D) by sub.def given (C → D) ⊆ Rel(C, D);
+        follows f : Rel by rel.is_rel_on;
+        hence dom(f) = A logically;
+        follows dom(f) ⊆ dom(f) by sub.refl;
+        follows dom(f) ⊆ A by eq.subst [dom(f) ⊆ _] [dom(f)] [A];
+        follows f ∈ Rel(A, B) by rel_on.is_rel;
+        done by fn_on.def
+        ;
+    done logically
 qed
 
 We define function application by extracting the second element of the unique 
