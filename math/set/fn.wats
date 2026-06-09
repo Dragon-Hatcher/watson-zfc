@@ -456,10 +456,41 @@ definition
     f:term (a) := ℩b, ⟨a, b⟩ ∈ f
 end
 
+This proof follows from our definition as well as the iota operator which lets us show unambiguity
+
 theorem fn_on.pairs [f A B : term] : (f ∈ (A → B))
     |- f = {⟨a, f(a)⟩ | a ∈ A}
 proof
-    todo
+    suffices f = {y | ∃a, a ∈ A ∧ y = ⟨a, f(a)⟩};
+    thus f ∈ Rel(A, B) ∧ ∀a ∈ A, ∃!b, ⟨a, b⟩ ∈ f by fn_on.def;
+    follows f ⊆ A × B by rel_on.def;
+    follows ∀a ∈ A, ∃!b, ⟨a, b⟩ ∈ f logically;
+    thus ∀x, x ∈ f ↔ (∃a, a ∈ A ∧ x = ⟨a, f(a)⟩) as
+        arbitrary x;
+        assume x ∈ f then ∃a, a ∈ A ∧ x = ⟨a, f(a)⟩ as
+            follows x ∈ A × B by sub.def given f ⊆ A × B;
+            obtain a st a ∈ A and b st b ∈ B ∧ x = ⟨a, b⟩ by cart_prod.def;
+            follows ⟨a, b⟩ ∈ f given x = ⟨a, b⟩;
+            follows ∃!b, ⟨a, b⟩ ∈ f logically;
+            follows ⟨a, f(a)⟩ ∈ f by iota.unique [⟨a, _⟩ ∈ f];
+            hence f(a) = b logically;
+            hence x = ⟨a, f(a)⟩ logically;
+            done logically
+            ;
+        assume ∃a, a ∈ A ∧ x = ⟨a, f(a)⟩ then x ∈ f as
+            obtain a st a ∈ A ∧ x = ⟨a, f(a)⟩ logically;
+            follows ∃!b, ⟨a, b⟩ ∈ f logically;
+            follows ⟨a, f(a)⟩ ∈ f by iota.unique [⟨a, _⟩ ∈ f];
+            done logically
+            ;
+        done logically
+        ;
+    -- f itself witnesses that the set exists, so the comprehension is well
+    -- defined and has the expected members.
+    follows ∃z, ∀x, x ∈ z ↔ (∃a, a ∈ A ∧ x = ⟨a, f(a)⟩) logically;
+    follows ∀x, x ∈ {y | ∃a, a ∈ A ∧ y = ⟨a, f(a)⟩} ↔ (∃a, a ∈ A ∧ x = ⟨a, f(a)⟩) by uncomp.def [∃a, a ∈ A ∧ _ = ⟨a, f(a)⟩];
+    follows ∀x, x ∈ f ↔ x ∈ {y | ∃a, a ∈ A ∧ y = ⟨a, f(a)⟩} logically;
+    done by zfc.extensionality
 qed
 
 theorem fn.pairs [f : term] : (f : Fn)
@@ -478,11 +509,54 @@ definition
     x ∈ X ↦ f(x) := {⟨x, f(x)⟩ | x ∈ X}
 end
 
+This theorem follows from an ever-rare explicit use of the axiom of replacement as well as previously shown results for relations.
+
 theorem fun_map.is.rel [A B : term] [f(_) : term(term)]: (∀x ∈ A, f(x) ∈ B)
     |- x ∈ A ↦ f(x) ∈ (A → B)
 proof
-    suffices {⟨x, f(x)⟩ | x ∈ A} ∈ {f ∈ Rel(A, B) | ∀a, a ∈ A → (∃!b, ⟨a, b⟩ ∈ f)};
-    todo
+    suffices {⟨x, f(x)⟩ | x ∈ A} ∈ (A → B);
+    suffices {y | ∃x, x ∈ A ∧ y = ⟨x, f(x)⟩} ∈ (A → B);
+    -- Using our replacement axiom to show that a functional mapping of a set defines its own set
+    follows ∀a, (∀x, x ∈ a → ∃!y, y = ⟨x, f(x)⟩) → (∃x, ∀y, y ∈ x ↔ (∃z, z ∈ a ∧ y = ⟨z, f(z)⟩))
+        by zfc.replacement [_1 = ⟨_0, f(_0)⟩];
+    -- Then we show the set that it defines
+    follows ∃z, ∀y, y ∈ z ↔ (∃x, x ∈ A ∧ y = ⟨x, f(x)⟩) logically;
+    thus ∀y, y ∈ {y | ∃x, x ∈ A ∧ y = ⟨x, f(x)⟩} ↔ (∃x, x ∈ A ∧ y = ⟨x, f(x)⟩)
+        by uncomp.def [∃x, x ∈ A ∧ _ = ⟨x, f(x)⟩];
+    suffices {y | ∃x, x ∈ A ∧ y = ⟨x, f(x)⟩} ∈ Rel(A, B)
+        ∧ ∀a ∈ A, ∃!b, ⟨a, b⟩ ∈ {y | ∃x, x ∈ A ∧ y = ⟨x, f(x)⟩} by fn_on.def;
+    -- Function mappings are subsets of all of the relations between two sets
+    thus {y | ∃x, x ∈ A ∧ y = ⟨x, f(x)⟩} ∈ Rel(A, B) as
+        suffices {y | ∃x, x ∈ A ∧ y = ⟨x, f(x)⟩} ⊆ A × B by rel_on.def;
+        suffices ∀w, w ∈ {y | ∃x, x ∈ A ∧ y = ⟨x, f(x)⟩} → w ∈ A × B by sub.def;
+        arbitrary w;
+        assume w ∈ {y | ∃x, x ∈ A ∧ y = ⟨x, f(x)⟩} then w ∈ A × B as
+            obtain a st a ∈ A ∧ w = ⟨a, f(a)⟩ logically;
+            follows f(a) ∈ B logically;
+            done by cart_prod.def
+            ;
+        done logically
+        ;
+    -- Showing function well-definedness, basically that every element a in A has a mapping, and that a = a → f(a) = f(a)
+    thus ∀a ∈ A, ∃!b, ⟨a, b⟩ ∈ {y | ∃x, x ∈ A ∧ y = ⟨x, f(x)⟩} as
+        arbitrary a;
+        assume a ∈ A then ∃!b, ⟨a, b⟩ ∈ {y | ∃x, x ∈ A ∧ y = ⟨x, f(x)⟩} as
+            thus ⟨a, f(a)⟩ ∈ {y | ∃x, x ∈ A ∧ y = ⟨x, f(x)⟩} logically;
+            thus ∀b, ⟨a, b⟩ ∈ {y | ∃x, x ∈ A ∧ y = ⟨x, f(x)⟩} → b = f(a) as
+                arbitrary b;
+                assume ⟨a, b⟩ ∈ {y | ∃x, x ∈ A ∧ y = ⟨x, f(x)⟩} then b = f(a) as
+                    obtain c st c ∈ A ∧ ⟨a, b⟩ = ⟨c, f(c)⟩ logically;
+                    follows a = c ∧ b = f(c) by opair.eq;
+                    done logically
+                    ;
+                done logically
+                ;
+            done logically
+            ;
+        done logically
+        ;
+
+    done logically
 qed
 
 
