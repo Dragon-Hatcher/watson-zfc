@@ -78,32 +78,23 @@ This proof follows simply from the definition of the ordered pair and the proper
 theorem opair_second.def [a b : term] :
     |- π₂(⟨a, b⟩) = b
 proof
-    -- suffices ⋃{x ∈ ⋃{{a}, {a, b}} | ⋃{{a}, {a, b}} ≠ ⋂{{a}, {a, b}} → x ∉ ⋂{{a}, {a, b}}} = b;
-    -- thus ∀x, x ∈ ⋃{{a}, {a, b}} ↔ (x ∈ {a} ∨ x ∈ {a, b}) by union.def [{a}] [{a, b}];
-    -- follows ∀x, x ∈ ⋂{{a}, {a, b}} ↔ (x ∈ {a} ∧ x ∈ {a, b}) by inter.def [{a}] [{a, b}];
-    -- follows ∀x, (x ∈ {a} ∧ x ∈ {a, b}) ↔ (x = a ∧ x ∈ {a, b}) by singleton.def;
-    -- follows ∀x, (x = a ∧ x ∈ {a, b}) ↔ (x = a ∧ (x = a ∨ x = b)) by pair.def;
-    -- hence ∀x, x ∈ ⋂{{a}, {a, b}} ↔ x = a by opair.inter;
-    -- thus ∀x, x = a ↔ x ∈ {a} by singleton.def;
-    -- follows ⋂{{a}, {a, b}} = {a} by zfc.extensionality;
-    -- hence ⋃⟨a, b⟩ = {a, b} by opair.union;
-    -- hence ⋃{x ∈ {a, b} | {a, b} ≠ {a} → x ∉ {a}} = ⋃{x ∈ ⋃{{a}, {a, b}} | ⋃{{a}, {a, b}} ≠ ⋂{{a}, {a, b}} → x ∉ ⋂{{a}, {a, b}}} logically;
-    -- thus ∀x, x ∈ {a, b} ↔ (x = a ∨ x = b) by pair.def;
-    -- hence ∀x, x ∈ {a} ↔ x = a by singleton.def;
-    -- follows {a, b} ≠ {a} ↔ a ≠ b logically;
-    -- hence ∀x, ((x = a ∨ x = b) ∧ (a ≠ b → x ∉ {a})) ↔ (x = b) logically;
-    -- thus ∀x, x ∈ {x ∈ {a, b} | {a, b} ≠ {a} → x ∉ {a}} ↔ x = b by zfc.extensionality;
-    -- hence ∀x, x = b ↔ x ∈ {b} by singleton.def;
-    -- follows ∀x, x ∈ {x ∈ {a, b} | {a, b} ≠ {a} → x ∉ {a}} ↔ x ∈ {b} logically; 
-    -- follows {x ∈ {a, b} | {a, b} ≠ {a} → x ∉ {a}} = {b} by zfc.extensionality;
-    -- hence ⋃{x ∈ {a, b} | {a, b} ≠ {a} → x ∉ {a}} = ⋃{b} logically;
-    -- hence ⋃{x ∈ ⋃{{a}, {a, b}} | ⋃{{a}, {a, b}} ≠ ⋂{{a}, {a, b}} → x ∉ ⋂{{a}, {a, b}}} = ⋃{b} logically;
-    -- thus ∀x, x ∈ ⋃{b} ↔ (∃y, x ∈ y ∧ y ∈ {b}) by big_union.def;
-    -- hence ∀x, (∃y, x ∈ y ∧ y ∈ {b}) ↔ x ∈ b logically;
-    -- follows ∀x, x ∈ ⋃{b} ↔ x ∈ b logically;
-    -- thus ⋃{b} = b by zfc.extensionality;
-    -- done logically
-    todo
+    suffices ⋃{x ∈ ⋃⟨a, b⟩ | ⋃⟨a, b⟩ ≠ ⋂⟨a, b⟩ → x ∉ ⋂⟨a, b⟩} = b;
+    follows ⋃⟨a, b⟩ = {a, b} by opair.union;
+    follows ⋂⟨a, b⟩ = {a}    by opair.inter;
+    -- We can simplify our goal with our known facts for the union and intersection
+    hence ⋃{x ∈ ⋃⟨a, b⟩ | ⋃⟨a, b⟩ ≠ ⋂⟨a, b⟩ → x ∉ ⋂⟨a, b⟩}
+        = ⋃{x ∈ {a, b} | {a, b} ≠ {a} → x ∉ {a}} logically;
+    thus ∀x, x ∈ {a, b} ↔ (x = a ∨ x = b) by pair.def;
+    follows ∀x, x ∈ {a} ↔ x = a by singleton.def;
+    follows {a, b} ≠ {a} ↔ a ≠ b logically;
+    hence ∀x, ((x = a ∨ x = b) ∧ (a ≠ b → x ∉ {a})) ↔ x = b logically;
+    thus ∀x, x ∈ {x ∈ {a, b} | {a, b} ≠ {a} → x ∉ {a}} ↔ x = b by zfc.extensionality;
+    hence ∀x, x = b ↔ x ∈ {b} by singleton.def;
+    follows ∀x, x ∈ {x ∈ {a, b} | {a, b} ≠ {a} → x ∉ {a}} ↔ x ∈ {b} logically;
+    follows {x ∈ {a, b} | {a, b} ≠ {a} → x ∉ {a}} = {b} by zfc.extensionality;
+    -- so π₂(⟨a, b⟩) = ⋃{b} = b
+    hence ⋃{x ∈ {a, b} | {a, b} ≠ {a} → x ∉ {a}} = ⋃{b} logically;
+    done by big_union.singleton
 qed
 
 Finally, we show that two ordered pairs are equal iff their first and second elements are equal.
