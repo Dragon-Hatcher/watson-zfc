@@ -616,3 +616,101 @@ proof
         = {⟨x, g(x)⟩ | x ∈ dom(g) ∩ X} as todo;
         = g ↾ X                        as todo;
 qed
+
+## Function properties & Composition
+
+notation image_set
+    term (1000) ::= term "[" term "]"
+end
+
+definition
+    f:term [A] := {f(a) | a ∈ A}
+end
+
+theorem image.def [f A : term] :
+    |- ∀y, y ∈ f[A] ↔ ∃a ∈ A, y = f(a)
+proof
+    suffices ∀y, y ∈ {f(a) | a ∈ A} ↔ ∃a ∈ A, y = f(a);
+    thus ∀y, y ∈ {f(a) | a ∈ A} ↔ (∃a, a ∈ A ∧ y = f(a)) by set_map.def [f(_)] [A];
+    done logically
+qed
+
+notation preimage_set
+    term (1000) ::= term "⁻¹" "[" term "]"
+end
+
+definition
+    f:term⁻¹[A] := {x ∈ dom(f) | f(x) ∈ A}
+end
+
+theorem preimage.def [f A : term] :
+    |- ∀x, x ∈ f⁻¹[A] ↔ (x ∈ dom(f) ∧ f(x) ∈ A)
+proof
+    suffices ∀x, x ∈ {x ∈ dom(f) | f(x) ∈ A} ↔ (x ∈ dom(f) ∧ f(x) ∈ A);
+    done by zfc.extensionality
+qed
+
+notation surjection
+    term ::= term " ↠ " term
+end
+
+definition
+    A ↠ B := {f ∈ (A → B) | ran(f) = B}
+end
+
+theorem surj_on.def [A B : term] :
+    |- ∀f, f ∈ (A ↠ B) ↔ (f ∈ (A → B) ∧ ran(f) = B)
+proof
+    suffices ∀f, f ∈ {f ∈ (A → B) | ran(f) = B} ↔ (f ∈ (A → B) ∧ ran(f) = B);
+    done by zfc.extensionality
+qed
+
+notation injection
+    term ::= term " ↣ " term
+end
+
+definition
+    A ↣ B := {f ∈ (A → B) | ∀x, ∀y, x ∈ A ∧ y ∈ A ∧ f(x) = f(y) → x = y}
+end
+
+theorem inj_on.def [A B : term] :
+    |- ∀f, f ∈ (A ↣ B) ↔ (f ∈ (A → B) ∧ (∀x, ∀y, x ∈ A ∧ y ∈ A ∧ f(x) = f(y) → x = y))
+proof
+    suffices ∀f, f ∈ {f ∈ (A → B) | ∀x, ∀y, x ∈ A ∧ y ∈ A ∧ f(x) = f(y) → x = y} ↔ (f ∈ (A → B) ∧ (∀x, ∀y, x ∈ A ∧ y ∈ A ∧ f(x) = f(y) → x = y));
+    done by zfc.extensionality
+qed
+
+definition
+    f : Inj := f ∈ (dom(f) ↣ ran(f))
+end
+
+theorem inj.def [f : term] :
+    |- f : Inj ↔ f ∈ (dom(f) ↣ ran(f))
+proof
+    done by iff.refl [f : Inj]
+qed
+
+notation bijection
+    term ::= term " ↔ " term
+end
+
+definition
+    A ↔ B := {f ∈ (A ↣ B) | ran(f) = B}
+end
+
+theorem bij_on.def [A B : term] :
+    |- ∀f, f ∈ (A ↔ B) ↔ (f ∈ (A ↣ B) ∧ ran(f) = B)
+proof
+    suffices ∀f, f ∈ {f ∈ (A ↣ B) | ran(f) = B} ↔ (f ∈ (A ↣ B) ∧ ran(f) = B);
+    done by zfc.extensionality
+qed
+
+definition
+    f : Bij := f ∈ (dom(f) ↔ ran(f))
+end
+
+theorem bij.def [f : term] :
+    |- f : Bij ↔ f ∈ (dom(f) ↔ ran(f))
+proof
+    done by iff.refl [f : Bij]
+qed
