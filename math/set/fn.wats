@@ -823,12 +823,11 @@ proof
         thus ∀z, z ∈ f⁻¹ ↔ ∃p ∈ f, z = ⟨π₂(p), π₁(p)⟩ by set_map.def [⟨π₂(_), π₁(_)⟩] [f];
         obtain p st p ∈ f ∧ y = ⟨π₂(p), π₁(p)⟩ logically;
         -- inv.mem swaps the pair back into f
-        follows ⟨π₁(p), π₂(p)⟩ ∈ f logically;
+        follows ⟨π₁(p), π₂(p)⟩ ∈ f by inv.mem;
         follows ⟨π₁(p), π₂(p)⟩ ∈ A × B by sub.def given f ⊆ A × B;
         hence π₁(p) ∈ A ∧ π₂(p) ∈ B by cart_prod.def, opair.eq;
         done by cart_prod.def
         ;
-    done logically
 qed
 
 notation function_composition
